@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.3
+// @version      0.4
 // @description  Find S2 properties
 // @author       someone
 // @match        https://gymhuntr.com/*
@@ -27,21 +27,10 @@
 	let regionLayer;
 
 	function analyzeData() {
-		const response = window.prompt('Which level of S2 cell do you want to analyze? (6-20)', gridLevel);
-		if (!response)
-			return;
-		const level = parseInt(response, 10);
-		if (isNaN(level) || (level < 6) || (level > 20)) {
-			alert('Invalid value');
-			return;
-		}
-		gridLevel = level;
-		updateMapGrid();
-
-		const cells = groupByCell(level);
+		const cells = groupByCell(gridLevel);
 
 		// Save data
-		const filename = 'S2_' + level + '_' + new Date().getTime() + '.json';
+		const filename = 'S2_' + gridLevel + '_' + new Date().getTime() + '.json';
 		const blob = new Blob([JSON.stringify(cells)], {
 			type: 'text/plain;charset=utf-8'
 		});
@@ -102,9 +91,15 @@
 		button.title = 'Find S2 distribution';
 
 		document.querySelector('.controls').appendChild(button);
-		button.addEventListener('click', analyzeData);
+
+		button.addEventListener('click', e => {
+			const dialog = document.getElementById('s2dialog');
+			dialog.style.display = (dialog.style.display == 'none') ? 'block' : 'none';
+		});
+		//	button.addEventListener('click', analyzeData);
 	}
 
+	/*
 	function showSaveButton() {
 		const button = document.createElement('button');
 		button.className = 'button button-circle';
@@ -112,13 +107,67 @@
 		button.title = 'Save Gyms and Portals';
 
 		document.querySelector('.controls').appendChild(button);
-		button.addEventListener('click', function () {
-			const filename = 'gyms+stops_' + new Date().getTime() + '.json';
-			const data = {gyms: window.pokegyms, pokestops: window.pokestops};
-			const blob = new Blob([JSON.stringify(data)], {
-				type: 'text/plain;charset=utf-8'
-			});
-			saveAs(blob, filename);
+		button.addEventListener('click', saveGymStopsJSON);
+	}
+	*/
+	function saveGymStopsJSON() {
+		const filename = 'gyms+stops_' + new Date().getTime() + '.json';
+		const data = {gyms: window.pokegyms, pokestops: window.pokestops};
+		const blob = new Blob([JSON.stringify(data)], {
+			type: 'text/plain;charset=utf-8'
+		});
+		saveAs(blob, filename);
+	}
+
+	function addDialog() {
+		const html = `<div class="filter-box">
+			  <div class="close-button"><i class="fa fa-times"></i></div>
+			  <h3>S2 Cells</h3>
+			  <p>Select the level of grid to display: <select>
+			<option value=0>None</option>
+			<option value=10>10</option>
+			<option value=11>11</option>
+			<option value=12>12</option>
+			<option value=13>13</option>
+			<option value=14>14</option>
+			<option value=15>15</option>
+			<option value=16>16</option>
+			<option value=17>17</option>
+			<option value=18>18</option>
+			<option value=19>19</option>
+			<option value=20>20</option>
+			</select></p>
+			<!--
+			  <div class="inner-filter">
+				<div class="filteritem">
+				  <div class="filterlevels">
+				  <p>Show raids with level: </p>
+				  <input name="0" id="filter-level0" type="checkbox"><label for="filter-pokestops">No Raids</label><br>
+				  <input name="1" id="filter-level1" type="checkbox"><label for="filter-pokestops">Level 1</label><br>
+				  </div>
+				</div>
+			  </div>
+			-->
+			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button>
+			<button class="btn btn-primary" id="show-summary"> Show Analysis</button>
+			  <!--<button class="btn btn-primary" id="save-filter">Save Filter</button> -->
+			</div>`;
+
+		const div = document.createElement('div');
+		div.id = 's2dialog';
+		div.className = 'filters';
+		div.style.display = 'none';
+		div.innerHTML = html;
+		document.body.appendChild(div);
+
+		div.querySelector('.close-button').addEventListener('click', e => div.style.display = 'none');
+		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
+		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
+		const select = div.querySelector('select');
+		select.value = gridLevel;
+		select.addEventListener('change', e => {
+			gridLevel = parseInt(select.value, 10);
+			updateMapGrid();
 		});
 	}
 
@@ -162,7 +211,8 @@
 			origOpen.apply(this, arguments);
 		};
 		showButton();
-		showSaveButton();
+		addDialog();
+		//showSaveButton();
 	}
 
 	function initS2checker() {
@@ -200,6 +250,9 @@
 
 	function updateMapGrid() {
 		regionLayer.clearLayers();
+		if (gridLevel < 6) {
+			return;
+		}
 
 		const bounds = map.getBounds();
 
@@ -207,22 +260,22 @@
 
 		const drawCellAndNeighbors = function (cell) {
 
-			let cellStr = cell.toString();
+			const cellStr = cell.toString();
 
 			if (!seenCells[cellStr]) {
 				// cell not visited - flag it as visited now
 				seenCells[cellStr] = true;
 
 				// is it on the screen?
-				let corners = cell.getCornerLatLngs();
-				let cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
+				const corners = cell.getCornerLatLngs();
+				const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
 
 				if (cellBounds.intersects(bounds)) {
 					// on screen - draw it
 					drawCell(cell);
 
 					// and recurse to our neighbors
-					let neighbors = cell.getNeighbors();
+					const neighbors = cell.getNeighbors();
 					for (let i = 0; i < neighbors.length; i++) {
 						drawCellAndNeighbors(neighbors[i]);
 					}
