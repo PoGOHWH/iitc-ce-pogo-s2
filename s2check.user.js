@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  Find S2 properties
 // @author       someone
 // @require      https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.min.js
@@ -11,20 +11,19 @@
 
 /* eslint-env es6 */
 /* eslint no-var: "error" */
-/* globals saveAs */
+/* globals saveAs, L, S2, map */
 
 (function () {
-
 	'use strict';
-
-	if (!document.querySelector('.controls'))
-		return;
 
 	window.pokestops = {};
 	window.pokegyms = {};
 
+	let gridLevel = 14;
+	let regionLayer;
+
 	function analyzeData() {
-		const response = window.prompt('Which level of S2 cell do you want to analyze? (6-20)', 14);
+		const response = window.prompt('Which level of S2 cell do you want to analyze? (6-20)', gridLevel);
 		if (!response)
 			return;
 		const level = parseInt(response, 10);
@@ -32,6 +31,9 @@
 			alert('Invalid value');
 			return;
 		}
+		gridLevel = level;
+		updateMapGrid();
+
 		const cells = groupByCell(level);
 
 		// Save data
@@ -41,7 +43,9 @@
 		});
 		showCellSummary(cells);
 
-		saveAs(blob, filename);
+		if (window.saveAs) {
+			saveAs(blob, filename);
+		}
 	}
 
 	function showCellSummary(cells) {
@@ -51,7 +55,7 @@
 		let i = 1;
 		keys.forEach(name => {
 			const cell = cells[name];
-			const gymSummary = cell.gyms.map(gym => gym.name.substr(0,15)).join(', ');
+			const gymSummary = cell.gyms.map(gym => gym.name.substr(0, 20)).join(', ');
 			summary.push(i + ': ' + cell.stops.length + ' stops & ' + cell.gyms.length + ' gyms (' + gymSummary + ').');
 			i++;
 		});
@@ -116,7 +120,7 @@
 		});
 	}
 
-	(function () {
+	function interceptGymHuntr() {
 
 		const origOpen = XMLHttpRequest.prototype.open;
 		// add our handler as a listener to every XMLHttpRequest
@@ -156,8 +160,124 @@
 			origOpen.apply(this, arguments);
 		};
 		showButton();
-		showSaveButton();
-	})();
+		if (window.saveAs) {
+			showSaveButton();
+		}
+	}
+
+	function initS2checker() {
+		// No ads :-)
+		const frame = window.frameElement;
+		if (frame) {
+			frame.parentNode.removeChild(frame);
+		}
+
+		// get a reference to the Leaflet map object
+		const orgLayer = L.Map.prototype.addLayer;
+		L.Map.prototype.addLayer = function () { 
+			// save global reference
+			window.map = this;
+			// restore addLayer method
+			L.Map.prototype.addLayer = orgLayer;
+
+			initMap(this);
+			return orgLayer.apply(this, arguments);
+		};
+
+		if (!document.querySelector('.controls'))
+			return;
+
+		interceptGymHuntr();
+	}
+
+	function initMap(map) {
+		regionLayer = L.layerGroup();
+		map.addLayer(regionLayer);
+		map.on('moveend', updateMapGrid);
+		updateMapGrid();
+	}
+
+
+	function updateMapGrid() {
+		regionLayer.clearLayers();
+
+		const bounds = map.getBounds();
+
+		const seenCells = {};
+
+		const drawCellAndNeighbors = function (cell) {
+
+			let cellStr = cell.toString();
+
+			if (!seenCells[cellStr]) {
+				// cell not visited - flag it as visited now
+				seenCells[cellStr] = true;
+
+				// is it on the screen?
+				let corners = cell.getCornerLatLngs();
+				let cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
+
+				if (cellBounds.intersects(bounds)) {
+					// on screen - draw it
+					drawCell(cell);
+
+					// and recurse to our neighbors
+					let neighbors = cell.getNeighbors();
+					for (let i = 0; i < neighbors.length; i++) {
+						drawCellAndNeighbors(neighbors[i]);
+					}
+				}
+			}
+		};
+
+		// center cell
+		const zoom = map.getZoom();
+
+		if (zoom >= 5) {
+			const cell = S2.S2Cell.FromLatLng (map.getCenter(), gridLevel);
+			drawCellAndNeighbors(cell);
+		}
+		/*
+		// the six cube side boundaries. we cheat by hard-coding the coords as it's simple enough
+		const latLngs = [[45,-180], [35.264389682754654,-135], [35.264389682754654,-45], [35.264389682754654,45], [35.264389682754654,135], [45,180]];
+
+		const globalCellOptions = {color: 'red', weight: 5, opacity: 0.5, clickable: false};
+
+		for (let i = 0; i < latLngs.length - 1; i++) {
+			// the geodesic line code can't handle a line/polyline spanning more than (or close to?) 180 degrees, so we draw
+			// each segment as a separate line
+			const poly1 = L.geodesicPolyline ([latLngs[i], latLngs[i + 1]], globalCellOptions);
+			regionLayer.addLayer(poly1);
+
+			//southern mirror of the above
+			const poly2 = L.geodesicPolyline ([[-latLngs[i][0],latLngs[i][1]], [-latLngs[i + 1][0], latLngs[i + 1][1]]], globalCellOptions);
+			regionLayer.addLayer(poly2);
+		}
+
+		// and the north-south lines. no need for geodesic here
+		for (let i = -135; i <= 135; i += 90) {
+			const poly = L.polyline ([[35.264389682754654, i], [-35.264389682754654, i]], globalCellOptions);
+			regionLayer.addLayer(poly);
+		}
+		*/
+	}
+
+
+	function drawCell(cell) {
+		// corner points
+		const corners = cell.getCornerLatLngs();
+
+		const color = cell.level == 10 ? 'gold' : 'orange';
+
+		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
+		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
+		// from the other cell, or be off screen so we don't care
+		const region = L.polyline([corners[0],corners[1],corners[2]], {fill: false, color: color, opacity: 0.5, weight: 5, clickable: false});
+
+		regionLayer.addLayer(region);
+	}
+
+	initS2checker();
 })();
 
 
