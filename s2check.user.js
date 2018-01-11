@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.6
+// @version      0.7
 // @description  Find S2 properties
 // @author       someone
 // @match        https://gymhuntr.com/*
@@ -31,29 +31,37 @@
 		const allCells = groupByCell(gridLevel);
 
 		const cells = filterByMapBounds(allCells);
+		showCellSummary(cells);
+	}
 
-		// Save data
+	function saveGridAnalysis(cells) {
 		const filename = 'S2_' + gridLevel + '_' + new Date().getTime() + '.json';
 		const blob = new Blob([JSON.stringify(cells)], {
 			type: 'text/plain;charset=utf-8'
 		});
-		showCellSummary(cells);
-
 		saveAs(blob, filename);
 	}
 
 	function showCellSummary(cells) {
 		const keys = Object.keys(cells);
 		const summary = [];
-		summary.push('Total number of cells: ' + keys.length);
+		//summary.push('<h1>Total number of cells: ' + keys.length + '</h1>');
+		summary.push('<h3>Analysis Results <i class="fa fa-save" title="Click to save the analysis"></i></h3>');
+		summary.push('<div class="S2Analysis"><table>');
+		summary.push('<thead><tr><th> </th><th>Cell</th><th>Stops</th><th>Gyms</th><th>Gym names</th></tr>');
 		let i = 1;
 		keys.forEach(name => {
-			const cell = cells[name];
-			const gymSummary = cell.gyms.map(gym => gym.name.substr(0, 20)).join(', ');
-			summary.push(i + ': ' + cell.stops.length + ' stops & ' + cell.gyms.length + ' gyms (' + gymSummary + ').');
+			const cellData = cells[name];
+			const cellCenter = cellData.cell.getLatLng();
+			const gymSummary = cellData.gyms.map(gym => '<a data-lat="' + gym.lat + '" data-lng="' + gym.lng + '">' + gym.name.substr(0, 20) + '</a>').join(', ');
+			summary.push('<tr><td>' + i + '</td><td>' + '<a data-lat="' + cellCenter.lat + '" data-lng="' + cellCenter.lng + '">' + name + '</a></td><td>' + cellData.stops.length + '</td><td>' + cellData.gyms.length + '</td><td class="s2-gymnames">' + gymSummary + '</td></tr>');
 			i++;
 		});
-		alert(summary.join('\r\n'));
+		summary.push('</table></div>');
+		const dialog = document.getElementById('S2Summary');
+		dialog.querySelector('#S2SummaryContent').innerHTML = summary.join('\r\n');
+		dialog.style.display = 'block';
+		dialog.querySelector('h3 i').addEventListener('click', e => saveGridAnalysis(cells));
 	}
 	
 	// return only the cells that are visible by the map bounds to ignore far away data that might not be complete
@@ -144,10 +152,9 @@
 	}
 
 	function addDialog() {
-		const html = `<div class="filter-box">
-			  <div class="close-button"><i class="fa fa-times"></i></div>
-			  <h3>S2 Cells</h3>
-			  <p>Select the level of grid to display: <select>
+		const html = `
+			<h3>S2 Cells</h3>
+			<p>Select the level of grid to display: <select>
 			<option value=0>None</option>
 			<option value=10>10</option>
 			<option value=11>11</option>
@@ -161,30 +168,12 @@
 			<option value=19>19</option>
 			<option value=20>20</option>
 			</select></p>
-			<!--
-			  <div class="inner-filter">
-				<div class="filteritem">
-				  <div class="filterlevels">
-				  <p>Show raids with level: </p>
-				  <input name="0" id="filter-level0" type="checkbox"><label for="filter-pokestops">No Raids</label><br>
-				  <input name="1" id="filter-level1" type="checkbox"><label for="filter-pokestops">Level 1</label><br>
-				  </div>
-				</div>
-			  </div>
-			-->
 			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button>
 			<button class="btn btn-primary" id="show-summary"> Show Analysis</button>
-			  <!--<button class="btn btn-primary" id="save-filter">Save Filter</button> -->
-			</div>`;
+			 `;
 
-		const div = document.createElement('div');
-		div.id = 's2dialog';
-		div.className = 'filters';
-		div.style.display = 'none';
-		div.innerHTML = html;
-		document.body.appendChild(div);
+		const div = insertDialogTemplate(html, 's2dialog');
 
-		div.querySelector('.close-button').addEventListener('click', e => div.style.display = 'none');
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
 		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
 		const select = div.querySelector('select');
@@ -193,6 +182,44 @@
 			gridLevel = parseInt(select.value, 10);
 			updateMapGrid();
 		});
+
+		addSummaryDialog();
+	}
+
+	function addSummaryDialog() {
+		const html = '<div id="S2SummaryContent"></div>';
+		const div = insertDialogTemplate(html, 'S2Summary');
+
+		// clicking on any of the 'a' elements in the dialog, close it and center the map there.
+		div.addEventListener('click', e => {
+			const target = e.target;
+			if (target.nodeName != 'A') {
+				return;
+			}
+			div.style.display = 'none';
+			document.getElementById('s2dialog').style.display = 'none';
+			const lat = target.dataset.lat;
+			const lng = target.dataset.lng;
+			map.panTo(new L.LatLng(lat, lng));
+		});
+	} 
+
+	function insertDialogTemplate(content, id) {
+		const html = `<div class="filter-box">
+			  <div class="close-button"><i class="fa fa-times"></i></div>
+			  ${content}
+			</div>`;
+
+		const div = document.createElement('div');
+		div.id = id;
+		div.className = 'filters';
+		div.style.display = 'none';
+		div.innerHTML = html;
+		document.body.appendChild(div);
+
+		div.querySelector('.close-button').addEventListener('click', e => div.style.display = 'none');
+		
+		return div;
 	}
 
 	function interceptGymHuntr() {
@@ -241,7 +268,7 @@
 
 	function injectStyles() {
 		const css = `
-			#s2dialog {
+			.filters {
 				position: absolute;
 				top: 0;
 				left: 0;
@@ -252,7 +279,7 @@
 				text-align: center;
 			}
 
-			#s2dialog .filter-box {
+			.filters .filter-box {
 				background: #fff;
 				margin-top: 5%;
 				padding: 10px;
@@ -262,11 +289,37 @@
 				box-sizing: border-box;
 			}
 
-			#s2dialog .close-button {
+			#S2Summary .filter-box {
+				width: auto;
+			}
+
+			.filters .close-button {
 				float: right;
 				display: inline-block;
 				padding: 2px 5px;
 				color: #555;
+				cursor: pointer;
+			}
+
+			.s2-gymnames {
+				text-align: left;
+			}
+
+			#S2SummaryContent {
+				max-height: 90vh;
+				overflow-y: scroll;
+			}
+
+			#S2SummaryContent tr:nth-child(even) {
+				background: #FBFBFB;
+			}
+			.S2Analysis h3 i {
+				color: rgba(57, 176, 45, 1);
+				cursor: pointer;
+			}
+
+			.S2Analysis a {
+				color: rgba(57, 176, 45, 1);
 				cursor: pointer;
 			}
 
@@ -348,6 +401,9 @@
 		}
 	}
 
+	/**
+	 * We got a reference to the Leaflet map object, initialize our overlay
+	 */
 	function initMap(map) {
 		regionLayer = L.layerGroup();
 		map.addLayer(regionLayer);
@@ -355,7 +411,9 @@
 		updateMapGrid();
 	}
 
-
+	/**
+	 * Refresh the S2 grid over the map
+	 */
 	function updateMapGrid() {
 		regionLayer.clearLayers();
 		if (gridLevel < 6) {
@@ -422,7 +480,6 @@
 		}
 		*/
 	}
-
 
 	function drawCell(cell) {
 		// corner points
@@ -655,15 +712,13 @@
 		return 'F' + this.face + 'ij[' + this.ij[0] + ',' + this.ij[1] + ']@' + this.level;
 	};
 
-	/*
-	S2.S2Cell.prototype.getLatLng = function() {
-		var st = IJToST(this.ij,this.level, [0.5,0.5]);
-		var uv = STToUV(st);
-		var xyz = FaceUVToXYZ(this.face, uv);
+	S2.S2Cell.prototype.getLatLng = function () {
+		const st = IJToST(this.ij, this.level, [0.5, 0.5]);
+		const uv = STToUV(st);
+		const xyz = FaceUVToXYZ(this.face, uv);
 
 		return XYZToLatLng(xyz);
 	};
-	*/
 
 	S2.S2Cell.prototype.getCornerLatLngs = function () {
 		const offsets = [
