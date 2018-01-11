@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Find S2 properties
 // @author       someone
 // @match        https://gymhuntr.com/*
@@ -28,7 +28,9 @@
 	let regionLayer;
 
 	function analyzeData() {
-		const cells = groupByCell(gridLevel);
+		const allCells = groupByCell(gridLevel);
+
+		const cells = filterByMapBounds(allCells);
 
 		// Save data
 		const filename = 'S2_' + gridLevel + '_' + new Date().getTime() + '.json';
@@ -53,6 +55,24 @@
 		});
 		alert(summary.join('\r\n'));
 	}
+	
+	// return only the cells that are visible by the map bounds to ignore far away data that might not be complete
+	function filterByMapBounds(cells) {
+		const bounds = map.getBounds();
+		const filtered = {};
+		Object.keys(cells).forEach(cellId => {
+			const cellData = cells[cellId];
+			const cell = cellData.cell;
+
+			// is it on the screen?
+			const corners = cell.getCornerLatLngs();
+			const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
+			if (cellBounds.intersects(bounds)) {
+				filtered[cellId] = cellData;
+			}
+		});
+		return filtered;
+	}
 
 	function groupByCell(level) {
 		const cells = {};
@@ -63,6 +83,7 @@
 			const cellId = cell.toString();
 			if (!cells[cellId]) {
 				cells[cellId] = {
+					cell: cell,
 					gyms: [],
 					stops: []
 				};
@@ -76,6 +97,7 @@
 			const cellId = cell.toString();
 			if (!cells[cellId]) {
 				cells[cellId] = {
+					cell: cell,
 					gyms: [],
 					stops: []
 				};
@@ -230,7 +252,7 @@
 				text-align: center;
 			}
 
-			#s2dialog  .filter-box {
+			#s2dialog .filter-box {
 				background: #fff;
 				margin-top: 5%;
 				padding: 10px;
@@ -238,6 +260,14 @@
 				display: inline-block;
 				width: 350px;
 				box-sizing: border-box;
+			}
+
+			#s2dialog .close-button {
+				float: right;
+				display: inline-block;
+				padding: 2px 5px;
+				color: #555;
+				cursor: pointer;
 			}
 
 			body > #s2gridbtn {
