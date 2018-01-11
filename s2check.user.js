@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Find S2 properties
 // @author       someone
 // @match        https://gymhuntr.com/*
+// @match        https://gomap.eu/*
 // @grant        none
 // ==/UserScript==
 
@@ -56,8 +57,8 @@
 	function groupByCell(level) {
 		const cells = {};
 		const pokegyms = window.pokegyms;
-		Object.keys(pokegyms).forEach(guid => {
-			const gym = pokegyms[guid];
+		Object.keys(pokegyms).forEach(id => {
+			const gym = pokegyms[id];
 			const cell = window.S2.S2Cell.FromLatLng(gym, level);
 			const cellId = cell.toString();
 			if (!cells[cellId]) {
@@ -69,8 +70,8 @@
 			cells[cellId].gyms.push(gym);
 		});
 		const pokestops = window.pokestops;
-		Object.keys(pokestops).forEach(guid => {
-			const pokestop = pokestops[guid];
+		Object.keys(pokestops).forEach(id => {
+			const pokestop = pokestops[id];
 			const cell = window.S2.S2Cell.FromLatLng(pokestop, level);
 			const cellId = cell.toString();
 			if (!cells[cellId]) {
@@ -84,13 +85,14 @@
 		return cells;
 	}
 
-	function showButton() {
+	function showButton(parent) {
 		const button = document.createElement('button');
+		button.id = 's2gridbtn';
 		button.className = 'button button-circle';
 		button.innerHTML = '<span class="inner"><i class="fa fa-table"></i></span>';
 		button.title = 'Find S2 distribution';
 
-		document.querySelector('.controls').appendChild(button);
+		parent.appendChild(button);
 
 		button.addEventListener('click', e => {
 			const dialog = document.getElementById('s2dialog');
@@ -201,7 +203,7 @@
 						const pokestop = JSON.parse(stop);
 						// coordinates seem reversed
 						window.pokestops[pokestop.pokestop_id] = {
-							guid: pokestop.gym_id,
+							guid: pokestop.pokestop_id,
 							lat: pokestop.longitude,
 							lng: pokestop.latitude
 						};
@@ -210,9 +212,83 @@
 			});
 			origOpen.apply(this, arguments);
 		};
-		showButton();
+		showButton(document.querySelector('.controls'));
 		addDialog();
 		//showSaveButton();
+	}
+
+	function injectStyles() {
+		const css = `
+			#s2dialog {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				z-index: 1000;
+				background: rgba(0, 0, 0, .5);
+				text-align: center;
+			}
+
+			#s2dialog  .filter-box {
+				background: #fff;
+				margin-top: 5%;
+				padding: 10px;
+				border-radius: 3px;
+				display: inline-block;
+				width: 350px;
+				box-sizing: border-box;
+			}
+
+			body > #s2gridbtn {
+				z-index: 400;
+				position: absolute;
+				top: 170px;
+				left: 32px;
+			}
+			`;
+		const style = document.createElement('style');
+		style.type = 'text/css';
+		style.innerHTML = css;
+		document.querySelector('head').appendChild(style);
+	}
+
+	function interceptGoMap() {
+		const origOpen = XMLHttpRequest.prototype.open;
+		// add our handler as a listener to every XMLHttpRequest
+		XMLHttpRequest.prototype.open = function () {
+			this.addEventListener('load', function (xhr) {
+				let json;
+				if (this.responseText.indexOf('gyms') > 0) {
+					json = JSON.parse(this.responseText);
+					const gyms = json.gyms;
+					gyms.forEach(function (pokegym) {
+						// gym_id is not a real guid
+						window.pokegyms[pokegym.gym_id] = {
+							name: pokegym.name,
+							lat: pokegym.latitude,
+							lng: pokegym.longitude
+						};
+					});
+				}
+				if ((json && json.pstops) || this.responseText.indexOf('pstops') > 0) {
+					if (!json) {
+						json = JSON.parse(this.responseText);
+					}
+					const stops = json.pstops;
+					stops.forEach(function (pokestop) {
+						window.pokestops[pokestop.id] = {
+							lat: pokestop.latitude,
+							lng: pokestop.longitude
+						};
+					});
+				}
+			});
+			origOpen.apply(this, arguments);
+		};
+		showButton(document.body);
+		addDialog();
+		injectStyles();
 	}
 
 	function initS2checker() {
@@ -234,10 +310,12 @@
 			return orgLayer.apply(this, arguments);
 		};
 
-		if (!document.querySelector('.controls'))
-			return;
-
-		interceptGymHuntr();
+		if (document.location.hostname == 'gymhuntr.com' && document.querySelector('.controls')) {
+			interceptGymHuntr();
+		}
+		if (document.location.hostname == 'gomap.eu') {
+			interceptGoMap();
+		}
 	}
 
 	function initMap(map) {
