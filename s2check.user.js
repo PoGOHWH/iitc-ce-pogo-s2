@@ -26,6 +26,7 @@
 
 	let gridLevel = 14;
 	let regionLayer;
+	let highlightGymCandidateCells = true;
 
 	function analyzeData() {
 		const allCells = groupByCell(gridLevel);
@@ -87,9 +88,19 @@
 		const pokegyms = window.pokegyms;
 		Object.keys(pokegyms).forEach(id => {
 			const gym = pokegyms[id];
-			const cell = window.S2.S2Cell.FromLatLng(gym, level);
-			const cellId = cell.toString();
+			let cell;
+			// Compute the cell only once for each level
+			if (!gym.cells[level]) {
+				cell = window.S2.S2Cell.FromLatLng(gym, level);
+				gym.cells[level] = cell.toString();
+			}
+			const cellId = gym.cells[level];
+
+			// Add it to the array of gyms of that cell
 			if (!cells[cellId]) {
+				if (!cell) {
+					cell = window.S2.S2Cell.FromLatLng(gym, level);
+				}
 				cells[cellId] = {
 					cell: cell,
 					gyms: [],
@@ -101,9 +112,18 @@
 		const pokestops = window.pokestops;
 		Object.keys(pokestops).forEach(id => {
 			const pokestop = pokestops[id];
-			const cell = window.S2.S2Cell.FromLatLng(pokestop, level);
-			const cellId = cell.toString();
+			let cell;
+			// Compute the cell only once for each level
+			if (!pokestop.cells[level]) {
+				cell = window.S2.S2Cell.FromLatLng(pokestop, level);
+				pokestop.cells[level] = cell.toString();
+			}
+			const cellId = pokestop.cells[level];
+			// Add it to the array of stops of that cell
 			if (!cells[cellId]) {
+				if (!cell) {
+					cell = window.S2.S2Cell.FromLatLng(pokestop, level);
+				}
 				cells[cellId] = {
 					cell: cell,
 					gyms: [],
@@ -168,8 +188,9 @@
 			<option value=19>19</option>
 			<option value=20>20</option>
 			</select></p>
-			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button>
-			<button class="btn btn-primary" id="show-summary"> Show Analysis</button>
+			<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
+			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button></p>
+			<p><button class="btn btn-primary" id="show-summary"> Show Analysis</button>
 			 `;
 
 		const div = insertDialogTemplate(html, 's2dialog');
@@ -180,6 +201,12 @@
 		select.value = gridLevel;
 		select.addEventListener('change', e => {
 			gridLevel = parseInt(select.value, 10);
+			updateMapGrid();
+		});
+		const chkHighlight = div.querySelector('#chkHighlightCandidates');
+		chkHighlight.checked = highlightGymCandidateCells;
+		chkHighlight.addEventListener('change', e => {
+			highlightGymCandidateCells = chkHighlight.checked;
 			updateMapGrid();
 		});
 
@@ -234,13 +261,19 @@
 					const gyms = json.gyms;
 					gyms.forEach(function (gym) {
 						const pokegym = JSON.parse(gym);
+						const id = pokegym.gym_id;
+						if (window.pokegyms[id]) {
+							return;
+						}
 						// coordinates seem reversed
-						window.pokegyms[pokegym.gym_id] = {
+						const data = {
 							guid: pokegym.gym_id,
 							name: pokegym.gym_name,
 							lat: pokegym.longitude,
 							lng: pokegym.latitude
 						};
+						computeCells(data);
+						window.pokegyms[id] = data;
 					});
 				}
 				if (this.responseText.indexOf('pokestops') > 0) {
@@ -250,12 +283,18 @@
 					const stops = json.pokestops;
 					stops.forEach(function (stop) {
 						const pokestop = JSON.parse(stop);
+						const id = pokestop.pokestop_id;
+						if (window.pokestops[id]) {
+							return;
+						}
 						// coordinates seem reversed
-						window.pokestops[pokestop.pokestop_id] = {
+						const data = {
 							guid: pokestop.pokestop_id,
 							lat: pokestop.longitude,
 							lng: pokestop.latitude
 						};
+						computeCells(data);
+						window.pokestops[id] = data;
 					});
 				}
 			});
@@ -346,12 +385,18 @@
 					json = JSON.parse(this.responseText);
 					const gyms = json.gyms;
 					gyms.forEach(function (pokegym) {
+						const id = pokegym.gym_id;
+						if (window.pokegyms[id]) {
+							return;
+						}
 						// gym_id is not a real guid
-						window.pokegyms[pokegym.gym_id] = {
+						const data = {
 							name: pokegym.name,
 							lat: pokegym.latitude,
 							lng: pokegym.longitude
 						};
+						computeCells(data);
+						window.pokegyms[id] = data;
 					});
 				}
 				if ((json && json.pstops) || this.responseText.indexOf('pstops') > 0) {
@@ -360,10 +405,16 @@
 					}
 					const stops = json.pstops;
 					stops.forEach(function (pokestop) {
-						window.pokestops[pokestop.id] = {
+						const id = pokestop.id;
+						if (window.pokestops[id]) {
+							return;
+						}
+						const data = {
 							lat: pokestop.latitude,
 							lng: pokestop.longitude
 						};
+						computeCells(data);
+						window.pokestops[id] = data;
 					});
 				}
 			});
@@ -372,6 +423,15 @@
 		showButton(document.body);
 		addDialog();
 		injectStyles();
+	}
+
+	/**
+	 * Creates an object to store the cells for the gym/stop, compute the level 14 by default
+	 */
+	function computeCells(item) {
+		item.cells = {};
+		const cell = window.S2.S2Cell.FromLatLng(item, 14);
+		item.cells[14] = cell.toString();
 	}
 
 	function initS2checker() {
@@ -416,16 +476,10 @@
 	 */
 	function updateMapGrid() {
 		regionLayer.clearLayers();
-		if (gridLevel < 6) {
-			return;
-		}
 
 		const bounds = map.getBounds();
-
 		const seenCells = {};
-
 		const drawCellAndNeighbors = function (cell) {
-
 			const cellStr = cell.toString();
 
 			if (!seenCells[cellStr]) {
@@ -438,7 +492,7 @@
 
 				if (cellBounds.intersects(bounds)) {
 					// on screen - draw it
-					drawCell(cell);
+					drawCell(cell, 'orange');
 
 					// and recurse to our neighbors
 					const neighbors = cell.getNeighbors();
@@ -451,46 +505,110 @@
 
 		// center cell
 		const zoom = map.getZoom();
-
-		if (zoom >= 5) {
+		if (zoom < 5) {
+			return;
+		}
+		if (gridLevel >= 6 && (!highlightGymCandidateCells || gridLevel != 14)) {
 			const cell = S2.S2Cell.FromLatLng (map.getCenter(), gridLevel);
 			drawCellAndNeighbors(cell);
 		}
-		/*
-		// the six cube side boundaries. we cheat by hard-coding the coords as it's simple enough
-		const latLngs = [[45,-180], [35.264389682754654,-135], [35.264389682754654,-45], [35.264389682754654,45], [35.264389682754654,135], [45,180]];
-
-		const globalCellOptions = {color: 'red', weight: 5, opacity: 0.5, clickable: false};
-
-		for (let i = 0; i < latLngs.length - 1; i++) {
-			// the geodesic line code can't handle a line/polyline spanning more than (or close to?) 180 degrees, so we draw
-			// each segment as a separate line
-			const poly1 = L.geodesicPolyline ([latLngs[i], latLngs[i + 1]], globalCellOptions);
-			regionLayer.addLayer(poly1);
-
-			//southern mirror of the above
-			const poly2 = L.geodesicPolyline ([[-latLngs[i][0],latLngs[i][1]], [-latLngs[i + 1][0], latLngs[i + 1][1]]], globalCellOptions);
-			regionLayer.addLayer(poly2);
-		}
-
-		// and the north-south lines. no need for geodesic here
-		for (let i = -135; i <= 135; i += 90) {
-			const poly = L.polyline ([[35.264389682754654, i], [-35.264389682754654, i]], globalCellOptions);
-			regionLayer.addLayer(poly);
-		}
-		*/
+		if (highlightGymCandidateCells) {
+			updateCandidateCells();
+		}	
 	}
 
-	function drawCell(cell) {
+	/**
+	 * Highlight cells that are missing a few stops to get another gym
+	 * based on https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/ data
+	 * Cutt offs: 2, 6, 20
+	 */
+	function updateCandidateCells() {
+		const level = 14;
+		// All cells with items
+		const allCells = groupByCell(level);
+		// Get only cells in the screen
+		//const cells = filterByMapBounds(allCells);
+
+		const bounds = map.getBounds();
+		const seenCells = {};
+		const drawCellAndNeighbors = function (cell) {
+			const cellStr = cell.toString();
+
+			if (!seenCells[cellStr]) {
+				// cell not visited - flag it as visited now
+				seenCells[cellStr] = true;
+
+				// is it on the screen?
+				const corners = cell.getCornerLatLngs();
+				const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
+
+				if (cellBounds.intersects(bounds)) {
+					// on screen - draw it
+					const cellData = allCells[cellStr];
+					const missingStops = cellData ? computeMissingStops(cellData) : 2;
+					switch (missingStops) {
+						case 1:
+							drawCell(cell, 'red');
+							break;
+						case 2:
+							drawCell(cell, 'gold');
+							break;
+						case 3:
+							drawCell(cell, 'yellow');
+							break;
+						case 0:
+							fillCell(cell, 'black');
+							break;
+					}
+
+					// and recurse to our neighbors
+					const neighbors = cell.getNeighbors();
+					for (let i = 0; i < neighbors.length; i++) {
+						drawCellAndNeighbors(neighbors[i]);
+		}
+				}
+			}
+		};
+
+		const cell = S2.S2Cell.FromLatLng(map.getCenter(), level);
+		drawCellAndNeighbors(cell);
+		}
+
+	function computeMissingStops(cellData) {
+		const sum = cellData.gyms.length + cellData.stops.length;
+		if (sum < 2)
+			return 2 - sum;
+
+		if (sum < 6)
+			return 6 - sum;
+
+		if (sum < 20)
+			return 20 - sum;
+
+		// No options to more gyms ATM.
+		return 0;
+	}
+
+	function drawCell(cell, color) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
-
-		const color = cell.level == 10 ? 'gold' : 'orange';
 
 		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
 		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
 		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0],corners[1],corners[2]], {fill: false, color: color, opacity: 0.5, weight: 5, clickable: false});
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: 0.5, weight: 5, clickable: false});
+
+		regionLayer.addLayer(region);
+	}
+
+	function fillCell(cell, color) {
+		// corner points
+		const corners = cell.getCornerLatLngs();
+
+		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
+		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
+		// from the other cell, or be off screen so we don't care
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: true, color: color, opacity: 0.4, weight: 1, clickable: false});
 
 		regionLayer.addLayer(region);
 	}
