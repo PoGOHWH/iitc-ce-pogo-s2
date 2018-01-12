@@ -171,6 +171,19 @@
 		saveAs(blob, filename);
 	}
 
+	function saveCSV(data, title) {
+		const keys = Object.keys(data);
+		const contents = keys.map(id => {
+			const gym = data[id];
+			return (gym.name ? gym.name + '\t' : '') + gym.lat + '\t' + gym.lng;
+		});
+		const filename = title + '_' + new Date().getTime() + '.csv';
+		const blob = new Blob([contents.join('\n')], {
+			type: 'text/plain;charset=utf-8'
+		});
+		saveAs(blob, filename);
+	}
+
 	function addDialog() {
 		const html = `
 			<h3>S2 Cells</h3>
@@ -190,12 +203,16 @@
 			</select></p>
 			<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button></p>
+			<p><button class="btn btn-primary" id="save-gymscsv"><i class="fa fa-save"></i> Save Gyms as CSV</button></p>
+			<p><button class="btn btn-primary" id="save-stopscsv"><i class="fa fa-save"></i> Save Stops as CSV</button></p>
 			<p><button class="btn btn-primary" id="show-summary"> Show Analysis</button>
 			 `;
 
 		const div = insertDialogTemplate(html, 's2dialog');
 
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
+		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(window.pokegyms, 'Pokegyms'));
+		div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(window.pokestops, 'Pokestops'));
 		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
 		const select = div.querySelector('select');
 		select.value = gridLevel;
@@ -517,7 +534,7 @@
 			return;
 		}
 		if (gridLevel >= 6 && (!highlightGymCandidateCells || gridLevel != 14)) {
-			const cell = S2.S2Cell.FromLatLng (map.getCenter(), gridLevel);
+			const cell = S2.S2Cell.FromLatLng(map.getCenter(), gridLevel);
 			drawCellAndNeighbors(cell);
 		}
 		if (highlightGymCandidateCells) {
@@ -580,14 +597,14 @@
 					const neighbors = cell.getNeighbors();
 					for (let i = 0; i < neighbors.length; i++) {
 						drawCellAndNeighbors(neighbors[i]);
-		}
+					}
 				}
 			}
 		};
 
 		const cell = S2.S2Cell.FromLatLng(map.getCenter(), level);
 		drawCellAndNeighbors(cell);
-		}
+	}
 
 	function coverBlockedAreas(cellData) {
 		if (!cellData)
