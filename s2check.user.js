@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      0.8
 // @description  Find S2 properties
 // @author       someone
 // @match        https://gymhuntr.com/*
@@ -26,7 +26,7 @@
 
 	let gridLevel = 14;
 	let regionLayer;
-	let highlightGymCandidateCells = true;
+	let highlightGymCandidateCells = false;
 
 	function analyzeData() {
 		const allCells = groupByCell(gridLevel);
@@ -203,10 +203,18 @@
 			gridLevel = parseInt(select.value, 10);
 			updateMapGrid();
 		});
+		// In gymhuntr the styles of the checkbox look reversed, checked is red and unchecked green.
+		const reverseCheckbox = document.location.hostname == 'gymhuntr.com';
 		const chkHighlight = div.querySelector('#chkHighlightCandidates');
 		chkHighlight.checked = highlightGymCandidateCells;
+		if (reverseCheckbox) {
+			chkHighlight.checked = !chkHighlight.checked;
+		}
 		chkHighlight.addEventListener('change', e => {
 			highlightGymCandidateCells = chkHighlight.checked;
+			if (reverseCheckbox) {
+				highlightGymCandidateCells = !chkHighlight.checked;
+			}
 			updateMapGrid();
 		});
 
@@ -549,12 +557,19 @@
 					switch (missingStops) {
 						case 1:
 							drawCell(cell, 'red');
+							coverBlockedAreas(cellData);
 							break;
 						case 2:
 							drawCell(cell, 'gold');
+							coverBlockedAreas(cellData);
 							break;
 						case 3:
 							drawCell(cell, 'yellow');
+							coverBlockedAreas(cellData);
+							break;
+						case 4:
+						case 5:
+							coverBlockedAreas(cellData);
 							break;
 						case 0:
 							fillCell(cell, 'black');
@@ -573,6 +588,18 @@
 		const cell = S2.S2Cell.FromLatLng(map.getCenter(), level);
 		drawCellAndNeighbors(cell);
 		}
+
+	function coverBlockedAreas(cellData) {
+		if (!cellData)
+			return;
+		cellData.gyms.forEach(coverLevel17Cell);
+		cellData.stops.forEach(coverLevel17Cell);
+	}
+
+	function coverLevel17Cell(point) {
+		const cell = S2.S2Cell.FromLatLng(point, 17);
+		fillCell(cell, 'black');
+	}
 
 	function computeMissingStops(cellData) {
 		const sum = cellData.gyms.length + cellData.stops.length;
