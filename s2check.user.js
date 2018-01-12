@@ -346,7 +346,7 @@
 
 			#S2SummaryContent {
 				max-height: 90vh;
-				overflow-y: scroll;
+				overflow-y: auto;
 			}
 
 			#S2SummaryContent tr:nth-child(even) {
