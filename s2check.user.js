@@ -328,7 +328,7 @@
 		};
 		showButton(document.querySelector('.controls'));
 		addDialog();
-		//showSaveButton();
+		injectStyles();
 	}
 
 	function injectStyles() {
@@ -378,6 +378,12 @@
 			#S2SummaryContent tr:nth-child(even) {
 				background: #FBFBFB;
 			}
+
+			.S2Analysis th {
+				text-align: center;
+				padding: 1px 5px 2px;
+			}
+
 			.S2Analysis h3 i {
 				color: rgba(57, 176, 45, 1);
 				cursor: pointer;
