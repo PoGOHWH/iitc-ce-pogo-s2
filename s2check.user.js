@@ -656,11 +656,7 @@
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
-		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
-		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
-		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: true, color: color, opacity: 0.4, weight: 1, clickable: false});
-
+		const region = L.polygon(corners, {color: color, weight: 1});
 		regionLayer.addLayer(region);
 	}
 
