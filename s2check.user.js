@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.8
 // @description  Find S2 properties
-// @author       someone
+// @author       Alfonso M.
 // @match        https://gymhuntr.com/*
 // @match        https://gomap.eu/*
 // @grant        none
@@ -189,6 +189,7 @@
 			<h3>S2 Cells</h3>
 			<p>Select the level of grid to display: <select>
 			<option value=0>None</option>
+			<option value=9>9</option>
 			<option value=10>10</option>
 			<option value=11>11</option>
 			<option value=12>12</option>
