@@ -28,6 +28,31 @@
 	let regionLayer;
 	let highlightGymCandidateCells = false;
 
+	let colorScheme = {
+		// https://www.materialui.co/colors
+		level: {
+			// teal
+			9: '#004D40',
+			10: '#00695C',
+			11: '#00796B',
+			12: '#00897B',
+			13: '#009688',
+			14: '#26A69A',
+			// Green
+			15: '#1B5E20',
+			16: '#2E7D32',
+			17: '#388E3C',
+			18: '#43A047',
+			19: '#4CAF50',
+			20: '#66BB6A'
+		},
+		missingStops: {
+			1: '#BF360C',
+			2: '#E64A19',
+			3: '#FF5722'
+		}
+	};
+
 	function analyzeData() {
 		const allCells = groupByCell(gridLevel);
 
@@ -503,6 +528,7 @@
 		updateMapGrid();
 	}
 
+//debugger;
 	/**
 	 * Refresh the S2 grid over the map
 	 */
@@ -524,7 +550,7 @@
 
 				if (cellBounds.intersects(bounds)) {
 					// on screen - draw it
-					drawCell(cell, 'orange');
+					drawCell(cell, colorScheme.level[gridLevel], 5);
 
 					// and recurse to our neighbors
 					const neighbors = cell.getNeighbors();
@@ -540,7 +566,7 @@
 		if (zoom < 5) {
 			return;
 		}
-		if (gridLevel >= 6 && (!highlightGymCandidateCells || gridLevel != 14)) {
+		if (gridLevel >= 6) {
 			const cell = S2.S2Cell.FromLatLng(map.getCenter(), gridLevel);
 			drawCellAndNeighbors(cell);
 		}
@@ -577,27 +603,28 @@
 				if (cellBounds.intersects(bounds)) {
 					// on screen - draw it
 					const cellData = allCells[cellStr];
-					const missingStops = cellData ? computeMissingStops(cellData) : 2;
-					switch (missingStops) {
-						case 1:
-							drawCell(cell, 'red');
-							coverBlockedAreas(cellData);
-							break;
-						case 2:
-							drawCell(cell, 'gold');
-							coverBlockedAreas(cellData);
-							break;
-						case 3:
-							drawCell(cell, 'yellow');
-							coverBlockedAreas(cellData);
-							break;
-						case 4:
-						case 5:
-							coverBlockedAreas(cellData);
-							break;
-						case 0:
-							fillCell(cell, 'black');
-							break;
+					if (cellData) {
+						const missingStops = cellData ? computeMissingStops(cellData) : 2;
+						switch (missingStops) {
+							case 0:
+								fillCell(cell, 'black', 0.5);
+								break;
+							case 1:
+								fillCell(cell, colorScheme.missingStops[missingStops], 0.3);
+								coverBlockedAreas(cellData);
+								break;
+							case 2:
+								fillCell(cell, colorScheme.missingStops[missingStops], 0.1);
+								coverBlockedAreas(cellData);
+								break;
+							case 3:
+								fillCell(cell, colorScheme.missingStops[missingStops], 0.05);
+								coverBlockedAreas(cellData);
+								break;
+							default:
+								coverBlockedAreas(cellData);
+								break;
+						}
 					}
 
 					// and recurse to our neighbors
@@ -622,7 +649,7 @@
 
 	function coverLevel17Cell(point) {
 		const cell = S2.S2Cell.FromLatLng(point, 17);
-		fillCell(cell, 'black');
+		fillCell(cell, 'black', 0.6);
 	}
 
 	function computeMissingStops(cellData) {
@@ -640,23 +667,23 @@
 		return 0;
 	}
 
-	function drawCell(cell, color) {
+	function drawCell(cell, color, weight) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
 		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
 		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
 		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: 0.5, weight: 5, clickable: false});
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: 0.5, weight: weight, clickable: false});
 
 		regionLayer.addLayer(region);
 	}
 
-	function fillCell(cell, color) {
+	function fillCell(cell, color, opacity) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
-		const region = L.polygon(corners, {color: color, weight: 1});
+		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0});
 		regionLayer.addLayer(region);
 	}
 
