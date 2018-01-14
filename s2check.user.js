@@ -171,7 +171,7 @@
 
 		button.addEventListener('click', e => {
 			const dialog = document.getElementById('s2dialog');
-			dialog.style.display = (dialog.style.display == 'none') ? 'block' : 'none';
+			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
 		});
 		//	button.addEventListener('click', analyzeData);
 	}
@@ -425,6 +425,12 @@
 				top: 170px;
 				left: 32px;
 			}
+
+			.s2check-text {
+				text-align: center;
+				text-shadow: #fff 1px 1px;
+			    font-size: 120%;
+			}
 			`;
 		const style = document.createElement('style');
 		style.type = 'text/css';
@@ -528,7 +534,6 @@
 		updateMapGrid();
 	}
 
-//debugger;
 	/**
 	 * Refresh the S2 grid over the map
 	 */
@@ -550,7 +555,7 @@
 
 				if (cellBounds.intersects(bounds)) {
 					// on screen - draw it
-					drawCell(cell, colorScheme.level[gridLevel], 5);
+					drawCell(cell, colorScheme.level[gridLevel], 5, 0.5);
 
 					// and recurse to our neighbors
 					const neighbors = cell.getNeighbors();
@@ -589,6 +594,11 @@
 
 		const bounds = map.getBounds();
 		const seenCells = {};
+		const cellsToDraw = {
+			1: [],
+			2: [],
+			3: []
+		};
 		const drawCellAndNeighbors = function (cell) {
 			const cellStr = cell.toString();
 
@@ -610,19 +620,15 @@
 								fillCell(cell, 'black', 0.5);
 								break;
 							case 1:
-								fillCell(cell, colorScheme.missingStops[missingStops], 0.3);
-								coverBlockedAreas(cellData);
-								break;
 							case 2:
-								fillCell(cell, colorScheme.missingStops[missingStops], 0.1);
-								coverBlockedAreas(cellData);
-								break;
 							case 3:
-								fillCell(cell, colorScheme.missingStops[missingStops], 0.05);
+								cellsToDraw[missingStops].push(cell);
 								coverBlockedAreas(cellData);
+								writeInCell(cell, missingStops);
 								break;
 							default:
 								coverBlockedAreas(cellData);
+								writeInCell(cell, missingStops);
 								break;
 						}
 					}
@@ -638,6 +644,12 @@
 
 		const cell = S2.S2Cell.FromLatLng(map.getCenter(), level);
 		drawCellAndNeighbors(cell);
+		// Draw missing cells in reverse order
+		for (let missingStops = 3; missingStops >= 1; missingStops--) {
+			const color = colorScheme.missingStops[missingStops];
+			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
+		}
+
 	}
 
 	function coverBlockedAreas(cellData) {
@@ -667,14 +679,14 @@
 		return 0;
 	}
 
-	function drawCell(cell, color, weight) {
+	function drawCell(cell, color, weight, opacity) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
 		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
 		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
 		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: 0.5, weight: weight, clickable: false});
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false});
 
 		regionLayer.addLayer(region);
 	}
@@ -685,6 +697,46 @@
 
 		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0});
 		regionLayer.addLayer(region);
+	}
+
+	/**
+	*	Writes a text in the center of a cell
+	*/
+	function writeInCell(cell, text) {
+		// center point
+		let center = cell.getLatLng();
+
+		// move the label if we're at a high enough zoom level and it's off screen
+		if (map.getZoom() >= 9) {
+			let namebounds = map.getBounds().pad(-0.1); // pad 10% inside the screen bounds
+			if (!namebounds.contains(center)) {
+				// name is off-screen. pull it in so it's inside the bounds
+				let newlat = Math.max(Math.min(center.lat, namebounds.getNorth()), namebounds.getSouth());
+				let newlng = Math.max(Math.min(center.lng, namebounds.getEast()), namebounds.getWest());
+
+				let newpos = L.latLng(newlat,newlng);
+
+				// ensure the new position is still within the same cell
+				let newposcell = S2.S2Cell.FromLatLng(newpos, 6);
+				if (newposcell.toString() == cell.toString()) {
+					center = newpos;
+				}
+				// else we leave the name where it was - offscreen
+			}
+		}
+
+		let marker = L.marker(center, {
+			icon: L.divIcon({
+				className: 's2check-text',
+				iconAnchor: [25, 5],
+				iconSize: [50, 10],
+				html: text
+			}),
+			interactive: false
+		});
+		// fixme, maybe add some click handler
+
+		regionLayer.addLayer(marker);
 	}
 
 	initS2checker();
