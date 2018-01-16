@@ -301,7 +301,15 @@
 	}
 
 	function interceptGymHuntr() {
-
+		// Sponsored gyms/stops don't have a suffix
+		const markSponsored = function(data) {
+			if (data.guid.length == 32) {
+				data.sponsored = true;
+				if (data.name) {
+					data.name += ' ($)';
+				}
+			}
+		};
 		const origOpen = XMLHttpRequest.prototype.open;
 		// add our handler as a listener to every XMLHttpRequest
 		XMLHttpRequest.prototype.open = function () {
@@ -324,6 +332,7 @@
 							lng: pokegym.latitude
 						};
 						computeCells(data);
+						markSponsored(data);
 						window.pokegyms[id] = data;
 					});
 				}
@@ -345,6 +354,7 @@
 							lng: pokestop.latitude
 						};
 						computeCells(data);
+						markSponsored(data);
 						window.pokestops[id] = data;
 					});
 				}
