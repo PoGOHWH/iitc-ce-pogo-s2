@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.10
+// @version      0.11
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -200,7 +200,7 @@
 		const keys = Object.keys(data);
 		const contents = keys.map(id => {
 			const gym = data[id];
-			return (gym.name ? gym.name + '\t' : '') + gym.lat + '\t' + gym.lng;
+			return (gym.name ? gym.name.replace(/,/g, ' ') + ',' : '') + gym.lat + ',' + gym.lng;
 		});
 		const filename = title + '_' + new Date().getTime() + '.csv';
 		const blob = new Blob([contents.join('\n')], {
