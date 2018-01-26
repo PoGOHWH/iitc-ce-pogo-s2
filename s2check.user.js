@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.14
+// @version      0.15
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -319,6 +319,8 @@
 
 	const pokestops = {};
 	const pokegyms = {};
+	window.pokestops = pokestops;
+	window.pokegyms = pokegyms;
 
 	let gridLevel = 14;
 	let regionLayer;
@@ -412,6 +414,30 @@
 		return cellBounds.intersects(mapBounds);
 	}
 
+	/**
+	* Filter a group of items (gyms/stops) excluding those out of the screen
+	*/
+	function filterItemsByMapBounds(items) {
+		const bounds = map.getBounds();
+		const filtered = {};
+		Object.keys(items).forEach(id => {
+			const item = items[id];
+
+			if (isPointOnScreen(bounds, item)) {
+				filtered[id] = item;
+			}
+		});
+		return filtered;
+	}
+
+	function isPointOnScreen(mapBounds, point) {
+		if (typeof L != 'undefined') {
+			return mapBounds.contains(point);
+		}
+
+		return mapBounds.contains(point);
+	}
+
 	function groupByCell(level) {
 		const cells = {};
 		Object.keys(pokegyms).forEach(id => {
@@ -492,14 +518,15 @@
 	*/
 	function saveGymStopsJSON() {
 		const filename = 'gyms+stops_' + new Date().getTime() + '.json';
-		const data = {gyms: pokegyms, pokestops: pokestops};
+		const data = {gyms: filterItemsByMapBounds(pokegyms), pokestops: filterItemsByMapBounds(pokestops)};
 		const blob = new Blob([JSON.stringify(data)], {
 			type: 'text/plain;charset=utf-8'
 		});
 		saveAs(blob, filename);
 	}
 
-	function saveCSV(data, title) {
+	function saveCSV(allData, title) {
+		const data = filterItemsByMapBounds(allData);
 		const keys = Object.keys(data);
 		const contents = keys.map(id => {
 			const gym = data[id];
