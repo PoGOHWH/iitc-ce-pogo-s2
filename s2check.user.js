@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.13
+// @version      0.14
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -936,11 +936,18 @@
 		};
 	}
 
+	function cleanAds() {
+		const containers = document.querySelectorAll('.advert, iframe');
+		[...containers].forEach(node => node.parentNode.removeChild(node));
+	}
+
 	function initS2checker() {
-		// No ads :-)
-		const frame = window.frameElement;
-		if (frame) {
-			frame.parentNode.removeChild(frame);
+		if (window.frameElement) {
+			return;
+		}
+
+		if (window.FuckAdBlock) {
+			cleanAds();
 		}
 
 		if (document.location.hostname == 'gymhuntr.com' && document.querySelector('.controls')) {
@@ -948,6 +955,15 @@
 		}
 		if (document.location.hostname == 'gomap.eu') {
 			interceptGoMap();
+			/*
+			window.setTimeout(o => {
+				const mapo = document.getElementById('mapo');
+				if (mapo) {
+					mapo.style.height = '100%';
+					document.body.removeChild(document.body.firstElementChild);
+				}
+			}, 50);
+			*/
 		}
 		if (document.location.hostname == 'www.pokemongomap.info') {
 			interceptPokemonGoMapInfo();
@@ -1169,25 +1185,6 @@
 		let center = cell.getLatLng();
 
 		if (regionLayer) {
-			// move the label if we're at a high enough zoom level and it's off screen
-			if (map.getZoom() >= 9) {
-				let namebounds = map.getBounds().pad(-0.1); // pad 10% inside the screen bounds
-				if (!namebounds.contains(center)) {
-					// name is off-screen. pull it in so it's inside the bounds
-					let newlat = Math.max(Math.min(center.lat, namebounds.getNorth()), namebounds.getSouth());
-					let newlng = Math.max(Math.min(center.lng, namebounds.getEast()), namebounds.getWest());
-
-					let newpos = L.latLng(newlat,newlng);
-
-					// ensure the new position is still within the same cell
-					let newposcell = S2.S2Cell.FromLatLng(newpos, 6);
-					if (newposcell.toString() == cell.toString()) {
-						center = newpos;
-					}
-					// else we leave the name where it was - offscreen
-				}
-			}
-
 			let marker = L.marker(center, {
 				icon: L.divIcon({
 					className: 's2check-text',
@@ -1204,7 +1201,6 @@
 			const point = new google.maps.LatLng(center.lat, center.lng);
 			const label = new Label({position: point, text: text, map: map, className: 's2check-text'});
 			gmapItems.push(label);
-
 
 		}
 	}
