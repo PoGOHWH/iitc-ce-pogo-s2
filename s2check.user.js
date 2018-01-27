@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.15
+// @version      0.16
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -432,7 +432,7 @@
 
 	function isPointOnScreen(mapBounds, point) {
 		if (typeof L != 'undefined') {
-			return mapBounds.contains(point);
+			return mapBounds.contains(L.latLng(point));
 		}
 
 		return mapBounds.contains(point);
