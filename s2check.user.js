@@ -326,6 +326,7 @@
 	let regionLayer;
 	let gmapItems = [];
 	let highlightGymCandidateCells = false;
+	let highlihgtGymCenter = false;
 
 	let colorScheme = {
 		// https://www.materialui.co/colors
@@ -558,6 +559,7 @@
 			<option value=20>20</option>
 			</select></p>
 			<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
+			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
 			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button></p>
 			<p><button class="btn btn-primary" id="save-gymscsv"><i class="fa fa-save"></i> Save Gyms as CSV</button></p>
 			<p><button class="btn btn-primary" id="save-stopscsv"><i class="fa fa-save"></i> Save Stops as CSV</button></p>
@@ -587,6 +589,19 @@
 			highlightGymCandidateCells = chkHighlight.checked;
 			if (reverseCheckbox) {
 				highlightGymCandidateCells = !chkHighlight.checked;
+			}
+			updateMapGrid();
+		});
+
+		const chkHighlightCenters = div.querySelector('#chkHighlightCenters');
+		chkHighlightCenters.checked = highlihgtGymCenter;
+		if (reverseCheckbox) {
+			chkHighlightCenters.checked = !chkHighlightCenters.checked;
+		}
+		chkHighlightCenters.addEventListener('change', e => {
+			highlihgtGymCenter = chkHighlightCenters.checked;
+			if (reverseCheckbox) {
+				highlihgtGymCenter = !chkHighlightCenters.checked;
 			}
 			updateMapGrid();
 		});
@@ -1052,6 +1067,9 @@
 		if (highlightGymCandidateCells) {
 			updateCandidateCells();
 		}	
+		if (highlihgtGymCenter) {
+			updateGymCenters();
+		}	
 	}
 
 	function getLatLngPoint(data) {
@@ -1128,7 +1146,65 @@
 			const color = colorScheme.missingStops[missingStops];
 			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
 		}
+	}
 
+	/**
+	 * Draw a cross to the center of level 20 cells that have a Gym to check better EX locations
+	 */
+	function updateGymCenters() {
+		const visibleGyms = filterItemsByMapBounds(pokegyms);
+		const level = 20;
+
+		Object.keys(visibleGyms).forEach(id => {
+			const gym = pokegyms[id];
+			const cell = window.S2.S2Cell.FromLatLng(gym, level);
+			const corners = cell.getCornerLatLngs();
+			// center point
+			const center = cell.getLatLng();
+
+			if (regionLayer) {
+				const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false};
+				const line1 = L.polyline([corners[0], corners[2]], style);
+				regionLayer.addLayer(line1);
+
+				const line2 = L.polyline([corners[1], corners[3]], style);
+				regionLayer.addLayer(line2);
+
+				const circle = L.circle(center, 1, style);
+				regionLayer.addLayer(circle);
+
+			} else {
+				const line1 = new google.maps.Polyline({
+					path: [corners[0], corners[2]],
+					strokeColor: 'red',
+					strokeOpacity: 0.8,
+					strokeWeight: 1,
+					map: map
+				});
+				gmapItems.push(line1);
+
+				const line2 = new google.maps.Polyline({
+					path: [corners[1], corners[3]],
+					strokeColor: 'red',
+					strokeOpacity: 0.8,
+					strokeWeight: 1,
+					map: map
+				});
+				gmapItems.push(line2);
+
+				const circle = new google.maps.Circle({
+					center: center,
+					radius: 1,
+					strokeColor: 'red',
+					strokeOpacity: 0.8,
+					strokeWeight: 1,
+					map: map
+				});
+				gmapItems.push(circle);
+
+			}
+
+		});
 	}
 
 	function coverBlockedAreas(cellData) {
