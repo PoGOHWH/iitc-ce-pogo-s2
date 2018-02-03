@@ -27,6 +27,12 @@ function wrapper(plugin_info) {
 	}
 
 	// PLUGIN START ////////////////////////////////////////////////////////
+	/***********************************************************************
+
+     HOOKS:
+     - pluginpogoEdit: fired when a pogo/folder is removed, added or sorted, also when a folder is opened/closed;
+
+     ***********************************************************************/
 	////////////////////////////////////////////////////////////////////////
 
 	// use own namespace for plugin
@@ -210,6 +216,13 @@ function wrapper(plugin_info) {
 			window.plugin.pogo.saveStorage();
 			window.plugin.pogo.updateStarPortal();
 
+			window.runHooks('pluginpogoEdit', {
+				'target': 'portal',
+				'action': 'remove',
+				'folder': pogoData['id_folder'],
+				'id': pogoData['id_pogo'],
+				'guid': guid
+			});
 			console.log('pogo: removed portal (' + pogoData['id_pogo'] + ' situated in ' + pogoData['id_folder'] + ' folder)');
 			if (list[pogoData['id_folder']].label !== type) {
 				if (type === 'gym') {
@@ -241,7 +254,7 @@ function wrapper(plugin_info) {
 
 		window.plugin.pogo.saveStorage();
 		window.plugin.pogo.refreshpogo();
-
+		window.runHooks('pluginpogoEdit', {'target': type, 'action': 'add', 'id': ID});
 		console.log('pogo: added ' + type + ' ' + ID);
 	};
 
@@ -304,7 +317,15 @@ function wrapper(plugin_info) {
 
 		window.plugin.pogo.saveStorage();
 		window.plugin.pogo.refreshpogo();
-
+		window.runHooks('pluginpogoEdit', {
+			'target': 'portal',
+			'action': 'add',
+			'id': ID,
+			'guid': guid,
+			'type': typeID,
+			'latlng': latlng,
+			'lbl': label
+		});
 		console.log('pogo: added portal ' + ID);
 	};
 
@@ -414,7 +435,7 @@ function wrapper(plugin_info) {
 					}
 				}
 				window.plugin.pogo.refreshpogo();
-
+				window.runHooks('pluginpogoEdit', {'target': 'all', 'action': 'import'});
 				window.plugin.pogo.optAlert('Successful. ');
 			} catch (e) {
 				console.warn('pogo: failed to import data: ' + e);
@@ -434,7 +455,7 @@ function wrapper(plugin_info) {
 				JSON.parse(content); // try to parse JSON first
 				localStorage[window.plugin.pogo.KEY_STORAGE] = content;
 				window.plugin.pogo.refreshpogo();
-
+				window.runHooks('pluginpogoEdit', {'target': 'all', 'action': 'import'});
 				window.plugin.pogo.optAlert('Successful. ');
 			} catch (e) {
 				console.warn('pogo: failed to import data: ' + e);
@@ -450,6 +471,7 @@ function wrapper(plugin_info) {
 			window.plugin.pogo.createStorage();
 			window.plugin.pogo.loadStorage();
 			window.plugin.pogo.refreshpogo();
+			window.runHooks('pluginpogoEdit', {'target': 'all', 'action': 'reset'});
 			window.plugin.pogo.optAlert('Successful. ');
 		}
 	};
@@ -731,6 +753,8 @@ background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAA
 
 		window.plugin.pogo.isSmart = window.isSmartphone();
 
+		// Fired when a pogo/folder is removed, added or sorted, also when a folder is opened/closed.
+		if ($.inArray('pluginpogoEdit', window.VALID_HOOKS) < 0) { window.VALID_HOOKS.push('pluginpogoEdit'); }
 		// If the storage not exists or is a old version
 		window.plugin.pogo.createStorage();
 		window.plugin.pogo.upgradeToNewStorage();
