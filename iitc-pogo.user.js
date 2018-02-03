@@ -13,10 +13,15 @@
 // @grant          none
 // ==/UserScript==
 
+/* eslint-env es6 */
+
 /* globals $, L, GM_info, plugin, android, dialog, map */
+/* globals escapeHtmlSpecialChars, zoomToAndShowPortal, renderPortalDetails, _current_highlighter */
 
 function wrapper(plugin_info) {
-// ensure plugin framework is there, even if iitc is not yet loaded
+	'use strict';
+
+	// ensure plugin framework is there, even if iitc is not yet loaded
 	if (typeof window.plugin !== 'function') {
 		window.plugin = function () {};
 	}
@@ -454,7 +459,6 @@ function wrapper(plugin_info) {
 	/***************************************************************************************************************************************************************/
 	window.plugin.pogo.highlight = function (data) {
 		var guid = data.portal.options.ent[0];
-		var color = 'red';
 		var pogoData = window.plugin.pogo.findByGuid(guid);
 		if (pogoData) {
 			var list = window.plugin.pogo.pogoObj['portals'];
