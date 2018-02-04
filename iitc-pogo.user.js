@@ -97,7 +97,7 @@ function wrapper(plugin_info) {
 	// Append a 'star' flag in sidebar.
 	window.plugin.pogo.onPortalSelectedPending = false;
 	window.plugin.pogo.onPortalSelected = function () {
-		$('.pogoStar').remove();
+		$('.pogoStop').remove();
 		$('.pogoGym').remove();
 
 		if (window.selectedPortal == null) {
@@ -110,13 +110,13 @@ function wrapper(plugin_info) {
 			setTimeout(function () { // the sidebar is constructed after firing the hook
 				window.plugin.pogo.onPortalSelectedPending = false;
 
-				$('.pogoStar').remove();
+				$('.pogoStop').remove();
 				$('.pogoGym').remove();
 
 				// Prepend a star to mobile status-bar
 				if (window.plugin.pogo.isSmart) {
 					$('#updatestatus').prepend(plugin.pogo.htmlStar);
-					$('#updatestatus .pogoStar').attr('title', '');
+					$('#updatestatus .pogoStop').attr('title', '');
 				}
 
 				$('#portaldetails > h3.title').before(plugin.pogo.htmlStar);
@@ -128,17 +128,15 @@ function wrapper(plugin_info) {
 	// Update the status of the star (when a portal is selected from the map/pogo-list)
 	window.plugin.pogo.updateStarPortal = function () {
 		var guid = window.selectedPortal;
-		$('.pogoStar').removeClass('favorite');
+		$('.pogoStop').removeClass('favorite');
 		$('.pogoGym').removeClass('favorite');
-		$('.pogo a.pogoLink.selected').removeClass('selected');
 
 		// If current portal is into pogo: select pogo portal from portals list and select the star
 		if (localStorage[window.plugin.pogo.KEY_STORAGE].search(guid) != -1) {
 			var pogoData = window.plugin.pogo.findByGuid(guid);
 			if (pogoData) {
-				$('.pogo#' + pogoData['id_pogo'] + ' a.pogoLink').addClass('selected');
 				if (pogoData['id_folder'] === 'pokestop') {
-					$('.pogoStar').addClass('favorite');
+					$('.pogoStop').addClass('favorite');
 				}
 				if (pogoData['id_folder'] === 'gym') {
 					$('.pogoGym').addClass('favorite');
@@ -392,7 +390,7 @@ function wrapper(plugin_info) {
 #sidebar #portaldetails h3.title{
 	width:auto;
 }
-.pogoStar span, .pogoGym span {
+.pogoStop span, .pogoGym span {
 	display:inline-block;
 	float:left;
 	margin:3px 1px 0 4px;
@@ -401,17 +399,17 @@ function wrapper(plugin_info) {
 	overflow:hidden;
 	background-repeat:no-repeat;
 }
-.pogoStar span, .pogoStar.favorite:focus span, .pogoGym span, .pogoGym.favorite:focus span {
+.pogoStop span, .pogoStop.favorite:focus span, .pogoGym span, .pogoGym.favorite:focus span {
 	background-position:left top;
 }
-.pogoStar:focus span, .pogoStar.favorite span, .pogoGym:focus span, .pogoGym.favorite span {
+.pogoStop:focus span, .pogoStop.favorite span, .pogoGym:focus span, .pogoGym.favorite span {
 	background-position:right top;
 }
 
 /**********************************************
 	MOBILE
 **********************************************/
-#updatestatus .pogoStar{
+#updatestatus .pogoStop{
 	float:left;
 	margin:-19px 0 0 -5px;
 	padding:0 3px 1px 4px;
@@ -449,7 +447,7 @@ function wrapper(plugin_info) {
 #pogoSetbox{
 	text-align:center;
 }
-.pogoStar span {
+.pogoStop span {
 	background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAAACyXj0lAAACZFBMVEUAAAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAABAQECAAAAAAAGAQEAAAAPDw8AAAAMAgIAAAALAQEBAQETAwMAAAAGBQUMAgISEhIAAAAWFhYBAQEWAwMAAAACAgIDAwMFBQUGBgYJCQkPDw8REREVGBgWFhYXFxchISEiIiIkICAoKCgpICAtLCwtLi4uBQUuKysuLy8vEBAvMjEyMDAzMzM0NDQ4ODg5OTk6Ojo+Pj5AQUFBS0tCSEhDQ0NISEhJSUlMTExSUlJUVFRWVlZXV1dYCwtZCwtaWlpcXFxeXl5gYGBhBgZiYmJjY2NlDAxmDAxnZ2doaGhra2tsbGxtbW1wcHBwfHtxcXFycnJ0dHR1dXV2dnZ4CQl5eXl9fX2CgoKEhISFhYWGhoaIiIiIiomJh4qKioqLi4uMjIyNjY2PiZCQkJCUlJSXBASaERGanJycBAScnJytFRWuDg6urq6wFBS2wcG3t7e4FRW5t7q6Cwu6urq7Dg6+vr7CwsLDwMTEDg7FxcXHxsfIyMjJFxfKDw/MDg7MzMzPz8/P0NDQ0NDRDw/RFxfS09XX19faGBja2trbExPc3NzlGhrl5eXo6Ojs7u7u7u7vGxvwGhrw8PDyGhry8vLz8/P0Ghr3Gxv39/f4+Pj8/Pz8/v79/f3+////HBz/HR3/Hh7///9j6e8DAAAAPnRSTlMAAAIKDBIWGBshJTI0O0tQY2VocnN1fImVnZ6lqKmrrLCxs7u8vb3G0tbW1tra39/i4uXl7Ozv7+/v8fH6+jTKPt8AAAGeSURBVHgBYwACZiFlAxMdWT4Qm5ERImBoqgsUgAAeDfe8hsbaZEd5VpACkED6rK27Nk4IAAoAAbdZVldXd3dXV5OXOgtIAbfFlFMnT5w4eXJ3IVCAgVkzGywNJJo9JIAKmLWnnwJJA9XszZBgYBD0AEp1F2fWd3W3VtpwMTIKZgDlT8yZtPnUiYPrbLkYVEuBuj3t7OxyurpbPEUYGdWWnTp5MjeuwnfqqRMHCkQYjIoqK9Psqu2jHapqyiKlGRmN5y1f3h+7vn1G8Iq1i+qkGczsgMDewS7JDgSUGBnN/fyD3Np67BaG+IUGeisx6M0/fbrELjXK0e7QsfkukoyM+jtOn17ts2R2d8zR4zsmSjIoRJ8+fdoVqLn59LYFdgKMjApzgQKTw+KjN50+vDNPgIHf7jQQLO0EEqvyzdgYGfkTQAJ7tgCJfSst2RiYVJxPQ8E0O2FgODCp9MEEticKA0OSQ9NhP5jbYCcFDmoOrY4jYIENSVLguGCXs3NKKY2wsxIDRxZIILx38ZqZ5dZAAQjgFVdUlhHlhMQmmgAAN4GpuWb98MUAAAAASUVORK5CYII=);
 }
 .pogoGym span {
@@ -462,7 +460,7 @@ function wrapper(plugin_info) {
 	};
 
 	window.plugin.pogo.setupContent = function () {
-		plugin.pogo.htmlStar = '<a class="pogoStar" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestop\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gym\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
+		plugin.pogo.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestop\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gym\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
 		plugin.pogo.htmlCallSetBox = '<a onclick="window.plugin.pogo.manualOpt();return false;">PoGo Opt</a>';
 
 		var actions = '';
