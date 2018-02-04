@@ -16,7 +16,7 @@
 /* eslint-env es6 */
 
 /* globals $, L, GM_info, plugin, android, dialog, map */
-/* globals escapeHtmlSpecialChars, zoomToAndShowPortal, renderPortalDetails, _current_highlighter */
+/* globals escapeHtmlSpecialChars, zoomToAndShowPortal, renderPortalDetails */
 
 function wrapper(plugin_info) {
 	'use strict';
@@ -390,31 +390,6 @@ function wrapper(plugin_info) {
 	};
 
 	/***************************************************************************************************************************************************************/
-	/** HIGHLIGHTER ************************************************************************************************************************************************/
-	/***************************************************************************************************************************************************************/
-	window.plugin.pogo.highlight = function (data) {
-		var guid = data.portal.options.ent[0];
-		var pogoData = window.plugin.pogo.findByGuid(guid);
-		if (pogoData) {
-			var list = window.plugin.pogo.pogoObj['portals'];
-			if (list[pogoData['id_folder']]['label'] === 'pokestop') {
-				data.portal.setStyle({fillColor: 'pink'});
-			}
-			if (list[pogoData['id_folder']]['label'] === 'gym') {
-				data.portal.setStyle({fillColor: 'purple'});
-			}
-		}
-	};
-
-	window.plugin.pogo.highlightRefresh = function (data) {
-		if (_current_highlighter === 'Pokemon Go Portals') {
-			if (data.target === 'portal' || (data.target === 'folder' && data.action === 'remove') || (data.target === 'all' && data.action === 'import') || (data.target === 'all' && data.action === 'reset')) {
-				window.resetHighlightedPortals();
-			}
-		}
-	};
-
-	/***************************************************************************************************************************************************************/
 	/** POKEMON GO PORTALS LAYER ***********************************************************************************************************************************/
 	/***************************************************************************************************************************************************************/
 	window.plugin.pogo.addAllStars = function () {
@@ -619,10 +594,6 @@ function wrapper(plugin_info) {
 		$('#toolbox').append(window.plugin.pogo.htmlCallSetBox);
 
 		window.addHook('portalSelected', window.plugin.pogo.onPortalSelected);
-
-		// Highlighter - pokemon go portals
-		window.addHook('pluginpogoEdit', window.plugin.pogo.highlightRefresh);
-		window.addPortalHighlighter('Pokemon Go Portals', window.plugin.pogo.highlight);
 
 		// Layer - pokemon go portals
 		window.plugin.pogo.stopLayerGroup = new L.LayerGroup();
