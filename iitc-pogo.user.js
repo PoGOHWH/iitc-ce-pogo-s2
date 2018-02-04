@@ -131,11 +131,6 @@ function wrapper(plugin_info) {
 				$('.pogoStar').remove();
 				$('.pogoGym').remove();
 
-				if (typeof Storage === 'undefined') {
-					$('#portaldetails > .imgpreview').after(plugin.pogo.htmlDisabledMessage);
-					return;
-				}
-
 				// Prepend a star to mobile status-bar
 				if (window.plugin.pogo.isSmart) {
 					$('#updatestatus').prepend(plugin.pogo.htmlStar);
@@ -555,8 +550,6 @@ function wrapper(plugin_info) {
 	};
 
 	window.plugin.pogo.setupContent = function () {
-
-		plugin.pogo.htmlDisabledMessage = '<div title="Your browser do not support localStorage">Plugin PoGo disabled*.</div>';
 		plugin.pogo.htmlStar = '<a class="pogoStar" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestop\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gym\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
 		plugin.pogo.htmlCallSetBox = '<a onclick="window.plugin.pogo.manualOpt();return false;">PoGo Opt</a>';
 
