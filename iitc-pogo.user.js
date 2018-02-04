@@ -30,7 +30,7 @@ function wrapper(plugin_info) {
 	/***********************************************************************
 
      HOOKS:
-     - pluginpogoEdit: fired when a pogo/folder is removed, added or sorted, also when a folder is opened/closed;
+     - pluginpogoEdit: fired when a pogo is removed, added 
 
      ***********************************************************************/
 	////////////////////////////////////////////////////////////////////////
@@ -38,7 +38,6 @@ function wrapper(plugin_info) {
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
 
-	window.plugin.pogo.KEY_OTHER_pogo = 'idOthers';
 	window.plugin.pogo.KEY_STORAGE = 'plugin-pogo';
 
 	window.plugin.pogo.pogoObj = {};
@@ -69,30 +68,21 @@ function wrapper(plugin_info) {
 	window.plugin.pogo.saveStorage = function () {
 		localStorage[plugin.pogo.KEY_STORAGE] = JSON.stringify(window.plugin.pogo.pogoObj);
 	};
+
 	// Load the localStorage
 	window.plugin.pogo.loadStorage = function () {
-		window.plugin.pogo.pogoObj = JSON.parse(localStorage[plugin.pogo.KEY_STORAGE]);
-		var newplugin = {
-			'maps': {'idOthers': {'label': 'Others', 'state': 1, 'pogo': {}}},
-			'portals': {'idOthers': {'label': 'Others', 'state': 1, 'pogo': {}}}
-		};
-		if (window.plugin.pogo.pogoObj === newplugin) {
-			console.log('New plugin');
-		} else {
-			console.log('Existing data present');
-		}
+		window.plugin.pogo.pogoObj = JSON.parse(localStorage[plugin.pogo.KEY_STORAGE]);	
 	};
 
 	window.plugin.pogo.createStorage = function () {
 		if (!localStorage[window.plugin.pogo.KEY_STORAGE]) {
-			window.plugin.pogo.pogoObj.maps = {idOthers: {label: 'Others', state: 1, pogo: {}}};
-			window.plugin.pogo.pogoObj.portals = {idOthers: {label: 'Others', state: 1, pogo: {}}};
+			window.plugin.pogo.pogoObj.portals = {idOthers: {label: 'Others', pogo: {}}};
 			window.plugin.pogo.saveStorage();
 		}
 	};
 
 	window.plugin.pogo.refreshpogo = function () {
-		$('#pogo_maps > ul, #pogo_portals > ul').remove();
+		$('#pogo_portals > ul').remove();
 		window.plugin.pogo.loadStorage();
 		window.plugin.pogo.updateStarPortal();
 	};
@@ -198,8 +188,6 @@ function wrapper(plugin_info) {
 				if (type === 'pokestop') {
 					plugin.pogo.addPortalpogo(guid, ll.lat + ',' + ll.lng, p.options.data.title, 'pokestop');
 				}
-			} else {
-				plugin.pogo.addPortalpogo(guid, ll.lat + ',' + ll.lng, p.options.data.title, 'none');
 			}
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
@@ -217,20 +205,17 @@ function wrapper(plugin_info) {
 		var type = 'folder';
 
 		// Add new folder in the localStorage
-		window.plugin.pogo.pogoObj['portals'][ID] = {'label': label, 'state': 1, 'pogo': {}};
+		window.plugin.pogo.pogoObj['portals'][ID] = {'label': label, 'pogo': {}};
 
 		window.plugin.pogo.saveStorage();
 		window.plugin.pogo.refreshpogo();
-		window.runHooks('pluginpogoEdit', {'target': type, 'action': 'add', 'id': ID});
-		console.log('pogo: added ' + type + ' ' + ID);
 	};
 
 	//check if folders exist
 	window.plugin.pogo.checkFolder = function () {
 		var list = window.plugin.pogo.pogoObj['portals'];
 		var gym = 0, 
-			pokestop = 0, 
-			none = 0;
+			pokestop = 0;
 		for (var idFolders in list) {
 			var folders = list[idFolders];
 			if (folders['label'] === 'gym') {
@@ -239,9 +224,6 @@ function wrapper(plugin_info) {
 			if (folders['label'] === 'pokestop') {
 				pokestop = 1;
 			}
-			if (folders['label'] === 'none') {
-				none = 1;
-			}
 		}
 		if (gym === 0) {
 			window.plugin.pogo.addFolder('gym');
@@ -249,16 +231,13 @@ function wrapper(plugin_info) {
 		if (pokestop === 0) {
 			window.plugin.pogo.addFolder('pokestop');
 		}
-		if (none === 0) {
-			window.plugin.pogo.addFolder('none');
-		}
 	};
 
 	// Add portal
 	plugin.pogo.addPortalpogo = function (guid, latlng, label, type) {
 		var ID = window.plugin.pogo.generateID();
-		if (!window.plugin.pogo.pogoObj['portals'][window.plugin.pogo.KEY_OTHER_pogo]['pogo']) {
-			window.plugin.pogo.pogoObj['portals'][window.plugin.pogo.KEY_OTHER_pogo]['pogo'] = {};
+		if (!window.plugin.pogo.pogoObj['portals']['idOthers']['pogo']) {
+			window.plugin.pogo.pogoObj['portals']['idOthers']['pogo'] = {};
 		}
 		window.plugin.pogo.checkFolder();
 
@@ -468,7 +447,7 @@ function wrapper(plugin_info) {
 					delete window.plugin.pogo.gymLayers[data.guid];
 				}
 			}
-		} else if ((data.target === 'all' && (data.action === 'import' || data.action === 'reset')) || (data.target === 'folder' && data.action === 'remove')) {
+		} else if (data.target === 'all' && (data.action === 'import' || data.action === 'reset')) {
 			window.plugin.pogo.resetAllStars();
 		}
 	};
@@ -593,12 +572,6 @@ function wrapper(plugin_info) {
 		window.addLayerGroup('Gyms', window.plugin.pogo.gymLayerGroup, true);
 		window.plugin.pogo.addAllStars();
 		window.addHook('pluginpogoEdit', window.plugin.pogo.editStar);
-
-		window.plugin.pogo.pogoTypes = {
-			'gym': 'id1461999480084',
-			'pokestop': 'id1461999480079',
-			'none': 'id1462324832172'
-		};
 
 	};
 
