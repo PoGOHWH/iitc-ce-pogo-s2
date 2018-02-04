@@ -925,8 +925,8 @@
 
 		const data = {
 			name: marker.pokemrkztit,
-			lat: marker.position.lat(),
-			lng: marker.position.lng()
+			lat: marker.position.lat().toFixed(6),
+			lng: marker.position.lng().toFixed(6)
 		};
 		computeCells(data);
 		if (isGym) {
