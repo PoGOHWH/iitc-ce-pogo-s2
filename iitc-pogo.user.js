@@ -3,7 +3,7 @@
 // @name           IITC plugin: pogo for portals
 // @category       Controls
 // @version        0.3.2.20160507.234802
-// @description    Mark Ingress portals as a pokestop or gym in Pokemon Go. There will be lots of bugs.
+// @description    Mark Ingress portals as a pokestop or gym in Pokemon Go. 
 // @include        https://www.ingress.com/intel*
 // @include        https://ingress.com/intel*
 // @match          https://www.ingress.com/intel*
@@ -65,18 +65,6 @@ function wrapper(plugin_info) {
 		var d = new Date();
 		var ID = d.getTime() + (Math.floor(Math.random() * 99) + 1);
 		return 'id' + ID.toString();
-	};
-
-	// Format the string
-	window.plugin.pogo.escapeHtml = function (text) {
-		return text
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#039;')
-			.replace(/\//g, '&#47;')
-			.replace(/\\/g, '&#92;');
 	};
 
 	// Update the localStorage
@@ -234,13 +222,13 @@ function wrapper(plugin_info) {
 			} else {
 				plugin.pogo.addPortalpogo(guid, ll.lat + ',' + ll.lng, p.options.data.title, 'none');
 			}
-		}
+		} else {
 		// If portal isn't saved in pogo: Add this pogo
-		else {
+	
 			// Get portal name and coordinates
-			var p = window.portals[guid];
-			var ll = p.getLatLng();
-			plugin.pogo.addPortalpogo(guid, ll.lat + ',' + ll.lng, p.options.data.title, type);
+			var portal = window.portals[guid];
+			var latlng = portal.getLatLng();
+			plugin.pogo.addPortalpogo(guid, latlng.lat + ',' + latlng.lng, portal.options.data.title, type);
 		}
 	};
 
@@ -261,23 +249,19 @@ function wrapper(plugin_info) {
 	//check if folders exist
 	window.plugin.pogo.checkFolder = function () {
 		var list = window.plugin.pogo.pogoObj['portals'];
-		var gym, pokestop, none = 0;
+		var gym = 0, 
+			pokestop = 0, 
+			none = 0;
 		for (var idFolders in list) {
 			var folders = list[idFolders];
-			if (gym === 1 || folders['label'] === 'gym') {
+			if (folders['label'] === 'gym') {
 				gym = 1;
-			} else {
-				gym = 0;
 			}
-			if (pokestop === 1 || folders['label'] === 'pokestop') {
+			if (folders['label'] === 'pokestop') {
 				pokestop = 1;
-			} else {
-				pokestop = 0;
 			}
-			if (none === 1 || folders['label'] === 'none') {
+			if (folders['label'] === 'none') {
 				none = 1;
-			} else {
-				none = 0;
 			}
 		}
 		if (gym === 0) {
@@ -289,7 +273,6 @@ function wrapper(plugin_info) {
 		if (none === 0) {
 			window.plugin.pogo.addFolder('none');
 		}
-
 	};
 
 	// Add portal
@@ -301,7 +284,6 @@ function wrapper(plugin_info) {
 		window.plugin.pogo.checkFolder();
 
 		var typeID = '';
-		window.plugin.pogo.getFolderID = function () {
 			var list = window.plugin.pogo.pogoObj['portals'];
 			for (var idFolders in list) {
 				var folders = list[idFolders];
@@ -309,8 +291,6 @@ function wrapper(plugin_info) {
 					typeID = idFolders;
 				}
 			}
-		};
-		window.plugin.pogo.getFolderID();
 
 		// Add pogo in the localStorage
 		window.plugin.pogo.pogoObj['portals'][typeID]['pogo'][ID] = {'guid': guid, 'latlng': latlng, 'label': label};
