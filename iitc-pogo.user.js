@@ -295,59 +295,6 @@ function wrapper(plugin_info) {
 		console.log('pogo: added portal ' + ID);
 	};
 
-	window.plugin.pogo.onSearch = function (query) {
-		var term = query.term.toLowerCase();
-
-		$.each(plugin.pogo.pogoObj.maps, function (id, folder) {
-			$.each(folder.pogo, function (id, pogo) {
-				if (pogo.label.toLowerCase().indexOf(term) === -1) {
-					return;
-				}
-
-				query.addResult({
-					title: escapeHtmlSpecialChars(pogo.label),
-					description: 'Map in folder "' + escapeHtmlSpecialChars(folder.label) + '"',
-					icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADYSURBVCiRldExLoRxEAXw33xZ4QIKB9BQWPl0yFKJA4hCo1CqXMABVA6gcgkFnc7/s7VQaByAgoYdhU3sZr9NmGSaee/NvJeJUkr6R3WgrusYm/ajJ7zr5t3ouGmarFrXpFPpuA2aFDSxIWxjXz/mWy25jx3hEAsqS0NsFi/68YxHlXPK8MKbGwR6GN06g0XhwYrrX0tb+enJAS5b8pzp5gk5GM+wl1/C1YQgfEwPPbA+JN3iAgMsTxeEOWlXNzet5pHKGl7HOKWUzEx/6VJKdvj54IT3KfUNvrNZ/jYm+uoAAAAASUVORK5CYII=',
-					position: L.latLng(pogo.latlng.split(',')),
-					zoom: pogo.z,
-					onSelected: window.plugin.pogo.onSearchResultSelected
-				});
-			});
-		});
-
-		$.each(plugin.pogo.pogoObj.portals, function (id, folder) {
-			$.each(folder.pogo, function (id, pogo) {
-				if (pogo.label.toLowerCase().indexOf(term) === -1) {
-					return;
-				}
-				query.addResult({
-					title: escapeHtmlSpecialChars(pogo.label),
-					description: 'Pokemon Go ' + escapeHtmlSpecialChars(folder.label),
-					icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAN1wAADdcBQiibeAAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAADFSURBVCiRrdEtTkMBEATgb19C0gsgEEgMFW2TooAURzgACoNAorgAB6jqAVBcghBQYPmxBAQeBYYQ4C2CJvTlPUibMG53ZpKZ3chMs6Bo3N7EwG2sTG9Ih9J+ExW1SFexpnCBNyzq5VPdcB2bwi4WsIz5Mf+OR9wrjHTy9DvSi3MEBhNimMOScKfj7KfDRn54sIPjhj5D3Twgy2rp7fwUTuotvU6O1SuVVseiSxyhRPt3Q2hJW7q5rpd7Cn08VyT/8+k/8AVY7Dd1pA43RAAAAABJRU5ErkJggg==',
-					position: L.latLng(pogo.latlng.split(',')),
-					guid: pogo.guid,
-					onSelected: window.plugin.pogo.onSearchResultSelected
-				});
-			});
-		});
-	};
-
-	window.plugin.pogo.onSearchResultSelected = function (result, event) {
-		if (result.guid) { // portal
-			var guid = result.guid;
-			if (event.type == 'dblclick') {
-				zoomToAndShowPortal(guid, result.position);
-			} else if (window.portals[guid]) {
-				renderPortalDetails(guid);
-			} else {
-				window.selectPortalByLatLng(result.position);
-			}
-		} else if (result.zoom) { // map
-			map.setView(result.position, result.zoom);
-		}
-		return true; // prevent default behavior
-	};
-
 	/***************************************************************************************************************************************************************/
 	/** OPTIONS ****************************************************************************************************************************************************/
 	/***************************************************************************************************************************************************************/
@@ -672,7 +619,6 @@ function wrapper(plugin_info) {
 		$('#toolbox').append(window.plugin.pogo.htmlCallSetBox);
 
 		window.addHook('portalSelected', window.plugin.pogo.onPortalSelected);
-		window.addHook('search', window.plugin.pogo.onSearch);
 
 		// Highlighter - pokemon go portals
 		window.addHook('pluginpogoEdit', window.plugin.pogo.highlightRefresh);
