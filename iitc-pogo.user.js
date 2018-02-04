@@ -85,20 +85,6 @@ function wrapper(plugin_info) {
 		}
 	};
 
-	window.plugin.pogo.upgradeToNewStorage = function () {
-		if (localStorage['plugin-pogo-portals-data'] && localStorage['plugin-pogo-maps-data']) {
-			var oldStor_1 = JSON.parse(localStorage['plugin-pogo-maps-data']);
-			var oldStor_2 = JSON.parse(localStorage['plugin-pogo-portals-data']);
-
-			window.plugin.pogo.pogoObj.maps = oldStor_1.pogo_maps;
-			window.plugin.pogo.pogoObj.portals = oldStor_2.pogo_portals;
-			window.plugin.pogo.saveStorage();
-
-			localStorage.removeItem('plugin-pogo-maps-data');
-			localStorage.removeItem('plugin-pogo-portals-data');
-		}
-	};
-
 	window.plugin.pogo.createStorage = function () {
 		if (!localStorage[window.plugin.pogo.KEY_STORAGE]) {
 			window.plugin.pogo.pogoObj.maps = {idOthers: {label: 'Others', state: 1, pogo: {}}};
@@ -737,7 +723,6 @@ background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAA
 		if ($.inArray('pluginpogoEdit', window.VALID_HOOKS) < 0) { window.VALID_HOOKS.push('pluginpogoEdit'); }
 		// If the storage not exists or is a old version
 		window.plugin.pogo.createStorage();
-		window.plugin.pogo.upgradeToNewStorage();
 
 		// Load data from localStorage
 		window.plugin.pogo.loadStorage();
