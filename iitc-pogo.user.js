@@ -41,8 +41,6 @@ function wrapper(plugin_info) {
 	window.plugin.pogo.KEY_OTHER_pogo = 'idOthers';
 	window.plugin.pogo.KEY_STORAGE = 'plugin-pogo';
 
-	window.plugin.pogo.KEY = {key: window.plugin.pogo.KEY_STORAGE, field: 'pogoObj'};
-
 	window.plugin.pogo.pogoObj = {};
 
 	window.plugin.pogo.stopLayers = {};
