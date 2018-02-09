@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.16
+// @version      0.17
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -318,9 +318,9 @@
 	/* eslint-enable */
 
 	const pokestops = {};
-	const pokegyms = {};
+	const gyms = {};
 	window.pokestops = pokestops;
-	window.pokegyms = pokegyms;
+	window.gyms = gyms;
 
 	let gridLevel = 14;
 	let regionLayer;
@@ -451,8 +451,8 @@
 
 	function groupByCell(level) {
 		const cells = {};
-		Object.keys(pokegyms).forEach(id => {
-			const gym = pokegyms[id];
+		Object.keys(gyms).forEach(id => {
+			const gym = gyms[id];
 			let cell;
 			// Compute the cell only once for each level
 			if (!gym.cells[level]) {
@@ -529,7 +529,7 @@
 	*/
 	function saveGymStopsJSON() {
 		const filename = 'gyms+stops_' + new Date().getTime() + '.json';
-		const data = {gyms: filterItemsByMapBounds(pokegyms), pokestops: filterItemsByMapBounds(pokestops)};
+		const data = {gyms: filterItemsByMapBounds(gyms), pokestops: filterItemsByMapBounds(pokestops)};
 		const blob = new Blob([JSON.stringify(data)], {
 			type: 'text/plain;charset=utf-8'
 		});
@@ -579,7 +579,7 @@
 		const div = insertDialogTemplate(html, 's2dialog');
 
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
-		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(pokegyms, 'Pokegyms'));
+		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
 		div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
 		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
 		const select = div.querySelector('select');
@@ -698,11 +698,11 @@
 				let json;
 				if (this.responseText.indexOf('gyms') > 0) {
 					json = JSON.parse(this.responseText);
-					const gyms = json.gyms;
-					gyms.forEach(function (gym) {
+
+					json.gyms.forEach(function (gym) {
 						const pokegym = JSON.parse(gym);
 						const id = parseGymHunterId(pokegym.gym_id);
-						if (pokegyms[id]) {
+						if (gyms[id]) {
 							return;
 						}
 						// coordinates seem reversed
@@ -714,15 +714,15 @@
 						};
 						computeCells(data);
 						markSponsored(data);
-						pokegyms[id] = data;
+						gyms[id] = data;
 					});
 				}
 				if (this.responseText.indexOf('pokestops') > 0) {
 					if (!json) {
 						json = JSON.parse(this.responseText);
 					}
-					const stops = json.pokestops;
-					stops.forEach(function (stop) {
+
+					json.pokestops.forEach(function (stop) {
 						const pokestop = JSON.parse(stop);
 						const id = parseGymHunterId(pokestop.pokestop_id);
 						
@@ -873,10 +873,10 @@
 				let json;
 				if (this.responseText.indexOf('gyms') > 0) {
 					json = JSON.parse(this.responseText);
-					const gyms = json.gyms;
-					gyms.forEach(function (pokegym) {
+
+					json.gyms.forEach(function (pokegym) {
 						const id = pokegym.gym_id;
-						if (pokegyms[id]) {
+						if (gyms[id]) {
 							return;
 						}
 						// gym_id is not a real guid
@@ -886,15 +886,15 @@
 							lng: pokegym.longitude
 						};
 						computeCells(data);
-						pokegyms[id] = data;
+						gyms[id] = data;
 					});
 				}
 				if ((json && json.pstops) || this.responseText.indexOf('pstops') > 0) {
 					if (!json) {
 						json = JSON.parse(this.responseText);
 					}
-					const stops = json.pstops;
-					stops.forEach(function (pokestop) {
+
+					json.pstops.forEach(function (pokestop) {
 						const id = pokestop.id;
 						if (pokestops[id]) {
 							return;
@@ -932,7 +932,7 @@
 		const isGym = url.substr(1, 3) == 'gym';
 
 		if (isGym) {
-			if (pokegyms[id]) 
+			if (gyms[id]) 
 				return;
 		} else {
 			if (pokestops[id]) {
@@ -947,7 +947,7 @@
 		};
 		computeCells(data);
 		if (isGym) {
-			pokegyms[id] = data;
+			gyms[id] = data;
 		} else {
 			pokestops[id] = data;
 		}
@@ -1183,11 +1183,11 @@
 	 * Draw a cross to the center of level 20 cells that have a Gym to check better EX locations
 	 */
 	function updateGymCenters() {
-		const visibleGyms = filterItemsByMapBounds(pokegyms);
+		const visibleGyms = filterItemsByMapBounds(gyms);
 		const level = 20;
 
 		Object.keys(visibleGyms).forEach(id => {
-			const gym = pokegyms[id];
+			const gym = gyms[id];
 			const cell = window.S2.S2Cell.FromLatLng(gym, level);
 			const corners = cell.getCornerLatLngs();
 			// center point
