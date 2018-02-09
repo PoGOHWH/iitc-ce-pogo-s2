@@ -679,13 +679,29 @@
 		// add our handler as a listener to every XMLHttpRequest
 		XMLHttpRequest.prototype.open = function () {
 			this.addEventListener('load', function (xhr) {
+
+				/** 
+				 * The guid might come sometimes encoded as base64
+				 */
+				const parseGymHunterId = function (id) {
+					try {
+						// Try to decode it
+						const decoded = atob(id);
+						// Now call it again to decode or return the current value
+						return parseGymHunterId(decoded);
+					} catch (e) {
+						// if it can't be decoded, return it as is
+						return id;
+					}
+				};
+
 				let json;
 				if (this.responseText.indexOf('gyms') > 0) {
 					json = JSON.parse(this.responseText);
 					const gyms = json.gyms;
 					gyms.forEach(function (gym) {
 						const pokegym = JSON.parse(gym);
-						const id = pokegym.gym_id;
+						const id = parseGymHunterId(pokegym.gym_id);
 						if (pokegyms[id]) {
 							return;
 						}
@@ -708,7 +724,8 @@
 					const stops = json.pokestops;
 					stops.forEach(function (stop) {
 						const pokestop = JSON.parse(stop);
-						const id = pokestop.pokestop_id;
+						const id = parseGymHunterId(pokestop.pokestop_id);
+						
 						if (pokestops[id]) {
 							return;
 						}
