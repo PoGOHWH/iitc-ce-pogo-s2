@@ -811,7 +811,7 @@
 				border: none !important;
 				background: none !important;
 				font-size: 130%;
-				text-shadow: 4px 4px #FFF, 2px 2px 6px #fff, -4px -4px #fff, -2px -2px 6px #fff;
+				text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
 			}
 
 			.s2grid-btn {
