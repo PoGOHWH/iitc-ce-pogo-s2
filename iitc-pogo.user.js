@@ -14,13 +14,22 @@
 // ==/UserScript==
 
 /* eslint-env es6 */
+/* eslint no-var: "error" */
 
 /* globals $, L, GM_info, plugin, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
 
-function wrapper(plugin_info) {
+;(function () {	// eslint-disable-line no-extra-semi
 	'use strict';
 
+	const plugin_info = {};
+	if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
+		plugin_info.script = {
+			version: GM_info.script.version,
+			name: GM_info.script.name,
+			description: GM_info.script.description
+		};
+	}
 
 	/**
 	 * Saves a file to disk with the provided text
@@ -82,12 +91,13 @@ function wrapper(plugin_info) {
 	// PLUGIN START ////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////
 
+	let pokestops = {};
+	let gyms = {};
+
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
 
-	window.plugin.pogo.KEY_STORAGE = 'plugin-pogo';
-
-	window.plugin.pogo.pogoObj = {};
+	const KEY_STORAGE = 'plugin-pogo';
 
 	window.plugin.pogo.stopLayers = {};
 	window.plugin.pogo.stopLayerGroup = null;
@@ -100,17 +110,18 @@ function wrapper(plugin_info) {
 
 	// Update the localStorage
 	window.plugin.pogo.saveStorage = function () {
-		localStorage[plugin.pogo.KEY_STORAGE] = JSON.stringify(window.plugin.pogo.pogoObj);
+		localStorage[KEY_STORAGE] = JSON.stringify({gyms: gyms, pokestops: pokestops});
 	};
 
 	// Load the localStorage
 	window.plugin.pogo.loadStorage = function () {
-		window.plugin.pogo.pogoObj = JSON.parse(localStorage[plugin.pogo.KEY_STORAGE]);	
+		const tmp = JSON.parse(localStorage[KEY_STORAGE]);	
+		gyms = tmp.gyms;
+		pokestops = tmp.pokestops;
 	};
 
 	window.plugin.pogo.createStorage = function () {
-		if (!localStorage[window.plugin.pogo.KEY_STORAGE]) {
-			window.plugin.pogo.pogoObj = {pokestops: {}, gyms: {}};
+		if (!localStorage[KEY_STORAGE]) {
 			window.plugin.pogo.saveStorage();
 		}
 	};
@@ -118,13 +129,11 @@ function wrapper(plugin_info) {
 	/***************************************************************************************************************************************************************/
 
 	window.plugin.pogo.findByGuid = function (guid) {
-		var list = window.plugin.pogo.pogoObj;
-		for (var type in list) {
-			var obj = list[type][guid];
-
-			if (obj) {
-				return {'type': type, 'guid': guid};
-			}
+		if (gyms[guid]) {
+			return {'type': 'gyms', 'store': gyms};
+		}
+		if (gyms[guid]) {
+			return {'type': 'pokestops', 'store': pokestops};
 		}
 		return null;
 	};
@@ -165,9 +174,9 @@ function wrapper(plugin_info) {
 		$('.pogoStop').removeClass('favorite');
 		$('.pogoGym').removeClass('favorite');
 
-		var guid = window.selectedPortal;
+		const guid = window.selectedPortal;
 		// If current portal is into pogo: select pogo portal from portals list and select the star
-		var pogoData = window.plugin.pogo.findByGuid(guid);
+		const pogoData = window.plugin.pogo.findByGuid(guid);
 		if (pogoData) {
 			if (pogoData.type === 'pokestops') {
 				$('.pogoStop').addClass('favorite');
@@ -180,41 +189,40 @@ function wrapper(plugin_info) {
 
 	// Switch the status of the star
 	window.plugin.pogo.switchStarPortal = function (type) {
-		var guid = window.selectedPortal;
+		const guid = window.selectedPortal;
 
 		// If portal is saved in pogo: Remove this pogo
-		var pogoData = window.plugin.pogo.findByGuid(guid);
+		const pogoData = window.plugin.pogo.findByGuid(guid);
 		if (pogoData) {
-			var list = window.plugin.pogo.pogoObj;
-			var existingType = pogoData.type;
-			delete list[existingType][pogoData.guid];
+			delete pogoData.store[guid];
+			const existingType = pogoData.type;
 
 			window.plugin.pogo.saveStorage();
 			window.plugin.pogo.updateStarPortal();
 	
 			if (existingType === 'pokestops') {
-				var starInLayer = window.plugin.pogo.stopLayers[guid];
+				const starInLayer = window.plugin.pogo.stopLayers[guid];
 				window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
 				delete window.plugin.pogo.stopLayers[guid];
 			}
 			if (existingType === 'gyms') {
-				var gymInLayer = window.plugin.pogo.gymLayers[guid];
+				const gymInLayer = window.plugin.pogo.gymLayers[guid];
 				window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
 				delete window.plugin.pogo.gymLayers[guid];
 			}
 
 			if (existingType !== type) {
 				// Get portal name and coordinates
-				var p = window.portals[guid];
-				var ll = p.getLatLng();
+				const p = window.portals[guid];
+				const ll = p.getLatLng();
 				plugin.pogo.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
 			}
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
 	
 			// Get portal name and coordinates
-			var portal = window.portals[guid];
-			var latlng = portal.getLatLng();
+			const portal = window.portals[guid];
+			const latlng = portal.getLatLng();
 			plugin.pogo.addPortalpogo(guid, latlng.lat, latlng.lng, portal.options.data.title, type);
 		}
 	};
@@ -222,7 +230,12 @@ function wrapper(plugin_info) {
 	// Add portal
 	plugin.pogo.addPortalpogo = function (guid, lat, lng, name, type) {
 		// Add pogo in the localStorage
-		window.plugin.pogo.pogoObj[type][guid] = {'guid': guid, 'lat': lat, 'lng': lng, 'name': name};
+		const obj = {'guid': guid, 'lat': lat, 'lng': lng, 'name': name};
+		if (type == 'gyms') {
+			gyms[guid] = obj;
+		} else {
+			pokestops[guid] = obj;
+		}
 
 		window.plugin.pogo.saveStorage();
 		window.plugin.pogo.updateStarPortal();
@@ -248,15 +261,15 @@ function wrapper(plugin_info) {
 	};
 
 	window.plugin.pogo.optExport = function () {
-		saveToFile(localStorage[window.plugin.pogo.KEY_STORAGE], 'IITC-pogo.json');
+		saveToFile(localStorage[KEY_STORAGE], 'IITC-pogo.json');
 	};
 
 	window.plugin.pogo.optImport = function () {
 		readFromFile(function (content) {
 			try {
-				var list = JSON.parse(content); // try to parse JSON first
-				for (var type in list) {
-					for (var idpogo in list[type]) {
+				const list = JSON.parse(content); // try to parse JSON first
+				for (let type in list) {
+					for (let idpogo in list[type]) {
 						const item = list[type][idpogo];
 						const lat = item.lat;
 						const lng = item.lng;
@@ -268,9 +281,8 @@ function wrapper(plugin_info) {
 								guid = idpogo;
 							}
 						}
-						// pokestops
-						// gyms
-						if (localStorage[window.plugin.pogo.KEY_STORAGE].search(guid) === -1) {
+
+						if (!plugin.pogo.findByGuid(guid)) {
 							plugin.pogo.addPortalpogo(guid, lat, lng, name, type);
 						}
 					}
@@ -288,9 +300,9 @@ function wrapper(plugin_info) {
 
 	
 	window.plugin.pogo.optReset = function () {
-		var promptAction = confirm('All pogo will be deleted. Are you sure?', '');
+		const promptAction = confirm('All pogo will be deleted. Are you sure?', '');
 		if (promptAction) {
-			delete localStorage[window.plugin.pogo.KEY_STORAGE];
+			delete localStorage[KEY_STORAGE];
 			window.plugin.pogo.createStorage();
 			window.plugin.pogo.loadStorage();
 			window.plugin.pogo.updateStarPortal();
@@ -303,28 +315,29 @@ function wrapper(plugin_info) {
 	/** POKEMON GO PORTALS LAYER ***********************************************************************************************************************************/
 	/***************************************************************************************************************************************************************/
 	window.plugin.pogo.addAllMarkers = function () {
-		var list = window.plugin.pogo.pogoObj;
-
-		for (var type in list) {
-			for (var idpogo in list[type]) {
-				var item = list[type][idpogo];
-				var lat = item.lat;
-				var lng = item.lng;
-				var guid = item.guid;
-				var name = item.name;
+		function iterateStore(store, type) {
+			for (let idpogo in store) {
+				const item = store[idpogo];
+				const lat = item.lat;
+				const lng = item.lng;
+				const guid = item.guid;
+				const name = item.name;
 				window.plugin.pogo.addStar(guid, lat, lng, name, type);
 			}
 		}
+
+		iterateStore(gyms, 'gyms');
+		iterateStore(pokestops, 'pokestops');
 	};
 
 	window.plugin.pogo.resetAllMarkers = function () {
-		for (var guid in window.plugin.pogo.stopLayers) {
-			var starInLayer = window.plugin.pogo.stopLayers[guid];
+		for (let guid in window.plugin.pogo.stopLayers) {
+			const starInLayer = window.plugin.pogo.stopLayers[guid];
 			window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
 			delete window.plugin.pogo.stopLayers[guid];
 		}
-		for (var gymGuid in window.plugin.pogo.gymLayers) {
-			var gymInLayer = window.plugin.pogo.gymLayers[gymGuid];
+		for (let gymGuid in window.plugin.pogo.gymLayers) {
+			const gymInLayer = window.plugin.pogo.gymLayers[gymGuid];
 			window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
 			delete window.plugin.pogo.gymLayers[gymGuid];
 		}
@@ -332,7 +345,7 @@ function wrapper(plugin_info) {
 	};
 
 	window.plugin.pogo.addStar = function (guid, lat, lng, name, type) {
-		var iconData;
+		let iconData;
 		if (type === 'pokestops') {
 			iconData = {
 				iconUrl: 'data:image/png;base64,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',
@@ -347,7 +360,7 @@ function wrapper(plugin_info) {
 				iconSize: [30, 40]
 			};
 		}
-		var star = L.marker([lat, lng], {
+		const star = L.marker([lat, lng], {
 			title: name,
 			icon: L.icon(iconData)
 		});
@@ -371,7 +384,8 @@ function wrapper(plugin_info) {
 #sidebar #portaldetails h3.title{
 	width:auto;
 }
-.pogoStop span, .pogoGym span {
+.pogoStop span, 
+.pogoGym span {
 	display:inline-block;
 	float:left;
 	margin:3px 1px 0 4px;
@@ -380,10 +394,12 @@ function wrapper(plugin_info) {
 	overflow:hidden;
 	background-repeat:no-repeat;
 }
-.pogoStop span, .pogoStop.favorite:focus span, .pogoGym span, .pogoGym.favorite:focus span {
+.pogoStop span, .pogoStop.favorite:focus span,
+.pogoGym span, .pogoGym.favorite:focus span {
 	background-position:left top;
 }
-.pogoStop:focus span, .pogoStop.favorite span, .pogoGym:focus span, .pogoGym.favorite span {
+.pogoStop:focus span, .pogoStop.favorite span,
+.pogoGym:focus span, .pogoGym.favorite span {
 	background-position:right top;
 }
 
@@ -418,12 +434,6 @@ function wrapper(plugin_info) {
 	border-color:#666;
 	text-decoration:none;
 }
-/*---- Opt panel - copy -----*/
-.ui-dialog-pogoSet-copy textarea{
-	width:96%;
-	height:120px;
-	resize:vertical;
-}
 
 #pogoSetbox{
 	text-align:center;
@@ -434,9 +444,6 @@ function wrapper(plugin_info) {
 .pogoGym span {
 	background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAAACyXj0lAAAC7lBMVEUAAAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEAAAAAAAAAAAAAAAAAAAABAQEAAAABAQEBAQEAAAAAAAAAAAAAAAAAAAADAwMAAAAAAAABAQIAAAAAAAAAAAAAAAAAAAACAgIAAAAAAAABAAAAAAAAAAAAAAAAAAACAgIAAAAHBwcAAAACAgIAAAAbBgYBAQEBAQEZBgcAAAAAAAAAAAABAQEXFxcCAgICAgIHBAUBAQEGBgdyFRcRERFsFRYCAgIDAwMFBQUODg4EBAQFBQUREREFBQUGBgYTExMRCQoEBAQGBAVcIiYaGhoaGhsFBQUUFBRaJSgGBgYdFBgDAwMEBAQNDQ0ODg4fHyAjIyNYWFheLTEHBgcHBwgJCQkLCwsNDQ0PDw8RERESEhIUFBQVFRYWFhYXFxcYGBgZGRkZGRoaGhocHBwdHR0eHh4eHx8fHx8iIiIlJSUmJiYnJycpKSkqKiotLS0uLi4uLi8wMDAyMjIzMzM0NDQ2NjY4ODg6Ojo7Ozs7Oz09PT4+Pj4/Pz9DKS9DQ0NJSUpLS0xMTE1NTU1PT09QUFBRUVFSUlNXV1dZWVlbW1tcXFxeXl5eXl9jY2NkZGRmZmZoaGlsbG1wcHBycnJ1dXV7e3t/f3+AgYGBgYGFhYWIh4mPj4+THyGTk5SVlZWYmJqbm5ygoKCnp6irq6uvr6+wr7KwsLGxsbO1tbW3tri4t7m5ubu9HyDGxcjGxsfJJyjOzs7PHR7QIyTQ0NDR0dHSICHS0tLU1NTY2NjZ2dndIiPd3d3e3t7fIyTi4uLj4+PnICHn5+jq6urs6+zs7Ozu7u7w8PDw8PHx8fHx8fLy8fLy8vLzHR329vb29vf39/j4+Pj5+fn6Hh76Hx/7+/v7+/z8Hx/8/Pz8/P39Hh79/f3///+f+BszAAAAcXRSTlMAAAECAwQFBwoPFhskJSYqKy4yMzU4OTw/Q0hRW1xjZGVmb294e3+Fi4+QkZibnaWmqq+2t7m+x8nKzM3Oz9HR19fd3d/h4eLk5ebm5+rq7O7v8PDy8vP09fX19/f3+Pn5+fr6/Pz8/f3+/v7+/v7+/k5HHiYAAAGUSURBVHgBY2BkFHMMizAVYmRk5NLSVAJSUg5uwYHOlmIMjFzq+soMbHrZ3WsWNyfJ8Gh7pOTxMjJKW6fd/v79S6IFn4FXciUvg3HNoqXNk5Y3ZcXXLSrVBRooW3Dvw/lTr75nZM7Yvd6dgcF37YqGxTOrayZsubkgkpOBkd3v7MddLX2zL7cef3srSoWBIWh1z6yL2zo2XH9wpRLIZeSKu3Bj4uGj03tOv/+60IaBgSG0cWrnypldO5+8nubPDLSBI6GwpGje5KoDn3/uCxAEKvBctH9Oe+/GOy83lykyABUw+aw7sbV/yt4XPx83aTEAgXzxwSeX7t78ca3DDiTPyKBQsePd/YfPP71f5crGAAJGOduP3X3/aHW6AEQBg1ru3DM/fn47kioHFACpMHSy3/PsULc5SB6sQtI2Ov/pm2UeDEAREGLRsPK+uilaAqoApEku/NzJWHGQAASLurd1m4CYcBUuS+abQW0E8xXLQ4RBTLgS1foYfpgCEClSqwFiIYBIqzZEACrMrceKqoBbhxmqAAABho1+nW2udAAAAABJRU5ErkJggg==);
 }
-#sidebar #portaldetails h3.title{
-	width:auto;
-}
 `).appendTo('head');
 	};
 
@@ -444,7 +451,7 @@ function wrapper(plugin_info) {
 		plugin.pogo.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestops\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gyms\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
 		plugin.pogo.htmlCallSetBox = '<a onclick="window.plugin.pogo.manualOpt();return false;">PoGo Opt</a>';
 
-		var actions = '';
+		let actions = '';
 		actions += '<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>';
 		//actions += '<a onclick="window.plugin.pogo.optCopy();return false;" title="Get data of all Pokemon Go markers">Copy PoGo portals</a>';
 		//actions += '<a onclick="window.plugin.pogo.optPaste();return false;" title="Add Pokemon Go markers to the map">Paste PoGo portals</a>';
@@ -457,7 +464,7 @@ function wrapper(plugin_info) {
 
 	/***************************************************************************************************************************************************************/
 
-	var setup = function () {
+	const setup = function () {
 
 		window.plugin.pogo.isSmart = window.isSmartphone();
 
@@ -484,7 +491,6 @@ function wrapper(plugin_info) {
 
 	// PLUGIN END //////////////////////////////////////////////////////////
 
-
 	setup.info = plugin_info; //add the script info data to the function as a property
 	if (!window.bootPlugins) {
 		window.bootPlugins = [];
@@ -494,16 +500,5 @@ function wrapper(plugin_info) {
 	if (window.iitcLoaded && typeof setup === 'function') {
 		setup();
 	}
-} // wrapper end
-// inject code into site context
-var script = document.createElement('script');
-var info = {};
-if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
-	info.script = {
-		version: GM_info.script.version,
-		name: GM_info.script.name,
-		description: GM_info.script.description
-	};
-}
-script.appendChild(document.createTextNode('(' + wrapper + ')(' + JSON.stringify(info) + ');'));
-(document.body || document.head || document.documentElement).appendChild(script);
+})();
+
