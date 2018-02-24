@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.18
+// @version      0.19
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1110,6 +1110,10 @@
 	function updateMapGrid() {
 		if (regionLayer) {
 			regionLayer.clearLayers();
+
+			if (!map.hasLayer(regionLayer)) 
+				return;
+
 		} else {
 			gmapItems.forEach(item => item.setMap(null));
 		}
@@ -1141,14 +1145,14 @@
 		if (zoom < 5) {
 			return;
 		}
-		if (gridLevel >= 6) {
+		if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
 			const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
 			drawCellAndNeighbors(cell);
 		}
-		if (highlightGymCandidateCells) {
+		if (highlightGymCandidateCells && 14 < (zoom + 2)) {
 			updateCandidateCells();
 		}	
-		if (highlihgtGymCenter) {
+		if (highlihgtGymCenter && 20 < (zoom + 2)) {
 			updateGymCenters();
 		}	
 	}
