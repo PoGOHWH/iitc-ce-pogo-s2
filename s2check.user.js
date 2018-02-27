@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.19
+// @version      0.20
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -992,8 +992,8 @@
 
 		const data = {
 			name: marker.pokemrkztit,
-			lat: marker.position.lat().toFixed(6),
-			lng: marker.position.lng().toFixed(6)
+			lat: parseFloat(marker.position.lat().toFixed(6)),
+			lng: parseFloat(marker.position.lng().toFixed(6))
 		};
 		computeCells(data);
 		if (isGym) {
