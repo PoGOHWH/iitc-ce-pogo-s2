@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.22
+// @version      0.23
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -806,18 +806,20 @@
 				left: 0;
 				width: 100%;
 				height: 100%;
-				z-index: 1000;
+				z-index: 5000;
 				background: rgba(0, 0, 0, .5);
 				text-align: center;
 			}
 
 			.filters .filter-box {
 				background: #fff;
+				color: #000;
 				margin-top: 5%;
 				padding: 10px;
 				border-radius: 3px;
 				display: inline-block;
 				width: 350px;
+				max-width: 100%;
 				box-sizing: border-box;
 			}
 
@@ -1841,6 +1843,7 @@ i.fa.fa-times:before {
 		document.getElementById('toolbox').appendChild(button);
 
 		button.addEventListener('click', e => {
+			if (window.isSmartphone()) window.show('map');
 			const dialog = document.getElementById('s2dialog');
 			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
 		});
