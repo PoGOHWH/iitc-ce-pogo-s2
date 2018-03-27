@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.20
+// @version      0.21
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1469,7 +1469,7 @@
 		if (gyms[guid]) {
 			return {'type': 'gyms', 'store': gyms};
 		}
-		if (gyms[guid]) {
+		if (pokestops[guid]) {
 			return {'type': 'pokestops', 'store': pokestops};
 		}
 		return null;
