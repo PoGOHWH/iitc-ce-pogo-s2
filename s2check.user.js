@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.21
+// @version      0.22
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1462,6 +1462,12 @@
 			window.plugin.pogo.saveStorage();
 		}
 	};
+	
+	window.plugin.pogo.createEmptyStorage = function () {
+		gyms = {};
+		pokestops = {};
+		window.plugin.pogo.saveStorage();
+	};
 
 	/***************************************************************************************************************************************************************/
 
@@ -1639,8 +1645,7 @@
 		const promptAction = confirm('All pogo will be deleted. Are you sure?', '');
 		if (promptAction) {
 			delete localStorage[KEY_STORAGE];
-			window.plugin.pogo.createStorage();
-			window.plugin.pogo.loadStorage();
+			window.plugin.pogo.createEmptyStorage();
 			window.plugin.pogo.updateStarPortal();
 			window.plugin.pogo.resetAllMarkers();
 			window.plugin.pogo.optAlert('Successful. ');
@@ -1862,7 +1867,3 @@ i.fa.fa-times:before {
 		setup();
 	}
 })();
-
-
-
-
