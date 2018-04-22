@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.24
+// @version      0.25
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -492,6 +492,9 @@
 
 	function isPointOnScreen(mapBounds, point) {
 		if (typeof L != 'undefined') {
+			if (point._latlng)
+				return mapBounds.contains(point._latlng);
+
 			return mapBounds.contains(L.latLng(point));
 		}
 
@@ -1655,6 +1658,125 @@
 		}
 	};
 
+	window.plugin.pogo.findPortalChanges = function () {
+		const portalsInView = filterItemsByMapBounds(window.portals);
+		const stopsInView = filterItemsByMapBounds(pokestops);
+		const gymsInView = filterItemsByMapBounds(gyms);
+
+		// Compare data
+		Object.keys(gymsInView).forEach(id => {
+			if (portalsInView[id]) {
+				delete portalsInView[id];
+				delete gymsInView[id];
+			}
+		});
+
+		Object.keys(stopsInView).forEach(id => {
+			if (portalsInView[id]) {
+				delete portalsInView[id];
+				delete stopsInView[id];
+			}
+		});
+
+		const keys = Object.keys(portalsInView);
+		if (keys.length > 0) {
+			// Ignore portals that are in the same cell that another one
+			const level = 17;
+			// All cells with pokemon items
+			const allCells = groupByCell(level);
+
+			keys.forEach(id => {
+				const portal = window.portals[id];
+				const cell = window.S2.S2Cell.FromLatLng(portal._latlng, level);
+				const cellId = cell.toString();
+				if (allCells[cellId]) {
+					delete portalsInView[id];
+				}
+			});
+		}
+
+
+		// Create report
+		const summary = [];
+		summary.push('<p>Portals not in Pokemon:</p>');
+		const portalKeys = Object.keys(portalsInView);
+		if (portalKeys.length == 0) {
+			summary.push('<p>-none-</p>');
+		} else {
+			summary.push('<table>');
+			portalKeys.forEach(id => {
+				const portal = portalsInView[id];
+				const latlng = portal._latlng;
+				summary.push('<tr><td><a onclick="selectPortalByLatLng(' + latlng.lat + ',' + latlng.lng + '); return false">' + portal.options.data.title + '</a></td>' +
+					'</tr>');
+			});
+			summary.push('</table>');
+		}
+
+		summary.push('<p>Gyms not in Ingress:</p>');
+		const gymKeys = Object.keys(gymsInView);
+		if (gymKeys.length == 0) {
+			summary.push('<p>-none-</p>');
+		} else {
+			summary.push('<table>');
+			gymKeys.forEach(id => {
+				const gym = gymsInView[id];
+				summary.push('<tr><td>' + gym.name + '</td>' +
+					'<td><a onclick="window.plugin.pogo.removeGym(\'' + id + '\', this); return false">Remove</a></td>' +
+					'</tr>');
+			});
+			summary.push('</table>');
+		}
+
+		summary.push('<p>Pokestops not in Ingress:</p>');
+		const stopKeys = Object.keys(stopsInView);
+		if (stopKeys.length == 0) {
+			summary.push('<p>-none-</p>');
+		} else {
+			summary.push('<table>');
+			stopKeys.forEach(id => {
+				const pokestop = stopsInView[id];
+				summary.push('<tr><td><a onclick="map.panTo(new L.LatLng(' + pokestop.lat + ',' + pokestop.lng + ')); return false">' +
+					pokestop.lat + ',' + pokestop.lng + '</a></td>' +
+					'<td><a onclick="window.plugin.pogo.removePokestop(\'' + id + '\', this); return false">Remove</a></td>' +
+					'</tr>');
+			}); 
+			summary.push('</table>');
+		}
+
+		dialog({
+			html: summary.join(''),
+			dialogClass: 'ui-dialog-pogoIngress',
+			title: 'Compare results'
+		});
+	};
+
+	window.plugin.pogo.removeGym = function (guid, link) {
+		delete gyms[guid];
+		window.plugin.pogo.saveStorage();
+		window.plugin.pogo.updateStarPortal();
+	
+		const gymInLayer = window.plugin.pogo.gymLayers[guid];
+		window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
+		delete window.plugin.pogo.gymLayers[guid];
+
+		const tr = link.parentNode.parentNode;
+		tr.parentNode.removeChild(tr);
+	};
+
+	window.plugin.pogo.removePokestop = function (guid, link) {
+		delete pokestops[guid];
+		window.plugin.pogo.saveStorage();
+		window.plugin.pogo.updateStarPortal();
+
+		const starInLayer = window.plugin.pogo.stopLayers[guid];
+		window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
+		delete window.plugin.pogo.stopLayers[guid];
+
+		const tr = link.parentNode.parentNode;
+		tr.parentNode.removeChild(tr);
+	};
+
 	/***************************************************************************************************************************************************************/
 	/** POKEMON GO PORTALS LAYER ***********************************************************************************************************************************/
 	/***************************************************************************************************************************************************************/
@@ -1807,6 +1929,8 @@ i.fa.fa-times:before {
 
 		actions += '<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>';
 		actions += '<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>';
+
+		actions += '<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>';
 
 		plugin.pogo.htmlSetbox = '<div id="pogoSetbox">' + actions + '</div>';
 	};
