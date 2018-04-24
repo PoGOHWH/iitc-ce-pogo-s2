@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.25
+// @version      0.26
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1356,7 +1356,7 @@
 		const corners = cell.getCornerLatLngs();
 
 		if (regionLayer) {
-			const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0});
+			const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false});
 			regionLayer.addLayer(region);
 		} else {
 			const polygon = new google.maps.Polygon({
