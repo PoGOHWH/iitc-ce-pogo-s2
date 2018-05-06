@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         S2 Check
 // @namespace    http://tampermonkey.net/
-// @version      0.26
+// @version      0.27
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
