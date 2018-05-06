@@ -1832,7 +1832,12 @@
 			icon: L.icon(iconData)
 		});
 		window.registerMarkerForOMS(star);
-		star.on('spiderfiedclick', function () { renderPortalDetails(guid); });
+		star.on('spiderfiedclick', function () { 
+			// don't try to render fake portals
+			if (guid.indexOf('.')>-1) {
+				renderPortalDetails(guid); 
+			}
+		});
 
 		if (type === 'pokestops') {
 			window.plugin.pogo.stopLayers[guid] = star;
