@@ -1625,8 +1625,9 @@
 						const name = item.name;
 						let guid = item.guid;
 						if (!guid) {
-							guid = findPortalGuidByPositionE6(lat, lng);
+							guid = findPortalGuidByPositionE6(lat * 1E6, lng * 1E6);
 							if (!guid) {
+								console.log('portal guid not found', name, lat, lng);
 								guid = idpogo;
 							}
 						}
