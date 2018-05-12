@@ -1,7 +1,10 @@
 // ==UserScript==
+// @id           s2check@alfonsoml
 // @name         S2 Check
+// @category     Layer
 // @namespace    http://tampermonkey.net/
-// @version      0.27
+// @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
+// @version      0.28
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1158,7 +1161,7 @@
 		if (highlightGymCandidateCells && 14 < (zoom + 2)) {
 			updateCandidateCells();
 		}	
-		if (highlihgtGymCenter && 20 < (zoom + 2)) {
+		if (highlihgtGymCenter && 20 < (zoom + 4)) {
 			updateGymCenters();
 		}	
 	}
