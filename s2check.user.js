@@ -377,11 +377,37 @@
 	let pokestops = {};
 	let gyms = {};
 
-	let gridLevel = 14;
 	let regionLayer;
 	let gmapItems = [];
-	let highlightGymCandidateCells = false;
-	let highlihgtGymCenter = false;
+
+	let settings = {
+		highlightGymCandidateCells: false,
+		highlightGymCenter: false,
+		grids: [
+			{
+				level: 14,
+				width: 5
+			},
+			{
+				level: 0,
+				width: 2
+			}
+		]
+	};
+
+	function saveSettings() {
+		localStorage['s2check_settings'] = JSON.stringify(settings);
+	}
+
+	function loadSettings() {
+		const tmp = localStorage['s2check_settings'];
+		if (!tmp)
+			return;
+		try	{
+			settings = JSON.parse(tmp);
+		} catch (e) {
+		}
+	}
 
 	let colorScheme = {
 		// https://www.materialui.co/colors
@@ -409,6 +435,7 @@
 	};
 
 	function analyzeData() {
+		const gridLevel = settings.grids[0].level;
 		const allCells = groupByCell(gridLevel);
 
 		const cells = filterByMapBounds(allCells);
@@ -416,6 +443,7 @@
 	}
 
 	function saveGridAnalysis(cells) {
+		const gridLevel = settings.grids[0].level;
 		const filename = 'S2_' + gridLevel + '_' + new Date().getTime() + '.json';
 		saveToFile(JSON.stringify(cells), filename);
 	}
@@ -606,9 +634,17 @@
 		saveToFile(contents.join('\n'), filename);
 	}
 
+	function configureGridLevelSelect(select, i) {
+		select.value = settings.grids[i].level;
+		select.addEventListener('change', e => {
+			settings.grids[i].level = parseInt(select.value, 10);
+			saveSettings();
+			updateMapGrid();
+		});
+	}
+
 	function addDialog() {
-		const html = `
-			<h3>S2 Cells</h3>
+		const selectRow = `
 			<p>Select the level of grid to display: <select>
 			<option value=0>None</option>
 			<option value=9>9</option>
@@ -623,8 +659,12 @@
 			<option value=18>18</option>
 			<option value=19>19</option>
 			<option value=20>20</option>
-			</select></p>
-			<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
+			</select></p>`;
+		const html = `
+			<h3>S2 Cells</h3>` +
+			selectRow +
+			selectRow +
+			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
 			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button></p>
 			<p><button class="btn btn-primary" id="save-gymscsv"><i class="fa fa-save"></i> Save Gyms as CSV</button></p>
@@ -638,37 +678,38 @@
 		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
 		div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
 		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
-		const select = div.querySelector('select');
-		select.value = gridLevel;
-		select.addEventListener('change', e => {
-			gridLevel = parseInt(select.value, 10);
-			updateMapGrid();
-		});
+		const selects = div.querySelectorAll('select');
+		for (let i = 0; i < 2; i++) {
+			configureGridLevelSelect(selects[i], i);
+		}
+
 		// In gymhuntr the styles of the checkbox look reversed, checked is red and unchecked green.
 		const reverseCheckbox = document.location.hostname == 'gymhuntr.com';
 		const chkHighlight = div.querySelector('#chkHighlightCandidates');
-		chkHighlight.checked = highlightGymCandidateCells;
+		chkHighlight.checked = settings.highlightGymCandidateCells;
 		if (reverseCheckbox) {
 			chkHighlight.checked = !chkHighlight.checked;
 		}
 		chkHighlight.addEventListener('change', e => {
-			highlightGymCandidateCells = chkHighlight.checked;
+			settings.highlightGymCandidateCells = chkHighlight.checked;
 			if (reverseCheckbox) {
-				highlightGymCandidateCells = !chkHighlight.checked;
+				settings.highlightGymCandidateCells = !chkHighlight.checked;
 			}
+			saveSettings();
 			updateMapGrid();
 		});
 
 		const chkHighlightCenters = div.querySelector('#chkHighlightCenters');
-		chkHighlightCenters.checked = highlihgtGymCenter;
+		chkHighlightCenters.checked = settings.highlightGymCenter;
 		if (reverseCheckbox) {
 			chkHighlightCenters.checked = !chkHighlightCenters.checked;
 		}
 		chkHighlightCenters.addEventListener('change', e => {
-			highlihgtGymCenter = chkHighlightCenters.checked;
+			settings.highlightGymCenter = chkHighlightCenters.checked;
 			if (reverseCheckbox) {
-				highlihgtGymCenter = !chkHighlightCenters.checked;
+				settings.highlightGymCenter = !chkHighlightCenters.checked;
 			}
+			saveSettings();
 			updateMapGrid();
 		});
 
@@ -1082,6 +1123,8 @@
 			cleanAds();
 		}
 
+		loadSettings();
+
 		if (document.location.hostname == 'gymhuntr.com' && document.querySelector('.controls')) {
 			interceptGymHuntr();
 		}
@@ -1129,7 +1172,7 @@
 
 		const bounds = map.getBounds();
 		const seenCells = {};
-		const drawCellAndNeighbors = function (cell) {
+		const drawCellAndNeighbors = function (cell, gridLevel, width) {
 			const cellStr = cell.toString();
 
 			if (!seenCells[cellStr]) {
@@ -1138,12 +1181,12 @@
 
 				if (isCellOnScreen(bounds, cell)) {
 					// on screen - draw it
-					drawCell(cell, colorScheme.level[gridLevel], 5, 0.5);
+					drawCell(cell, colorScheme.level[gridLevel], width, 0.5);
 
 					// and recurse to our neighbors
 					const neighbors = cell.getNeighbors();
 					for (let i = 0; i < neighbors.length; i++) {
-						drawCellAndNeighbors(neighbors[i]);
+						drawCellAndNeighbors(neighbors[i], gridLevel, width);
 					}
 				}
 			}
@@ -1154,14 +1197,18 @@
 		if (zoom < 5) {
 			return;
 		}
-		if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
-			const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
-			drawCellAndNeighbors(cell);
+		for (let i = 0; i < settings.grids.length; i++) {
+			const grid = settings.grids[i];
+			const gridLevel = grid.level;
+			if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
+				const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
+				drawCellAndNeighbors(cell, gridLevel, grid.width);
+			}
 		}
-		if (highlightGymCandidateCells && 14 < (zoom + 2)) {
+		if (settings.highlightGymCandidateCells && 14 < (zoom + 2)) {
 			updateCandidateCells();
 		}	
-		if (highlihgtGymCenter && 20 < (zoom + 4)) {
+		if (settings.highlightGymCenter && 20 < (zoom + 4)) {
 			updateGymCenters();
 		}	
 	}
@@ -1837,7 +1884,7 @@
 		window.registerMarkerForOMS(star);
 		star.on('spiderfiedclick', function () { 
 			// don't try to render fake portals
-			if (guid.indexOf('.')>-1) {
+			if (guid.indexOf('.') > -1) {
 				renderPortalDetails(guid); 
 			}
 		});
