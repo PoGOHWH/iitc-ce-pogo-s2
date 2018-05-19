@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.29
+// @version      0.30
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1624,6 +1624,10 @@
 			const latlng = portal.getLatLng();
 			plugin.pogo.addPortalpogo(guid, latlng.lat, latlng.lng, portal.options.data.title, type);
 		}
+
+		if (settings.highlightGymCandidateCells) {
+			updateMapGrid();
+		}
 	};
 
 	// Add portal
@@ -1745,7 +1749,6 @@
 				}
 			});
 		}
-
 
 		// Create report
 		const summary = [];
