@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.30
+// @version      0.31
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1024,7 +1024,7 @@
 	}
 
 	function analyzeMarker(marker) {
-		const id = marker.mrkdid;
+		const id = marker.locmarkerid;
 		const url = marker.url;
 		if (!id || !url) {
 			return;
@@ -1041,7 +1041,7 @@
 		}
 
 		const data = {
-			name: marker.pokemrkztit,
+			name: marker.locmarkername,
 			lat: parseFloat(marker.position.lat().toFixed(6)),
 			lng: parseFloat(marker.position.lng().toFixed(6))
 		};
