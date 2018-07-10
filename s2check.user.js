@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.31
+// @version      0.32
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -616,9 +616,33 @@
 		button.addEventListener('click', saveGymStopsJSON);
 	}
 	*/
+
+	/**
+		Tries to add the portal photo when exporting from Ingress.com/intel
+	*/
+	function findPhotos(items) {
+		if (!window.portals) {
+			return items;
+		}
+		Object.keys(items).forEach(id => {
+			const item = items[id];
+			if (item.image)
+				return;
+
+			const portal = window.portals[id];
+			if (portal && portal.options && portal.options.data) {
+				item.image = portal.options.data.image;
+			}
+		});
+		return items;
+	}
+
 	function saveGymStopsJSON() {
 		const filename = 'gyms+stops_' + new Date().getTime() + '.json';
-		const data = {gyms: filterItemsByMapBounds(gyms), pokestops: filterItemsByMapBounds(pokestops)};
+		const data = {
+			gyms: findPhotos(filterItemsByMapBounds(gyms)), 
+			pokestops: findPhotos(filterItemsByMapBounds(pokestops))
+		};
 		saveToFile(JSON.stringify(data), filename);
 	}
 
