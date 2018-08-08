@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.32
+// @version      0.33
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -961,8 +961,6 @@
 				box-shadow: 0px 1px 4px -1px rgba(0, 0, 0, 0.2);
 				border-radius: 2px;
 				height: 29px;
-				position: relative;
-				right: 10px;
 				cursor: pointer;
 				margin-top: 10px;
 				margin-left: 10px;
@@ -1039,55 +1037,57 @@
 		injectStyles();
 	}
 
-	function catchGoogleMap() {
-		google.maps.orgMarker = google.maps.Marker;
-		google.maps.Marker = function (a) { 
-			analyzeMarker(a);
-			return new google.maps.orgMarker(a);
-		};
-	}
-
-	function analyzeMarker(marker) {
-		const id = marker.locmarkerid;
-		const url = marker.url;
-		if (!id || !url) {
-			return;
-		}
-		const isGym = url.substr(1, 3) == 'gym';
-
-		if (isGym) {
-			if (gyms[id]) 
-				return;
-		} else {
-			if (pokestops[id]) {
-				return;
-			}
-		}
-
-		const data = {
-			name: marker.locmarkername,
-			lat: parseFloat(marker.position.lat().toFixed(6)),
-			lng: parseFloat(marker.position.lng().toFixed(6))
-		};
-		computeCells(data);
-		if (isGym) {
-			gyms[id] = data;
-		} else {
-			pokestops[id] = data;
-		}
-	}
-
 	function interceptPokemonGoMapInfo() {
-		// It uses Google maps.
-		map.addListener('bounds_changed', updateMapGrid);
+		captureLeafletMap();
 
-		initializeLabels();
+		const origOpen = XMLHttpRequest.prototype.open;
+		// add our handler as a listener to every XMLHttpRequest
+		const reUrl = /^https:\/\/www.pokemongomap.info\//;
+		XMLHttpRequest.prototype.open = function () {
+			this.addEventListener('load', function (ev) {
+				if (!reUrl.test(this.responseURL)) {
+					return;
+				}
 
-		// detect gyms&stops
-		catchGoogleMap();
+				if (this.responseText.indexOf('raid_status') > 0) {
+					const json = JSON.parse(this.responseText);
+
+					Object.keys(json).forEach(id => {
+						const entry = json[id];
+						const isGym = entry.xgxg35 == 'Mg==';
+						//const id = atob(entry.zfgs62);
+						if (isGym) {
+							if (gyms[id]) {
+								return;
+							}
+						} else {
+							if (pokestops[id]) {
+								return;
+							}
+						}
+
+						// gym_id is not a real guid
+						const data = {
+							name: entry.rfs21d,
+							lat: (parseFloat(atob(entry.z3iafj)) * 5.399568034557235e-7).toFixed(6),
+							lng: (parseFloat(atob(entry.f24sfvs)) * 5.399568034557235e-7).toFixed(6)
+						};
+						computeCells(data);
+
+						if (isGym) { 
+							gyms[id] = data; 
+						} else { 
+							pokestops[id] = data; 
+						} 
+					});
+				}
+			});
+			origOpen.apply(this, arguments);
+		};
 
 		// Inject grid button
 		const controlDiv = document.createElement('div');
+		controlDiv.className = 'leaflet-control';
 
 		const button = document.createElement('div');
 		button.id = 's2gridbtn';
@@ -1102,8 +1102,7 @@
 			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
 		});
 
-		controlDiv.index = 1;
-		map.controls[google.maps.ControlPosition.TOP_RIGHT].push(controlDiv);
+		document.querySelector('.leaflet-top.leaflet-right').appendChild(controlDiv);
 
 		addDialog();
 		injectStyles();
@@ -1452,43 +1451,21 @@
 		// center point
 		let center = cell.getLatLng();
 
-		if (regionLayer) {
-			let marker = L.marker(center, {
-				icon: L.divIcon({
-					className: 's2check-text',
-					iconAnchor: [25, 5],
-					iconSize: [50, 10],
-					html: text
-				}),
-				interactive: false
-			});
-			// fixme, maybe add some click handler
+		let marker = L.marker(center, {
+			icon: L.divIcon({
+				className: 's2check-text',
+				iconAnchor: [25, 5],
+				iconSize: [50, 10],
+				html: text
+			}),
+			interactive: false
+		});
+		// fixme, maybe add some click handler
 
-			regionLayer.addLayer(marker);
-		} else {
-			const point = new google.maps.LatLng(center.lat, center.lng);
-			const label = new Label({position: point, text: text, map: map, className: 's2check-text'});
-			gmapItems.push(label);
-
-		}
+		regionLayer.addLayer(marker);
 	}
 
 	initS2checker();
-
-	/*eslint-disable */
-	// ELabel
-	// http://blog.mridey.com/2009/09/label-overlay-example-for-google-maps.html
-	function Label(b){this.setValues(b);var a=this.span_=document.createElement("span");a.style.cssText="white-space:nowrap; border:1px solid #999; padding:2px; background-color:white";if(b.className) a.className=b.className;var c=this.div_=document.createElement("div");c.appendChild(a); c.style.cssText="position: absolute; display: none"}
-	function initializeLabels(){Label.prototype=new google.maps.OverlayView;Label.prototype.onAdd=function(){var b=this.getPanes().overlayLayer;b.appendChild(this.div_)};
-	Label.prototype.onRemove=function(){
-		if (this.div_.parentNode) 
-			this.div_.parentNode.removeChild(this.div_);
-		if (this.listeners_) {
-			for(var b=0,a=this.listeners_.length;b<a;++b){google.maps.event.removeListener(this.listeners_[b])}
-		}
-	};
-	Label.prototype.draw=function(){var b=this.getProjection(),a=b.fromLatLngToDivPixel(this.get("position")),c=this.div_;c.style.left=a.x+"px";c.style.top=a.y+"px";c.style.display="block";this.span_.innerHTML=this.get("text").toString()}}
-	/*eslint-enable */
 
 	// ***************************
 	// IITC code
