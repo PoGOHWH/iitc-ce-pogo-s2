@@ -8,11 +8,9 @@
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
-// @match        https://gomap.eu/*
 // @match        https://www.pokemongomap.info/*
 // @match        https://www.ingress.com/intel*
 // @match        https://ingress.com/intel*
-// @match        https://www.ingress.com/mission/*
 // @grant        none
 // ==/UserScript==
 
@@ -985,58 +983,6 @@
 		document.querySelector('head').appendChild(style);
 	}
 
-	function interceptGoMap() {
-		captureLeafletMap();
-
-		const origOpen = XMLHttpRequest.prototype.open;
-		// add our handler as a listener to every XMLHttpRequest
-		XMLHttpRequest.prototype.open = function () {
-			this.addEventListener('load', function (xhr) {
-				let json;
-				if (this.responseText.indexOf('gyms') > 0) {
-					json = JSON.parse(this.responseText);
-
-					json.gyms.forEach(function (pokegym) {
-						const id = pokegym.gym_id;
-						if (gyms[id]) {
-							return;
-						}
-						// gym_id is not a real guid
-						const data = {
-							name: pokegym.name,
-							lat: pokegym.latitude,
-							lng: pokegym.longitude
-						};
-						computeCells(data);
-						gyms[id] = data;
-					});
-				}
-				if ((json && json.pstops) || this.responseText.indexOf('pstops') > 0) {
-					if (!json) {
-						json = JSON.parse(this.responseText);
-					}
-
-					json.pstops.forEach(function (pokestop) {
-						const id = pokestop.id;
-						if (pokestops[id]) {
-							return;
-						}
-						const data = {
-							lat: pokestop.latitude,
-							lng: pokestop.longitude
-						};
-						computeCells(data);
-						pokestops[id] = data;
-					});
-				}
-			});
-			origOpen.apply(this, arguments);
-		};
-		showButton(document.body);
-		addDialog();
-		injectStyles();
-	}
-
 	function interceptPokemonGoMapInfo() {
 		captureLeafletMap();
 
@@ -1150,18 +1096,6 @@
 
 		if (document.location.hostname == 'gymhuntr.com' && document.querySelector('.controls')) {
 			interceptGymHuntr();
-		}
-		if (document.location.hostname == 'gomap.eu') {
-			interceptGoMap();
-			/*
-			window.setTimeout(o => {
-				const mapo = document.getElementById('mapo');
-				if (mapo) {
-					mapo.style.height = '100%';
-					document.body.removeChild(document.body.firstElementChild);
-				}
-			}, 50);
-			*/
 		}
 		if (document.location.hostname == 'www.pokemongomap.info') {
 			interceptPokemonGoMapInfo();
