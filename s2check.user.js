@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.33
+// @version      0.34
 // @description  Find S2 properties
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -50,7 +50,7 @@
  - i,j: they always use 30 bits, adjusting as needed. we use 0 to (1<<level)-1 instead
 				(so GetSizeIJ for a cell is always 1)
 */
-(function () {
+;(function () {
 
 	const S2 = window.S2 = {};
 
