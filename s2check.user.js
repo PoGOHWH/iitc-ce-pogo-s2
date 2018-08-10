@@ -5,7 +5,7 @@
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @version      0.34
-// @description  Find S2 properties
+// @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
 // @match        https://www.pokemongomap.info/*
