@@ -16,7 +16,7 @@
 
 /* eslint-env es6 */
 /* eslint no-var: "error" */
-/* globals L, S2, map, google */
+/* globals L, S2, map */
 /* globals GM_info, $, plugin, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
 
@@ -48,7 +48,7 @@
  - i,j: they always use 30 bits, adjusting as needed. we use 0 to (1<<level)-1 instead
 				(so GetSizeIJ for a cell is always 1)
 */
-;(function () {
+;(function () {	// eslint-disable-line no-extra-semi
 
 	const S2 = window.S2 = {};
 
@@ -371,10 +371,14 @@
 		input.click();
 	}
 
-
 	let pokestops = {};
 	let gyms = {};
-
+	/*
+	// Portals that aren't marked as PoGo items
+	let newPortals = {};
+	// PoGo items that aren't in Intel
+	let removedPortals = {};
+	*/
 	let regionLayer;
 	let gmapItems = [];
 
@@ -495,11 +499,7 @@
 
 	function isCellOnScreen(mapBounds, cell) {
 		const corners = cell.getCornerLatLngs();
-		if (typeof L != 'undefined') {
-			const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
-			return cellBounds.intersects(mapBounds);
-		}
-		const cellBounds = new google.maps.LatLngBounds(corners[0],corners[1]).extend(corners[2]).extend(corners[3]);
+		const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
 		return cellBounds.intersects(mapBounds);
 	}
 
@@ -1260,48 +1260,15 @@
 			// center point
 			const center = cell.getLatLng();
 
-			if (regionLayer) {
-				const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false};
-				const line1 = L.polyline([corners[0], corners[2]], style);
-				regionLayer.addLayer(line1);
+			const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false};
+			const line1 = L.polyline([corners[0], corners[2]], style);
+			regionLayer.addLayer(line1);
 
-				const line2 = L.polyline([corners[1], corners[3]], style);
-				regionLayer.addLayer(line2);
+			const line2 = L.polyline([corners[1], corners[3]], style);
+			regionLayer.addLayer(line2);
 
-				const circle = L.circle(center, 1, style);
-				regionLayer.addLayer(circle);
-
-			} else {
-				const line1 = new google.maps.Polyline({
-					path: [corners[0], corners[2]],
-					strokeColor: 'red',
-					strokeOpacity: 0.8,
-					strokeWeight: 1,
-					map: map
-				});
-				gmapItems.push(line1);
-
-				const line2 = new google.maps.Polyline({
-					path: [corners[1], corners[3]],
-					strokeColor: 'red',
-					strokeOpacity: 0.8,
-					strokeWeight: 1,
-					map: map
-				});
-				gmapItems.push(line2);
-
-				const circle = new google.maps.Circle({
-					center: center,
-					radius: 1,
-					strokeColor: 'red',
-					strokeOpacity: 0.8,
-					strokeWeight: 1,
-					map: map
-				});
-				gmapItems.push(circle);
-
-			}
-
+			const circle = L.circle(center, 1, style);
+			regionLayer.addLayer(circle);
 		});
 	}
 
@@ -1336,46 +1303,20 @@
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
-		if (regionLayer) {
-			// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
-			// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
-			// from the other cell, or be off screen so we don't care
-			const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false});
+		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
+		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
+		// from the other cell, or be off screen so we don't care
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false});
 
-			regionLayer.addLayer(region);
-		} else {
-			corners.push(corners[0]);
-
-			const line = new google.maps.Polyline({
-				path: corners,
-				geodesic: true,
-				strokeColor: color,
-				strokeOpacity: opacity,
-				strokeWeight: weight,
-				map: map
-			});
-			gmapItems.push(line);
-		}
+		regionLayer.addLayer(region);
 	}
 
 	function fillCell(cell, color, opacity) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
-		if (regionLayer) {
-			const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false});
-			regionLayer.addLayer(region);
-		} else {
-			const polygon = new google.maps.Polygon({
-				path: corners,
-				geodesic: true,
-				fillColor: color,
-				fillOpacity: opacity,
-				strokeWeight: 0,
-				map: map
-			});
-			gmapItems.push(polygon);
-		}
+		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false});
+		regionLayer.addLayer(region);
 	}
 
 	/**
@@ -1616,7 +1557,7 @@
 						if (!guid) {
 							guid = findPortalGuidByPositionE6(lat * 1E6, lng * 1E6);
 							if (!guid) {
-								console.log('portal guid not found', name, lat, lng);
+								console.log('portal guid not found', name, lat, lng); // eslint-disable-line no-console
 								guid = idpogo;
 							}
 						}
@@ -1631,7 +1572,7 @@
 				window.plugin.pogo.resetAllMarkers();
 				window.plugin.pogo.optAlert('Successful. ');
 			} catch (e) {
-				console.warn('pogo: failed to import data: ' + e);
+				console.warn('pogo: failed to import data: ' + e); // eslint-disable-line no-console
 				window.plugin.pogo.optAlert('<span style="color: #f88">Import failed </span>');
 			}
 		});
