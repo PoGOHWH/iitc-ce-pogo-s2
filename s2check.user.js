@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.34
+// @version      0.35
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -1181,8 +1181,8 @@
 
 	/**
 	 * Highlight cells that are missing a few stops to get another gym
-	 * based on https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/ data
-	 * Cutt offs: 2, 6, 20
+	 * based on data from https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/ 
+	 * Cut offs: 2, 6, 20
 	 */
 	function updateCandidateCells() {
 		const level = 14;
@@ -1209,10 +1209,19 @@
 					// on screen - draw it
 					const cellData = allCells[cellStr];
 					if (cellData) {
-						const missingStops = cellData ? computeMissingStops(cellData) : 2;
+						const missingGyms = computeMissingGyms(cellData);
+						if (missingGyms > 0) {
+							fillCell(cell, 'orange', 0.5);
+						} else if (missingGyms < 0) {
+							fillCell(cell, 'red', 0.5);
+						} 
+						const missingStops = computeMissingStops(cellData);
 						switch (missingStops) {
 							case 0:
-								fillCell(cell, 'black', 0.5);
+								coverBlockedAreas(cellData);
+								if (missingGyms == 0) {
+									fillCell(cell, 'black', 0.5);
+								}
 								break;
 							case 1:
 							case 2:
@@ -1284,6 +1293,7 @@
 		fillCell(cell, 'black', 0.6);
 	}
 
+	// Computes how many new stops must be added to the L14 Cell to get a new Gym
 	function computeMissingStops(cellData) {
 		const sum = cellData.gyms.length + cellData.stops.length;
 		if (sum < 2)
@@ -1297,6 +1307,23 @@
 
 		// No options to more gyms ATM.
 		return 0;
+	}
+
+	// Checks if the L14 cell has enough Gyms and Stops and one of the stops should be marked as a Gym
+	// If the result is negative then it has extra gyms
+	function computeMissingGyms(cellData) {
+		const totalGyms = cellData.gyms.length;
+		const sum = totalGyms + cellData.stops.length;
+		if (sum < 2)
+			return 0 - totalGyms;
+
+		if (sum < 6)
+			return 1 - totalGyms;
+
+		if (sum < 20)
+			return 2 - totalGyms;
+
+		return 3 - totalGyms;
 	}
 
 	function drawCell(cell, color, weight, opacity) {
