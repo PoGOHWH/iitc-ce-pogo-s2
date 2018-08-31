@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.35
+// @version      0.36
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -354,6 +354,11 @@
 	 * Callback signature: function( {string} contents ) {}
 	 */
 	function readFromFile(callback) {
+		if (isIITCm()) {
+			promptForPaste(callback);
+			return;
+		}
+
 		const input = document.createElement('input');
 		input.type = 'file';
 		input.className = 'baseutils-filepicker';
@@ -369,6 +374,42 @@
 		}, false);
 
 		input.click();
+	}
+
+	function promptForPaste(callback) {
+		const div = document.createElement('div');
+
+		const textarea = document.createElement('textarea');
+		textarea.style.width = '100%';
+		textarea.style.minHeight = '8em';
+		div.appendChild(textarea);
+
+		const container = dialog({
+			id: 'promptForPaste',
+			html: div,
+			width: '360px',
+			title: 'Paste here the data',
+			buttons: {
+				OK: function () {
+					container.dialog('close');
+					callback(textarea.value);
+				}
+			}
+		});
+	}
+
+	/**
+	 * Try to identify if the browser is IITCm due to special bugs like file picker not working
+	 */
+	function isIITCm() {
+		const ua = navigator.userAgent;
+		if (!ua.match(/Android.*Mobile/))
+			return false;
+
+		if (ua.match(/; wb\)/))
+			return true;
+		
+		return ua.match(/ Version\//);
 	}
 
 	let pokestops = {};
