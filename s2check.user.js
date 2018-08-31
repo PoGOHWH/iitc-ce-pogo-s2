@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.36
+// @version      0.37
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://gymhuntr.com/*
@@ -329,6 +329,12 @@
 			text = JSON.stringify(text);
 		}
 
+		if (isIITCm()) {
+			promptForCopy(text);
+			return;
+		}
+
+
 		// http://stackoverflow.com/a/18197341/250294
 		const element = document.createElement('a');
 		// fails with large amounts of data
@@ -393,6 +399,28 @@
 				OK: function () {
 					container.dialog('close');
 					callback(textarea.value);
+				}
+			}
+		});
+	}
+
+	function promptForCopy(text) {
+		const div = document.createElement('div');
+
+		const textarea = document.createElement('textarea');
+		textarea.style.width = '100%';
+		textarea.style.minHeight = '8em';
+		textarea.value = text;
+		div.appendChild(textarea);
+
+		const container = dialog({
+			id: 'promptForCopy',
+			html: div,
+			width: '360px',
+			title: 'Copy this data',
+			buttons: {
+				OK: function () {
+					container.dialog('close');
 				}
 			}
 		});
