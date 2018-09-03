@@ -4,10 +4,9 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.37
+// @version      0.38
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
-// @match        https://gymhuntr.com/*
 // @match        https://www.pokemongomap.info/*
 // @match        https://www.ingress.com/intel*
 // @match        https://ingress.com/intel*
@@ -16,7 +15,7 @@
 
 /* eslint-env es6 */
 /* eslint no-var: "error" */
-/* globals L, S2, map */
+/* globals L, S2 */
 /* globals GM_info, $, plugin, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
 
@@ -319,6 +318,9 @@
 (function () {
 	'use strict';
 
+	const randomPrefix = 'S2' + Math.random().toString(36).substring(5);
+	let map;
+
 	/**
 	 * Saves a file to disk with the provided text
 	 * @param {string} text - The text to save
@@ -449,7 +451,6 @@
 	let removedPortals = {};
 	*/
 	let regionLayer;
-	let gmapItems = [];
 
 	let settings = {
 		highlightGymCandidateCells: false,
@@ -545,8 +546,8 @@
 			i++;
 		});
 		summary.push('</table></div>');
-		const dialog = document.getElementById('S2Summary');
-		dialog.querySelector('#S2SummaryContent').innerHTML = summary.join('\r\n');
+		const dialog = document.getElementById(randomPrefix + 'Summary');
+		dialog.querySelector('#' + randomPrefix + 'SummaryContent').innerHTML = summary.join('\r\n');
 		dialog.style.display = 'block';
 		dialog.querySelector('h3 i').addEventListener('click', e => saveGridAnalysis(cells));
 	}
@@ -656,34 +657,6 @@
 		return cells;
 	}
 
-	function showButton(parent) {
-		const button = document.createElement('button');
-		button.id = 's2gridbtn';
-		button.className = 'button button-circle';
-		button.innerHTML = '<span class="inner"><i class="fa fa-table"></i></span>';
-		button.title = 'Find S2 distribution';
-
-		parent.appendChild(button);
-
-		button.addEventListener('click', e => {
-			const dialog = document.getElementById('s2dialog');
-			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
-		});
-		//	button.addEventListener('click', analyzeData);
-	}
-
-	/*
-	function showSaveButton() {
-		const button = document.createElement('button');
-		button.className = 'button button-circle';
-		button.innerHTML = '<span class="inner"><i class="fa fa-save"></i></span>';
-		button.title = 'Save Gyms and Portals';
-
-		document.querySelector('.controls').appendChild(button);
-		button.addEventListener('click', saveGymStopsJSON);
-	}
-	*/
-
 	/**
 		Tries to add the portal photo when exporting from Ingress.com/intel
 	*/
@@ -763,7 +736,7 @@
 			<p><button class="btn btn-primary" id="show-summary"> Show Analysis</button>
 			 `;
 
-		const div = insertDialogTemplate(html, 's2dialog');
+		const div = insertDialogTemplate(html, randomPrefix + 'dialog');
 
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
 		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
@@ -774,32 +747,19 @@
 			configureGridLevelSelect(selects[i], i);
 		}
 
-		// In gymhuntr the styles of the checkbox look reversed, checked is red and unchecked green.
-		const reverseCheckbox = document.location.hostname == 'gymhuntr.com';
 		const chkHighlight = div.querySelector('#chkHighlightCandidates');
 		chkHighlight.checked = settings.highlightGymCandidateCells;
-		if (reverseCheckbox) {
-			chkHighlight.checked = !chkHighlight.checked;
-		}
+
 		chkHighlight.addEventListener('change', e => {
 			settings.highlightGymCandidateCells = chkHighlight.checked;
-			if (reverseCheckbox) {
-				settings.highlightGymCandidateCells = !chkHighlight.checked;
-			}
 			saveSettings();
 			updateMapGrid();
 		});
 
 		const chkHighlightCenters = div.querySelector('#chkHighlightCenters');
 		chkHighlightCenters.checked = settings.highlightGymCenter;
-		if (reverseCheckbox) {
-			chkHighlightCenters.checked = !chkHighlightCenters.checked;
-		}
 		chkHighlightCenters.addEventListener('change', e => {
 			settings.highlightGymCenter = chkHighlightCenters.checked;
-			if (reverseCheckbox) {
-				settings.highlightGymCenter = !chkHighlightCenters.checked;
-			}
 			saveSettings();
 			updateMapGrid();
 		});
@@ -808,8 +768,8 @@
 	}
 
 	function addSummaryDialog() {
-		const html = '<div id="S2SummaryContent"></div>';
-		const div = insertDialogTemplate(html, 'S2Summary');
+		const html = '<div id="' + randomPrefix + 'SummaryContent"></div>';
+		const div = insertDialogTemplate(html, randomPrefix + 'Summary');
 
 		// clicking on any of the 'a' elements in the dialog, close it and center the map there.
 		div.addEventListener('click', e => {
@@ -818,7 +778,7 @@
 				return;
 			}
 			div.style.display = 'none';
-			document.getElementById('s2dialog').style.display = 'none';
+			document.getElementById(randomPrefix + 'dialog').style.display = 'none';
 			const lat = target.dataset.lat;
 			const lng = target.dataset.lng;
 			mapPanTo(lat, lng);
@@ -851,92 +811,9 @@
 		return div;
 	}
 
-	function interceptGymHuntr() {
-		captureLeafletMap();
-
-		// Sponsored gyms/stops don't have a suffix
-		const markSponsored = function (data) {
-			if (data.guid.length == 32) {
-				data.sponsored = true;
-				if (data.name) {
-					data.name += ' ($)';
-				}
-			}
-		};
-		const origOpen = XMLHttpRequest.prototype.open;
-		// add our handler as a listener to every XMLHttpRequest
-		XMLHttpRequest.prototype.open = function () {
-			this.addEventListener('load', function (xhr) {
-
-				/** 
-				 * The guid might come sometimes encoded as base64
-				 */
-				const parseGymHunterId = function (id) {
-					try {
-						// Try to decode it
-						const decoded = atob(id);
-						// Now call it again to decode or return the current value
-						return parseGymHunterId(decoded);
-					} catch (e) {
-						// if it can't be decoded, return it as is
-						return id;
-					}
-				};
-
-				let json;
-				if (this.responseText.indexOf('gyms') > 0) {
-					json = JSON.parse(this.responseText);
-
-					json.gyms.forEach(function (gym) {
-						const pokegym = JSON.parse(gym);
-						const id = parseGymHunterId(pokegym.gym_id);
-						if (gyms[id]) {
-							return;
-						}
-						// coordinates seem reversed
-						const data = {
-							guid: pokegym.gym_id,
-							name: pokegym.gym_name,
-							lat: pokegym.longitude,
-							lng: pokegym.latitude
-						};
-						computeCells(data);
-						markSponsored(data);
-						gyms[id] = data;
-					});
-				}
-				if (this.responseText.indexOf('pokestops') > 0) {
-					if (!json) {
-						json = JSON.parse(this.responseText);
-					}
-
-					json.pokestops.forEach(function (stop) {
-						const pokestop = JSON.parse(stop);
-						const id = parseGymHunterId(pokestop.pokestop_id);
-						
-						if (pokestops[id]) {
-							return;
-						}
-						// coordinates seem reversed
-						const data = {
-							guid: pokestop.pokestop_id,
-							lat: pokestop.longitude,
-							lng: pokestop.latitude
-						};
-						computeCells(data);
-						markSponsored(data);
-						pokestops[id] = data;
-					});
-				}
-			});
-			origOpen.apply(this, arguments);
-		};
-		showButton(document.querySelector('.controls'));
-		addDialog();
-		injectStyles();
-	}
-
 	function injectStyles() {
+		const prf = randomPrefix;
+
 		const css = `
 			.filters {
 				position: absolute;
@@ -961,7 +838,7 @@
 				box-sizing: border-box;
 			}
 
-			#S2Summary .filter-box {
+			#${prf}Summary .filter-box {
 				width: auto;
 			}
 
@@ -977,12 +854,12 @@
 				text-align: left;
 			}
 
-			#S2SummaryContent {
+			#${prf}SummaryContent {
 				max-height: 90vh;
 				overflow-y: auto;
 			}
 
-			#S2SummaryContent tr:nth-child(even) {
+			#${prf}SummaryContent tr:nth-child(even) {
 				background: #FBFBFB;
 			}
 
@@ -1005,13 +882,6 @@
 				cursor: pointer;
 			}
 
-			body > #s2gridbtn {
-				z-index: 400;
-				position: absolute;
-				top: 170px;
-				left: 32px;
-			}
-
 			.s2check-text {
 				text-align: center;
 				font-weight: bold;
@@ -1022,7 +892,7 @@
 				text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
 			}
 
-			.s2grid-btn {
+			.${prf}-btn {
 				font-weight: 500;
 				background-color: rgb(255, 255, 255);
 				box-shadow: 0px 1px 4px -1px rgba(0, 0, 0, 0.2);
@@ -1033,7 +903,7 @@
 				margin-left: 10px;
 				border: 1px solid #ccc;
 			}
-			.s2grid-txt {
+			.${prf}-txt {
 				color: rgb(86, 86, 86);
 				font-family: Roboto,Arial,sans-serif;
 				user-select: none;
@@ -1055,6 +925,7 @@
 	function interceptPokemonGoMapInfo() {
 		captureLeafletMap();
 
+		/*
 		const origOpen = XMLHttpRequest.prototype.open;
 		// add our handler as a listener to every XMLHttpRequest
 		const reUrl = /^https:\/\/www.pokemongomap.info\//;
@@ -1099,21 +970,21 @@
 			});
 			origOpen.apply(this, arguments);
 		};
+		*/
 
 		// Inject grid button
 		const controlDiv = document.createElement('div');
 		controlDiv.className = 'leaflet-control';
 
 		const button = document.createElement('div');
-		button.id = 's2gridbtn';
-		button.className = 's2grid-btn';
-		button.innerHTML = '<span class="s2grid-txt"><i class="fa fa-table"></i> S2 Grid</span>';
+		button.className = randomPrefix + '-btn';
+		button.innerHTML = '<span class="' + randomPrefix + '-txt"><i class="fa fa-table"></i> S2 Grid</span>';
 		button.title = 'Find S2 distribution';
 
 		controlDiv.appendChild(button);
 
 		button.addEventListener('click', e => {
-			const dialog = document.getElementById('s2dialog');
+			const dialog = document.getElementById(randomPrefix + 'dialog');
 			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
 		});
 
@@ -1137,18 +1008,56 @@
 		// get a reference to the Leaflet map object
 		const orgLayer = L.Map.prototype.addLayer;
 		L.Map.prototype.addLayer = function () { 
-			// save global reference
-			window.map = this;
-			// restore addLayer method
-			L.Map.prototype.addLayer = orgLayer;
-
-			initMap(this);
+			if (!map) {
+				// save global reference
+				map = this;
+				// restore addLayer method
+				//L.Map.prototype.addLayer = orgLayer;
+				initMap();
+			}
+			analyzeMarker(arguments[0]);
 			return orgLayer.apply(this, arguments);
 		};
 	}
 
+	function analyzeMarker(marker) {
+		const options = marker.options;
+		if (!options)
+			return;
+
+		const title = options.title;
+		const id = options.locmarkerid;
+		const name = options.locmarkername;
+		if (!id || !name) 
+			return;
+
+		const isGym = title.substr(0, 3) == 'Gym';
+		if (isGym) {
+			if (gyms[id]) {
+				return;
+			}
+		} else {
+			if (pokestops[id]) {
+				return;
+			}
+		}
+		// gym_id is not a real guid
+		const data = {
+			name: name,
+			lat: marker._latlng.lat,
+			lng: marker._latlng.lng
+		};
+		computeCells(data);
+
+		if (isGym) { 
+			gyms[id] = data; 
+		} else { 
+			pokestops[id] = data; 
+		} 
+	}
+
 	function cleanAds() {
-		const containers = document.querySelectorAll('.advert, iframe');
+		const containers = document.querySelectorAll('.advert, iframe, #mapad');
 		[...containers].forEach(node => node.parentNode.removeChild(node));
 	}
 
@@ -1163,10 +1072,8 @@
 
 		loadSettings();
 
-		if (document.location.hostname == 'gymhuntr.com' && document.querySelector('.controls')) {
-			interceptGymHuntr();
-		}
 		if (document.location.hostname == 'www.pokemongomap.info') {
+			cleanAds();
 			interceptPokemonGoMapInfo();
 		}
 
@@ -1175,7 +1082,7 @@
 	/**
 	 * We got a reference to the Leaflet map object, initialize our overlay
 	 */
-	function initMap(map) {
+	function initMap() {
 		regionLayer = L.layerGroup();
 		map.addLayer(regionLayer);
 		map.on('moveend', updateMapGrid);
@@ -1186,15 +1093,10 @@
 	 * Refresh the S2 grid over the map
 	 */
 	function updateMapGrid() {
-		if (regionLayer) {
-			regionLayer.clearLayers();
+		regionLayer.clearLayers();
 
-			if (!map.hasLayer(regionLayer)) 
-				return;
-
-		} else {
-			gmapItems.forEach(item => item.setMap(null));
-		}
+		if (!map.hasLayer(regionLayer)) 
+			return;
 
 		const bounds = map.getBounds();
 		const seenCells = {};
@@ -1969,6 +1871,7 @@ i.fa.fa-times:before {
 	/***************************************************************************************************************************************************************/
 
 	const setup = function () {
+		map = window.map;
 
 		window.plugin.pogo.isSmart = window.isSmartphone();
 
@@ -1991,8 +1894,6 @@ i.fa.fa-times:before {
 		window.addLayerGroup('Gyms', window.plugin.pogo.gymLayerGroup, true);
 		window.plugin.pogo.addAllMarkers();
 
-
-		//showButton(document.getElementById('toolbox'));
 		const button = document.createElement('a');
 		button.textContent = 'S2 Grid';
 		button.title = 'Find S2 distribution';
@@ -2000,7 +1901,7 @@ i.fa.fa-times:before {
 
 		button.addEventListener('click', e => {
 			if (window.isSmartphone()) window.show('map');
-			const dialog = document.getElementById('s2dialog');
+			const dialog = document.getElementById(randomPrefix + 'dialog');
 			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
 		});
 
