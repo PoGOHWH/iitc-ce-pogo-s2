@@ -4,10 +4,9 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.38
+// @version      0.39
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
-// @match        https://www.pokemongomap.info/*
 // @match        https://www.ingress.com/intel*
 // @match        https://ingress.com/intel*
 // @grant        none
@@ -15,7 +14,7 @@
 
 /* eslint-env es6 */
 /* eslint no-var: "error" */
-/* globals L, S2 */
+/* globals L, S2, map */
 /* globals GM_info, $, plugin, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
 
@@ -318,8 +317,7 @@
 (function () {
 	'use strict';
 
-	const randomPrefix = 'S2' + Math.random().toString(36).substring(5);
-	let map;
+	const randomPrefix = 'S2';
 
 	/**
 	 * Saves a file to disk with the provided text
@@ -922,171 +920,8 @@
 		document.querySelector('head').appendChild(style);
 	}
 
-	function interceptPokemonGoMapInfo() {
-		captureLeafletMap();
-
-		/*
-		const origOpen = XMLHttpRequest.prototype.open;
-		// add our handler as a listener to every XMLHttpRequest
-		const reUrl = /^https:\/\/www.pokemongomap.info\//;
-		XMLHttpRequest.prototype.open = function () {
-			this.addEventListener('load', function (ev) {
-				if (!reUrl.test(this.responseURL)) {
-					return;
-				}
-
-				if (this.responseText.indexOf('raid_status') > 0) {
-					const json = JSON.parse(this.responseText);
-
-					Object.keys(json).forEach(id => {
-						const entry = json[id];
-						const isGym = entry.xgxg35 == 'Mg==';
-						//const id = atob(entry.zfgs62);
-						if (isGym) {
-							if (gyms[id]) {
-								return;
-							}
-						} else {
-							if (pokestops[id]) {
-								return;
-							}
-						}
-
-						// gym_id is not a real guid
-						const data = {
-							name: entry.rfs21d,
-							lat: (parseFloat(atob(entry.z3iafj)) * 5.399568034557235e-7).toFixed(6),
-							lng: (parseFloat(atob(entry.f24sfvs)) * 5.399568034557235e-7).toFixed(6)
-						};
-						computeCells(data);
-
-						if (isGym) { 
-							gyms[id] = data; 
-						} else { 
-							pokestops[id] = data; 
-						} 
-					});
-				}
-			});
-			origOpen.apply(this, arguments);
-		};
-		*/
-
-		// Inject grid button
-		const controlDiv = document.createElement('div');
-		controlDiv.className = 'leaflet-control';
-
-		const button = document.createElement('div');
-		button.className = randomPrefix + '-btn';
-		button.innerHTML = '<span class="' + randomPrefix + '-txt"><i class="fa fa-table"></i> S2 Grid</span>';
-		button.title = 'Find S2 distribution';
-
-		controlDiv.appendChild(button);
-
-		button.addEventListener('click', e => {
-			const dialog = document.getElementById(randomPrefix + 'dialog');
-			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
-		});
-
-		document.querySelector('.leaflet-top.leaflet-right').appendChild(controlDiv);
-
-		addDialog();
-		injectStyles();
-	}
-
-
-	/**
-	 * Creates an object to store the cells for the gym/stop, compute the level 14 by default
-	 */
-	function computeCells(item) {
-		item.cells = {};
-		const cell = window.S2.S2Cell.FromLatLng(item, 14);
-		item.cells[14] = cell.toString();
-	}
-
-	function captureLeafletMap() {
-		// get a reference to the Leaflet map object
-		const orgLayer = L.Map.prototype.addLayer;
-		L.Map.prototype.addLayer = function () { 
-			if (!map) {
-				// save global reference
-				map = this;
-				// restore addLayer method
-				//L.Map.prototype.addLayer = orgLayer;
-				initMap();
-			}
-			analyzeMarker(arguments[0]);
-			return orgLayer.apply(this, arguments);
-		};
-	}
-
-	function analyzeMarker(marker) {
-		const options = marker.options;
-		if (!options)
-			return;
-
-		const title = options.title;
-		const id = options.locmarkerid;
-		const name = options.locmarkername;
-		if (!id || !name) 
-			return;
-
-		const isGym = title.substr(0, 3) == 'Gym';
-		if (isGym) {
-			if (gyms[id]) {
-				return;
-			}
-		} else {
-			if (pokestops[id]) {
-				return;
-			}
-		}
-		// gym_id is not a real guid
-		const data = {
-			name: name,
-			lat: marker._latlng.lat,
-			lng: marker._latlng.lng
-		};
-		computeCells(data);
-
-		if (isGym) { 
-			gyms[id] = data; 
-		} else { 
-			pokestops[id] = data; 
-		} 
-	}
-
-	function cleanAds() {
-		const containers = document.querySelectorAll('.advert, iframe, #mapad');
-		[...containers].forEach(node => node.parentNode.removeChild(node));
-	}
-
 	function initS2checker() {
-		if (window.frameElement) {
-			return;
-		}
-
-		if (window.FuckAdBlock) {
-			cleanAds();
-		}
-
 		loadSettings();
-
-		if (document.location.hostname == 'www.pokemongomap.info') {
-			cleanAds();
-			interceptPokemonGoMapInfo();
-		}
-
-	}
-
-	/**
-	 * We got a reference to the Leaflet map object, initialize our overlay
-	 */
-	function initMap() {
-		regionLayer = L.layerGroup();
-		map.addLayer(regionLayer);
-		map.on('moveend', updateMapGrid);
-		updateMapGrid();
 	}
 
 	/**
@@ -1871,8 +1706,6 @@ i.fa.fa-times:before {
 	/***************************************************************************************************************************************************************/
 
 	const setup = function () {
-		map = window.map;
-
 		window.plugin.pogo.isSmart = window.isSmartphone();
 
 		// If the storage not exists or is a old version
