@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.39
+// @version      0.40
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -531,10 +531,9 @@
 	function showCellSummary(cells) {
 		const keys = Object.keys(cells);
 		const summary = [];
-		//summary.push('<h1>Total number of cells: ' + keys.length + '</h1>');
-		summary.push('<h3>Analysis Results <i class="fa fa-save" title="Click to save the analysis"></i></h3>');
+
 		summary.push('<div class="S2Analysis"><table>');
-		summary.push('<thead><tr><th> </th><th>Cell</th><th>Stops</th><th>Gyms</th><th>Gym names</th></tr>');
+		summary.push('<thead><tr><th> </th><th>Cell</th><th>Stops</th><th>Gyms</th><th>Gym names</th></tr></thead>');
 		let i = 1;
 		keys.forEach(name => {
 			const cellData = cells[name];
@@ -544,10 +543,34 @@
 			i++;
 		});
 		summary.push('</table></div>');
-		const dialog = document.getElementById(randomPrefix + 'Summary');
-		dialog.querySelector('#' + randomPrefix + 'SummaryContent').innerHTML = summary.join('\r\n');
-		dialog.style.display = 'block';
-		dialog.querySelector('h3 i').addEventListener('click', e => saveGridAnalysis(cells));
+
+		const container = dialog({
+			id: 's2analysys',
+			width: 'auto',
+			html: summary.join('\r\n'),
+			title: 'Analysis Results',
+			buttons: {
+				OK: function () {
+					container.dialog('close');
+				},
+				Save: function () {
+					saveGridAnalysis(cells);
+				}
+			}
+		});
+
+		// clicking on any of the 'a' elements in the dialog, close it and center the map there.
+		container.on('click', e => {
+			const target = e.target;
+			if (target.nodeName != 'A') {
+				return;
+			}
+			//container.dialog('close');
+			const lat = target.dataset.lat;
+			const lng = target.dataset.lng;
+			mapPanTo(lat, lng);
+		});
+
 	}
 	
 	// return only the cells that are visible by the map bounds to ignore far away data that might not be complete
@@ -762,26 +785,7 @@
 			updateMapGrid();
 		});
 
-		addSummaryDialog();
 	}
-
-	function addSummaryDialog() {
-		const html = '<div id="' + randomPrefix + 'SummaryContent"></div>';
-		const div = insertDialogTemplate(html, randomPrefix + 'Summary');
-
-		// clicking on any of the 'a' elements in the dialog, close it and center the map there.
-		div.addEventListener('click', e => {
-			const target = e.target;
-			if (target.nodeName != 'A') {
-				return;
-			}
-			div.style.display = 'none';
-			document.getElementById(randomPrefix + 'dialog').style.display = 'none';
-			const lat = target.dataset.lat;
-			const lng = target.dataset.lng;
-			mapPanTo(lat, lng);
-		});
-	} 
 
 	function mapPanTo(lat, lng) {
 		if (typeof L != 'undefined') {
@@ -852,32 +856,17 @@
 				text-align: left;
 			}
 
-			#${prf}SummaryContent {
-				max-height: 90vh;
-				overflow-y: auto;
-			}
-
-			#${prf}SummaryContent tr:nth-child(even) {
-				background: #FBFBFB;
+			.S2Analysis thead {
+				background: rgba(5, 31, 51, 0.9);
 			}
 
 			.S2Analysis tr:nth-child(odd) td {
-				background: #f0f0f0;
+				background: rgba(7, 42, 69, 0.9);
 			}
 
 			.S2Analysis th {
 				text-align: center;
 				padding: 1px 5px 2px;
-			}
-
-			.S2Analysis h3 i {
-				color: rgba(57, 176, 45, 1);
-				cursor: pointer;
-			}
-
-			.S2Analysis a {
-				color: rgba(57, 176, 45, 1);
-				cursor: pointer;
 			}
 
 			.s2check-text {
@@ -890,29 +879,6 @@
 				text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
 			}
 
-			.${prf}-btn {
-				font-weight: 500;
-				background-color: rgb(255, 255, 255);
-				box-shadow: 0px 1px 4px -1px rgba(0, 0, 0, 0.2);
-				border-radius: 2px;
-				height: 29px;
-				cursor: pointer;
-				margin-top: 10px;
-				margin-left: 10px;
-				border: 1px solid #ccc;
-			}
-			.${prf}-txt {
-				color: rgb(86, 86, 86);
-				font-family: Roboto,Arial,sans-serif;
-				user-select: none;
-				font-size: 11px;
-				font-weight: 400;
-				line-height: 29px;
-				display: inline-block;
-				vertical-align: middle;
-				padding-left: 8px;
-				padding-right: 8px;
-			}
 			`;
 		const style = document.createElement('style');
 		style.type = 'text/css';
