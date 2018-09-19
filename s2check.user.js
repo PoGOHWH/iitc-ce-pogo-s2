@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.40
+// @version      0.41
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -317,8 +317,6 @@
 (function () {
 	'use strict';
 
-	const randomPrefix = 'S2';
-
 	/**
 	 * Saves a file to disk with the provided text
 	 * @param {string} text - The text to save
@@ -528,6 +526,7 @@
 		// a must be equal to b
 		return 0;
 	}
+
 	function showCellSummary(cells) {
 		const keys = Object.keys(cells);
 		const summary = [];
@@ -728,7 +727,7 @@
 		});
 	}
 
-	function addDialog() {
+	function showS2Dialog() {
 		const selectRow = `
 			<p>Select the level of grid to display: <select>
 			<option value=0>None</option>
@@ -745,8 +744,8 @@
 			<option value=19>19</option>
 			<option value=20>20</option>
 			</select></p>`;
-		const html = `
-			<h3>S2 Cells</h3>` +
+
+		const html = 
 			selectRow +
 			selectRow +
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
@@ -757,8 +756,14 @@
 			<p><button class="btn btn-primary" id="show-summary"> Show Analysis</button>
 			 `;
 
-		const div = insertDialogTemplate(html, randomPrefix + 'dialog');
+		const container = dialog({
+			id: 's2Settings',
+			width: 'auto',
+			html: html,
+			title: 'S2 Cells'
+		});
 
+		const div = container[0];
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
 		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
 		div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
@@ -793,101 +798,6 @@
 		} else {
 			map.panTo({lat, lng});
 		}
-	}
-
-	function insertDialogTemplate(content, id) {
-		const html = `<div class="filter-box">
-			  <div class="close-button"><i class="fa fa-times"></i></div>
-			  ${content}
-			</div>`;
-
-		const div = document.createElement('div');
-		div.id = id;
-		div.className = 'filters';
-		div.style.display = 'none';
-		div.innerHTML = html;
-		document.body.appendChild(div);
-
-		div.querySelector('.close-button').addEventListener('click', e => div.style.display = 'none');
-		
-		return div;
-	}
-
-	function injectStyles() {
-		const prf = randomPrefix;
-
-		const css = `
-			.filters {
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				z-index: 5000;
-				background: rgba(0, 0, 0, .5);
-				text-align: center;
-			}
-
-			.filters .filter-box {
-				background: #fff;
-				color: #000;
-				margin-top: 5%;
-				padding: 10px;
-				border-radius: 3px;
-				display: inline-block;
-				width: 350px;
-				max-width: 100%;
-				box-sizing: border-box;
-			}
-
-			#${prf}Summary .filter-box {
-				width: auto;
-			}
-
-			.filters .close-button {
-				float: right;
-				display: inline-block;
-				padding: 2px 5px;
-				color: #555;
-				cursor: pointer;
-			}
-
-			.s2-gymnames {
-				text-align: left;
-			}
-
-			.S2Analysis thead {
-				background: rgba(5, 31, 51, 0.9);
-			}
-
-			.S2Analysis tr:nth-child(odd) td {
-				background: rgba(7, 42, 69, 0.9);
-			}
-
-			.S2Analysis th {
-				text-align: center;
-				padding: 1px 5px 2px;
-			}
-
-			.s2check-text {
-				text-align: center;
-				font-weight: bold;
-				border: none !important;
-				background: none !important;
-				font-size: 130%;
-				color: #000;
-				text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
-			}
-
-			`;
-		const style = document.createElement('style');
-		style.type = 'text/css';
-		style.innerHTML = css;
-		document.querySelector('head').appendChild(style);
-	}
-
-	function initS2checker() {
-		loadSettings();
 	}
 
 	/**
@@ -1139,8 +1049,6 @@
 		regionLayer.addLayer(marker);
 	}
 
-	initS2checker();
-
 	// ***************************
 	// IITC code
 	// ***************************
@@ -1165,44 +1073,43 @@
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
 
+	const thisPlugin = window.plugin.pogo;
 	const KEY_STORAGE = 'plugin-pogo';
 
-	window.plugin.pogo.stopLayers = {};
-	window.plugin.pogo.stopLayerGroup = null;
-	window.plugin.pogo.gymLayers = {};
-	window.plugin.pogo.gymLayerGroup = null;
-
-	window.plugin.pogo.isSmart = undefined;
+	thisPlugin.stopLayers = {};
+	thisPlugin.stopLayerGroup = null;
+	thisPlugin.gymLayers = {};
+	thisPlugin.gymLayerGroup = null;
 
 	/*********************************************************************************************************************/
 
 	// Update the localStorage
-	window.plugin.pogo.saveStorage = function () {
+	thisPlugin.saveStorage = function () {
 		localStorage[KEY_STORAGE] = JSON.stringify({gyms: gyms, pokestops: pokestops});
 	};
 
 	// Load the localStorage
-	window.plugin.pogo.loadStorage = function () {
+	thisPlugin.loadStorage = function () {
 		const tmp = JSON.parse(localStorage[KEY_STORAGE]);	
 		gyms = tmp.gyms;
 		pokestops = tmp.pokestops;
 	};
 
-	window.plugin.pogo.createStorage = function () {
+	thisPlugin.createStorage = function () {
 		if (!localStorage[KEY_STORAGE]) {
-			window.plugin.pogo.saveStorage();
+			thisPlugin.saveStorage();
 		}
 	};
 	
-	window.plugin.pogo.createEmptyStorage = function () {
+	thisPlugin.createEmptyStorage = function () {
 		gyms = {};
 		pokestops = {};
-		window.plugin.pogo.saveStorage();
+		thisPlugin.saveStorage();
 	};
 
 	/***************************************************************************************************************************************************************/
 
-	window.plugin.pogo.findByGuid = function (guid) {
+	thisPlugin.findByGuid = function (guid) {
 		if (gyms[guid]) {
 			return {'type': 'gyms', 'store': gyms};
 		}
@@ -1213,8 +1120,8 @@
 	};
 
 	// Append a 'star' flag in sidebar.
-	window.plugin.pogo.onPortalSelectedPending = false;
-	window.plugin.pogo.onPortalSelected = function () {
+	thisPlugin.onPortalSelectedPending = false;
+	thisPlugin.onPortalSelected = function () {
 		$('.pogoStop').remove();
 		$('.pogoGym').remove();
 
@@ -1222,35 +1129,35 @@
 			return;
 		}
 
-		if (!window.plugin.pogo.onPortalSelectedPending) {
-			window.plugin.pogo.onPortalSelectedPending = true;
+		if (!thisPlugin.onPortalSelectedPending) {
+			thisPlugin.onPortalSelectedPending = true;
 
 			setTimeout(function () { // the sidebar is constructed after firing the hook
-				window.plugin.pogo.onPortalSelectedPending = false;
+				thisPlugin.onPortalSelectedPending = false;
 
 				$('.pogoStop').remove();
 				$('.pogoGym').remove();
 
 				// Prepend a star to mobile status-bar
-				if (window.plugin.pogo.isSmart) {
+				if (thisPlugin.isSmart) {
 					$('#updatestatus').prepend(plugin.pogo.htmlStar);
 					$('#updatestatus .pogoStop').attr('title', '');
 				}
 
 				$('#portaldetails > h3.title').before(plugin.pogo.htmlStar);
-				window.plugin.pogo.updateStarPortal();
+				thisPlugin.updateStarPortal();
 			}, 0);
 		}
 	};
 
 	// Update the status of the star (when a portal is selected from the map/pogo-list)
-	window.plugin.pogo.updateStarPortal = function () {
+	thisPlugin.updateStarPortal = function () {
 		$('.pogoStop').removeClass('favorite');
 		$('.pogoGym').removeClass('favorite');
 
 		const guid = window.selectedPortal;
 		// If current portal is into pogo: select pogo portal from portals list and select the star
-		const pogoData = window.plugin.pogo.findByGuid(guid);
+		const pogoData = thisPlugin.findByGuid(guid);
 		if (pogoData) {
 			if (pogoData.type === 'pokestops') {
 				$('.pogoStop').addClass('favorite');
@@ -1262,27 +1169,27 @@
 	};
 
 	// Switch the status of the star
-	window.plugin.pogo.switchStarPortal = function (type) {
+	thisPlugin.switchStarPortal = function (type) {
 		const guid = window.selectedPortal;
 
 		// If portal is saved in pogo: Remove this pogo
-		const pogoData = window.plugin.pogo.findByGuid(guid);
+		const pogoData = thisPlugin.findByGuid(guid);
 		if (pogoData) {
 			delete pogoData.store[guid];
 			const existingType = pogoData.type;
 
-			window.plugin.pogo.saveStorage();
-			window.plugin.pogo.updateStarPortal();
+			thisPlugin.saveStorage();
+			thisPlugin.updateStarPortal();
 	
 			if (existingType === 'pokestops') {
-				const starInLayer = window.plugin.pogo.stopLayers[guid];
-				window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
-				delete window.plugin.pogo.stopLayers[guid];
+				const starInLayer = thisPlugin.stopLayers[guid];
+				thisPlugin.stopLayerGroup.removeLayer(starInLayer);
+				delete thisPlugin.stopLayers[guid];
 			}
 			if (existingType === 'gyms') {
-				const gymInLayer = window.plugin.pogo.gymLayers[guid];
-				window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
-				delete window.plugin.pogo.gymLayers[guid];
+				const gymInLayer = thisPlugin.gymLayers[guid];
+				thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
+				delete thisPlugin.gymLayers[guid];
 			}
 
 			if (existingType !== type) {
@@ -1315,17 +1222,17 @@
 			pokestops[guid] = obj;
 		}
 
-		window.plugin.pogo.saveStorage();
-		window.plugin.pogo.updateStarPortal();
+		thisPlugin.saveStorage();
+		thisPlugin.updateStarPortal();
 
-		window.plugin.pogo.addStar(guid, lat, lng, name, type);
+		thisPlugin.addStar(guid, lat, lng, name, type);
 	};
 
-	/***************************************************************************************************************************************************************/
-	/** OPTIONS ****************************************************************************************************************************************************/
-	/***************************************************************************************************************************************************************/
+	/*
+		OPTIONS 
+	*/
 	// Manual import, export and reset data
-	window.plugin.pogo.manualOpt = function () {
+	thisPlugin.manualOpt = function () {
 		dialog({
 			html: plugin.pogo.htmlSetbox,
 			dialogClass: 'ui-dialog-pogoSet',
@@ -1333,16 +1240,16 @@
 		});
 	};
 
-	window.plugin.pogo.optAlert = function (message) {
+	thisPlugin.optAlert = function (message) {
 		$('.ui-dialog .ui-dialog-buttonset').prepend('<p class="pogo-alert" style="float:left;margin-top:4px;">' + message + '</p>');
 		$('.pogo-alert').delay(2500).fadeOut();
 	};
 
-	window.plugin.pogo.optExport = function () {
+	thisPlugin.optExport = function () {
 		saveToFile(localStorage[KEY_STORAGE], 'IITC-pogo.json');
 	};
 
-	window.plugin.pogo.optImport = function () {
+	thisPlugin.optImport = function () {
 		readFromFile(function (content) {
 			try {
 				const list = JSON.parse(content); // try to parse JSON first
@@ -1367,28 +1274,28 @@
 					}
 				}
 
-				window.plugin.pogo.updateStarPortal();
-				window.plugin.pogo.resetAllMarkers();
-				window.plugin.pogo.optAlert('Successful. ');
+				thisPlugin.updateStarPortal();
+				thisPlugin.resetAllMarkers();
+				thisPlugin.optAlert('Successful. ');
 			} catch (e) {
 				console.warn('pogo: failed to import data: ' + e); // eslint-disable-line no-console
-				window.plugin.pogo.optAlert('<span style="color: #f88">Import failed </span>');
+				thisPlugin.optAlert('<span style="color: #f88">Import failed </span>');
 			}
 		});
 	};
 
-	window.plugin.pogo.optReset = function () {
+	thisPlugin.optReset = function () {
 		const promptAction = confirm('All pogo will be deleted. Are you sure?', '');
 		if (promptAction) {
 			delete localStorage[KEY_STORAGE];
-			window.plugin.pogo.createEmptyStorage();
-			window.plugin.pogo.updateStarPortal();
-			window.plugin.pogo.resetAllMarkers();
-			window.plugin.pogo.optAlert('Successful. ');
+			thisPlugin.createEmptyStorage();
+			thisPlugin.updateStarPortal();
+			thisPlugin.resetAllMarkers();
+			thisPlugin.optAlert('Successful. ');
 		}
 	};
 
-	window.plugin.pogo.findPortalChanges = function () {
+	thisPlugin.findPortalChanges = function () {
 		const portalsInView = filterItemsByMapBounds(window.portals);
 		const stopsInView = filterItemsByMapBounds(pokestops);
 		const gymsInView = filterItemsByMapBounds(gyms);
@@ -1480,27 +1387,27 @@
 		});
 	};
 
-	window.plugin.pogo.removeGym = function (guid, link) {
+	thisPlugin.removeGym = function (guid, link) {
 		delete gyms[guid];
-		window.plugin.pogo.saveStorage();
-		window.plugin.pogo.updateStarPortal();
+		thisPlugin.saveStorage();
+		thisPlugin.updateStarPortal();
 	
-		const gymInLayer = window.plugin.pogo.gymLayers[guid];
-		window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
-		delete window.plugin.pogo.gymLayers[guid];
+		const gymInLayer = thisPlugin.gymLayers[guid];
+		thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
+		delete thisPlugin.gymLayers[guid];
 
 		const tr = link.parentNode.parentNode;
 		tr.parentNode.removeChild(tr);
 	};
 
-	window.plugin.pogo.removePokestop = function (guid, link) {
+	thisPlugin.removePokestop = function (guid, link) {
 		delete pokestops[guid];
-		window.plugin.pogo.saveStorage();
-		window.plugin.pogo.updateStarPortal();
+		thisPlugin.saveStorage();
+		thisPlugin.updateStarPortal();
 
-		const starInLayer = window.plugin.pogo.stopLayers[guid];
-		window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
-		delete window.plugin.pogo.stopLayers[guid];
+		const starInLayer = thisPlugin.stopLayers[guid];
+		thisPlugin.stopLayerGroup.removeLayer(starInLayer);
+		delete thisPlugin.stopLayers[guid];
 
 		const tr = link.parentNode.parentNode;
 		tr.parentNode.removeChild(tr);
@@ -1509,7 +1416,7 @@
 	/***************************************************************************************************************************************************************/
 	/** POKEMON GO PORTALS LAYER ***********************************************************************************************************************************/
 	/***************************************************************************************************************************************************************/
-	window.plugin.pogo.addAllMarkers = function () {
+	thisPlugin.addAllMarkers = function () {
 		function iterateStore(store, type) {
 			for (let idpogo in store) {
 				const item = store[idpogo];
@@ -1517,7 +1424,7 @@
 				const lng = item.lng;
 				const guid = item.guid;
 				const name = item.name;
-				window.plugin.pogo.addStar(guid, lat, lng, name, type);
+				thisPlugin.addStar(guid, lat, lng, name, type);
 			}
 		}
 
@@ -1525,21 +1432,21 @@
 		iterateStore(pokestops, 'pokestops');
 	};
 
-	window.plugin.pogo.resetAllMarkers = function () {
-		for (let guid in window.plugin.pogo.stopLayers) {
-			const starInLayer = window.plugin.pogo.stopLayers[guid];
-			window.plugin.pogo.stopLayerGroup.removeLayer(starInLayer);
-			delete window.plugin.pogo.stopLayers[guid];
+	thisPlugin.resetAllMarkers = function () {
+		for (let guid in thisPlugin.stopLayers) {
+			const starInLayer = thisPlugin.stopLayers[guid];
+			thisPlugin.stopLayerGroup.removeLayer(starInLayer);
+			delete thisPlugin.stopLayers[guid];
 		}
-		for (let gymGuid in window.plugin.pogo.gymLayers) {
-			const gymInLayer = window.plugin.pogo.gymLayers[gymGuid];
-			window.plugin.pogo.gymLayerGroup.removeLayer(gymInLayer);
-			delete window.plugin.pogo.gymLayers[gymGuid];
+		for (let gymGuid in thisPlugin.gymLayers) {
+			const gymInLayer = thisPlugin.gymLayers[gymGuid];
+			thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
+			delete thisPlugin.gymLayers[gymGuid];
 		}
-		window.plugin.pogo.addAllMarkers();
+		thisPlugin.addAllMarkers();
 	};
 
-	window.plugin.pogo.addStar = function (guid, lat, lng, name, type) {
+	thisPlugin.addStar = function (guid, lat, lng, name, type) {
 		let iconData;
 		if (type === 'pokestops') {
 			iconData = {
@@ -1568,18 +1475,16 @@
 		});
 
 		if (type === 'pokestops') {
-			window.plugin.pogo.stopLayers[guid] = star;
-			star.addTo(window.plugin.pogo.stopLayerGroup);
+			thisPlugin.stopLayers[guid] = star;
+			star.addTo(thisPlugin.stopLayerGroup);
 		}
 		if (type === 'gyms') {
-			window.plugin.pogo.gymLayers[guid] = star;
-			star.addTo(window.plugin.pogo.gymLayerGroup);
+			thisPlugin.gymLayers[guid] = star;
+			star.addTo(thisPlugin.gymLayerGroup);
 		}
 	};
 
-	/***************************************************************************************************************************************************************/
-
-	window.plugin.pogo.setupCSS = function () {
+	thisPlugin.setupCSS = function () {
 		$('<style>').prop('type', 'text/css').html(`
 #sidebar #portaldetails h3.title{
 	width:auto;
@@ -1645,21 +1550,41 @@
 	background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAAACyXj0lAAAC7lBMVEUAAAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEAAAAAAAAAAAAAAAAAAAABAQEAAAABAQEBAQEAAAAAAAAAAAAAAAAAAAADAwMAAAAAAAABAQIAAAAAAAAAAAAAAAAAAAACAgIAAAAAAAABAAAAAAAAAAAAAAAAAAACAgIAAAAHBwcAAAACAgIAAAAbBgYBAQEBAQEZBgcAAAAAAAAAAAABAQEXFxcCAgICAgIHBAUBAQEGBgdyFRcRERFsFRYCAgIDAwMFBQUODg4EBAQFBQUREREFBQUGBgYTExMRCQoEBAQGBAVcIiYaGhoaGhsFBQUUFBRaJSgGBgYdFBgDAwMEBAQNDQ0ODg4fHyAjIyNYWFheLTEHBgcHBwgJCQkLCwsNDQ0PDw8RERESEhIUFBQVFRYWFhYXFxcYGBgZGRkZGRoaGhocHBwdHR0eHh4eHx8fHx8iIiIlJSUmJiYnJycpKSkqKiotLS0uLi4uLi8wMDAyMjIzMzM0NDQ2NjY4ODg6Ojo7Ozs7Oz09PT4+Pj4/Pz9DKS9DQ0NJSUpLS0xMTE1NTU1PT09QUFBRUVFSUlNXV1dZWVlbW1tcXFxeXl5eXl9jY2NkZGRmZmZoaGlsbG1wcHBycnJ1dXV7e3t/f3+AgYGBgYGFhYWIh4mPj4+THyGTk5SVlZWYmJqbm5ygoKCnp6irq6uvr6+wr7KwsLGxsbO1tbW3tri4t7m5ubu9HyDGxcjGxsfJJyjOzs7PHR7QIyTQ0NDR0dHSICHS0tLU1NTY2NjZ2dndIiPd3d3e3t7fIyTi4uLj4+PnICHn5+jq6urs6+zs7Ozu7u7w8PDw8PHx8fHx8fLy8fLy8vLzHR329vb29vf39/j4+Pj5+fn6Hh76Hx/7+/v7+/z8Hx/8/Pz8/P39Hh79/f3///+f+BszAAAAcXRSTlMAAAECAwQFBwoPFhskJSYqKy4yMzU4OTw/Q0hRW1xjZGVmb294e3+Fi4+QkZibnaWmqq+2t7m+x8nKzM3Oz9HR19fd3d/h4eLk5ebm5+rq7O7v8PDy8vP09fX19/f3+Pn5+fr6/Pz8/f3+/v7+/v7+/k5HHiYAAAGUSURBVHgBY2BkFHMMizAVYmRk5NLSVAJSUg5uwYHOlmIMjFzq+soMbHrZ3WsWNyfJ8Gh7pOTxMjJKW6fd/v79S6IFn4FXciUvg3HNoqXNk5Y3ZcXXLSrVBRooW3Dvw/lTr75nZM7Yvd6dgcF37YqGxTOrayZsubkgkpOBkd3v7MddLX2zL7cef3srSoWBIWh1z6yL2zo2XH9wpRLIZeSKu3Bj4uGj03tOv/+60IaBgSG0cWrnypldO5+8nubPDLSBI6GwpGje5KoDn3/uCxAEKvBctH9Oe+/GOy83lykyABUw+aw7sbV/yt4XPx83aTEAgXzxwSeX7t78ca3DDiTPyKBQsePd/YfPP71f5crGAAJGOduP3X3/aHW6AEQBg1ru3DM/fn47kioHFACpMHSy3/PsULc5SB6sQtI2Ov/pm2UeDEAREGLRsPK+uilaAqoApEku/NzJWHGQAASLurd1m4CYcBUuS+abQW0E8xXLQ4RBTLgS1foYfpgCEClSqwFiIYBIqzZEACrMrceKqoBbhxmqAAABho1+nW2udAAAAABJRU5ErkJggg==);
 }
 
-i.fa.fa-times:before {
-    content: 'x';
-    font-style: normal;
+.s2-gymnames {
+	text-align: left;
+}
+
+.S2Analysis thead {
+	background: rgba(5, 31, 51, 0.9);
+}
+
+.S2Analysis tr:nth-child(odd) td {
+	background: rgba(7, 42, 69, 0.9);
+}
+
+.S2Analysis th {
+	text-align: center;
+	padding: 1px 5px 2px;
+}
+
+.s2check-text {
+	text-align: center;
+	font-weight: bold;
+	border: none !important;
+	background: none !important;
+	font-size: 130%;
+	color: #000;
+	text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
 }
 `).appendTo('head');
 	};
 
-	window.plugin.pogo.setupContent = function () {
+	thisPlugin.setupContent = function () {
 		plugin.pogo.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestops\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gyms\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
 		plugin.pogo.htmlCallSetBox = '<a onclick="window.plugin.pogo.manualOpt();return false;">PoGo Opt</a>';
 
 		let actions = '';
 		actions += '<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>';
-		//actions += '<a onclick="window.plugin.pogo.optCopy();return false;" title="Get data of all Pokemon Go markers">Copy PoGo portals</a>';
-		//actions += '<a onclick="window.plugin.pogo.optPaste();return false;" title="Add Pokemon Go markers to the map">Paste PoGo portals</a>';
 
 		actions += '<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>';
 		actions += '<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>';
@@ -1669,29 +1594,29 @@ i.fa.fa-times:before {
 		plugin.pogo.htmlSetbox = '<div id="pogoSetbox">' + actions + '</div>';
 	};
 
-	/***************************************************************************************************************************************************************/
-
 	const setup = function () {
-		window.plugin.pogo.isSmart = window.isSmartphone();
+		thisPlugin.isSmart = window.isSmartphone();
+
+		loadSettings();
 
 		// If the storage not exists or is a old version
-		window.plugin.pogo.createStorage();
+		thisPlugin.createStorage();
 
 		// Load data from localStorage
-		window.plugin.pogo.loadStorage();
-		window.plugin.pogo.setupContent();
-		window.plugin.pogo.setupCSS();
+		thisPlugin.loadStorage();
+		thisPlugin.setupContent();
+		thisPlugin.setupCSS();
 
-		$('#toolbox').append(window.plugin.pogo.htmlCallSetBox);
+		$('#toolbox').append(thisPlugin.htmlCallSetBox);
 
-		window.addHook('portalSelected', window.plugin.pogo.onPortalSelected);
+		window.addHook('portalSelected', thisPlugin.onPortalSelected);
 
 		// Layer - pokemon go portals
-		window.plugin.pogo.stopLayerGroup = new L.LayerGroup();
-		window.addLayerGroup('PokeStops', window.plugin.pogo.stopLayerGroup, true);
-		window.plugin.pogo.gymLayerGroup = new L.LayerGroup();
-		window.addLayerGroup('Gyms', window.plugin.pogo.gymLayerGroup, true);
-		window.plugin.pogo.addAllMarkers();
+		thisPlugin.stopLayerGroup = new L.LayerGroup();
+		window.addLayerGroup('PokeStops', thisPlugin.stopLayerGroup, true);
+		thisPlugin.gymLayerGroup = new L.LayerGroup();
+		window.addLayerGroup('Gyms', thisPlugin.gymLayerGroup, true);
+		thisPlugin.addAllMarkers();
 
 		const button = document.createElement('a');
 		button.textContent = 'S2 Grid';
@@ -1700,18 +1625,14 @@ i.fa.fa-times:before {
 
 		button.addEventListener('click', e => {
 			if (window.isSmartphone()) window.show('map');
-			const dialog = document.getElementById(randomPrefix + 'dialog');
-			dialog.style.display = dialog.style.display == 'none' ? 'block' : 'none';
+			showS2Dialog();
 		});
-
-		addDialog();
-		injectStyles();
 
 		regionLayer = L.layerGroup();
 		window.addLayerGroup('S2 Grid', regionLayer, true);
+
 		map.on('moveend', updateMapGrid);
 		updateMapGrid();
-
 	};
 
 	// PLUGIN END //////////////////////////////////////////////////////////
