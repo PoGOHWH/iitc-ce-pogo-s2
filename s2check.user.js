@@ -1124,6 +1124,7 @@
 	thisPlugin.onPortalSelected = function () {
 		$('.pogoStop').remove();
 		$('.pogoGym').remove();
+		document.getElementById('portaldetails').classList.remove('isGym');
 
 		if (window.selectedPortal == null) {
 			return;
@@ -1145,6 +1146,29 @@
 				}
 
 				$('#portaldetails > h3.title').before(thisPlugin.htmlStar);
+
+				$('#portaldetails').append(`<div id="PogoGymInfo">
+					<label for='PogoGymMedal'>Medal:</label> <select id='PogoGymMedal'>
+							<option value='None'>None</option>
+							<option value='Bronce'>Bronce</option>
+							<option value='Silver'>Silver</option>
+							<option value='Gold'>Gold</option>
+							</select><br>
+					<label>Is this an EX gym? <input type='checkbox' id='PogoGymEx'> Yes</label><br>
+				</div>`);
+
+				document.getElementById('PogoGymMedal').addEventListener('change', ev => {
+					const guid = window.selectedPortal;
+					gyms[guid].medal = ev.target.value;
+					thisPlugin.saveStorage();
+				});
+
+				document.getElementById('PogoGymEx').addEventListener('change', ev => {
+					const guid = window.selectedPortal;
+					gyms[guid].isEx = ev.target.checked;
+					thisPlugin.saveStorage();
+				});
+
 				thisPlugin.updateStarPortal();
 			}, 0);
 		}
@@ -1154,6 +1178,7 @@
 	thisPlugin.updateStarPortal = function () {
 		$('.pogoStop').removeClass('favorite');
 		$('.pogoGym').removeClass('favorite');
+		document.getElementById('portaldetails').classList.remove('isGym');
 
 		const guid = window.selectedPortal;
 		// If current portal is into pogo: select pogo portal from portals list and select the star
@@ -1164,6 +1189,13 @@
 			}
 			if (pogoData.type === 'gyms') {
 				$('.pogoGym').addClass('favorite');
+				document.getElementById('portaldetails').classList.add('isGym');
+				const gym = gyms[guid];
+				if (gym.medal) {
+					document.getElementById('PogoGymMedal').value = gym.medal;
+				}
+				document.getElementById('PogoGymEx').checked = gym.isEx;
+
 			}
 		}
 	};
@@ -1233,7 +1265,7 @@
 	*/
 	// Manual import, export and reset data
 	thisPlugin.manualOpt = function () {
-		const content =  `<div id="pogoSetbox">
+		const content = `<div id="pogoSetbox">
 				<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
 				<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>
 				<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>
@@ -1577,6 +1609,15 @@
 	font-size: 130%;
 	color: #000;
 	text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
+}
+
+#PogoGymInfo {
+	display: none;
+    padding: 3px;
+}
+
+.isGym #PogoGymInfo {
+	display: block;
 }
 `).appendTo('head');
 	};
