@@ -15,7 +15,7 @@
 /* eslint-env es6 */
 /* eslint no-var: "error" */
 /* globals L, S2, map */
-/* globals GM_info, $, plugin, dialog */
+/* globals GM_info, $, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
 
 /** S2 Geometry functions
@@ -1140,11 +1140,11 @@
 
 				// Prepend a star to mobile status-bar
 				if (thisPlugin.isSmart) {
-					$('#updatestatus').prepend(plugin.pogo.htmlStar);
+					$('#updatestatus').prepend(thisPlugin.htmlStar);
 					$('#updatestatus .pogoStop').attr('title', '');
 				}
 
-				$('#portaldetails > h3.title').before(plugin.pogo.htmlStar);
+				$('#portaldetails > h3.title').before(thisPlugin.htmlStar);
 				thisPlugin.updateStarPortal();
 			}, 0);
 		}
@@ -1196,7 +1196,7 @@
 				// Get portal name and coordinates
 				const p = window.portals[guid];
 				const ll = p.getLatLng();
-				plugin.pogo.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
+				thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
 			}
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
@@ -1204,7 +1204,7 @@
 			// Get portal name and coordinates
 			const portal = window.portals[guid];
 			const latlng = portal.getLatLng();
-			plugin.pogo.addPortalpogo(guid, latlng.lat, latlng.lng, portal.options.data.title, type);
+			thisPlugin.addPortalpogo(guid, latlng.lat, latlng.lng, portal.options.data.title, type);
 		}
 
 		if (settings.highlightGymCandidateCells) {
@@ -1213,7 +1213,7 @@
 	};
 
 	// Add portal
-	plugin.pogo.addPortalpogo = function (guid, lat, lng, name, type) {
+	thisPlugin.addPortalpogo = function (guid, lat, lng, name, type) {
 		// Add pogo in the localStorage
 		const obj = {'guid': guid, 'lat': lat, 'lng': lng, 'name': name};
 		if (type == 'gyms') {
@@ -1233,9 +1233,15 @@
 	*/
 	// Manual import, export and reset data
 	thisPlugin.manualOpt = function () {
+		const content =  `<div id="pogoSetbox">
+				<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
+				<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>
+				<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>
+				<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>
+			</div>`;
+
 		dialog({
-			html: plugin.pogo.htmlSetbox,
-			dialogClass: 'ui-dialog-pogoSet',
+			html: content,
 			title: 'PoGo Options'
 		});
 	};
@@ -1268,15 +1274,15 @@
 							}
 						}
 
-						if (!plugin.pogo.findByGuid(guid)) {
-							plugin.pogo.addPortalpogo(guid, lat, lng, name, type);
+						if (!thisPlugin.findByGuid(guid)) {
+							thisPlugin.addPortalpogo(guid, lat, lng, name, type);
 						}
 					}
 				}
 
 				thisPlugin.updateStarPortal();
 				thisPlugin.resetAllMarkers();
-				thisPlugin.optAlert('Successful. ');
+				thisPlugin.optAlert('Successful.');
 			} catch (e) {
 				console.warn('pogo: failed to import data: ' + e); // eslint-disable-line no-console
 				thisPlugin.optAlert('<span style="color: #f88">Import failed </span>');
@@ -1285,13 +1291,12 @@
 	};
 
 	thisPlugin.optReset = function () {
-		const promptAction = confirm('All pogo will be deleted. Are you sure?', '');
-		if (promptAction) {
+		if (confirm('All pogo will be deleted. Are you sure?', '')) {
 			delete localStorage[KEY_STORAGE];
 			thisPlugin.createEmptyStorage();
 			thisPlugin.updateStarPortal();
 			thisPlugin.resetAllMarkers();
-			thisPlugin.optAlert('Successful. ');
+			thisPlugin.optAlert('Successful.');
 		}
 	};
 
@@ -1382,7 +1387,6 @@
 
 		dialog({
 			html: summary.join(''),
-			dialogClass: 'ui-dialog-pogoIngress',
 			title: 'Compare results'
 		});
 	};
@@ -1413,9 +1417,7 @@
 		tr.parentNode.removeChild(tr);
 	};
 
-	/***************************************************************************************************************************************************************/
-	/** POKEMON GO PORTALS LAYER ***********************************************************************************************************************************/
-	/***************************************************************************************************************************************************************/
+	/* POKEMON GO PORTALS LAYER */
 	thisPlugin.addAllMarkers = function () {
 		function iterateStore(store, type) {
 			for (let idpogo in store) {
@@ -1579,21 +1581,6 @@
 `).appendTo('head');
 	};
 
-	thisPlugin.setupContent = function () {
-		plugin.pogo.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestops\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gyms\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
-		plugin.pogo.htmlCallSetBox = '<a onclick="window.plugin.pogo.manualOpt();return false;">PoGo Opt</a>';
-
-		let actions = '';
-		actions += '<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>';
-
-		actions += '<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>';
-		actions += '<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>';
-
-		actions += '<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>';
-
-		plugin.pogo.htmlSetbox = '<div id="pogoSetbox">' + actions + '</div>';
-	};
-
 	const setup = function () {
 		thisPlugin.isSmart = window.isSmartphone();
 
@@ -1604,10 +1591,10 @@
 
 		// Load data from localStorage
 		thisPlugin.loadStorage();
-		thisPlugin.setupContent();
-		thisPlugin.setupCSS();
 
-		$('#toolbox').append(thisPlugin.htmlCallSetBox);
+		thisPlugin.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestops\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gyms\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
+
+		thisPlugin.setupCSS();
 
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
 
@@ -1616,17 +1603,26 @@
 		window.addLayerGroup('PokeStops', thisPlugin.stopLayerGroup, true);
 		thisPlugin.gymLayerGroup = new L.LayerGroup();
 		window.addLayerGroup('Gyms', thisPlugin.gymLayerGroup, true);
+
 		thisPlugin.addAllMarkers();
 
-		const button = document.createElement('a');
-		button.textContent = 'S2 Grid';
-		button.title = 'Find S2 distribution';
-		document.getElementById('toolbox').appendChild(button);
+		const toolbox = document.getElementById('toolbox');
 
-		button.addEventListener('click', e => {
+		const buttonPoGo = document.createElement('a');
+		buttonPoGo.textContent = 'PoGo Opt';
+		buttonPoGo.title = 'Actions on Pokemon Go data';
+		buttonPoGo.addEventListener('click', thisPlugin.manualOpt);
+		toolbox.appendChild(buttonPoGo);
+
+		const buttonGrid = document.createElement('a');
+		buttonGrid.textContent = 'S2 Grid';
+		buttonGrid.title = 'Find S2 distribution';
+		buttonGrid.addEventListener('click', e => {
 			if (window.isSmartphone()) window.show('map');
 			showS2Dialog();
 		});
+		toolbox.appendChild(buttonGrid);
+
 
 		regionLayer = L.layerGroup();
 		window.addLayerGroup('S2 Grid', regionLayer, true);
