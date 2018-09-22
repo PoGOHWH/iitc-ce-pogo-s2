@@ -750,24 +750,17 @@
 			selectRow +
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
-			<p><button class="btn btn-primary" id="save-json"><i class="fa fa-save"></i> Save Gyms and Stops as JSON</button></p>
-			<p><button class="btn btn-primary" id="save-gymscsv"><i class="fa fa-save"></i> Save Gyms as CSV</button></p>
-			<p><button class="btn btn-primary" id="save-stopscsv"><i class="fa fa-save"></i> Save Stops as CSV</button></p>
-			<p><button class="btn btn-primary" id="show-summary"> Show Analysis</button>
 			 `;
 
 		const container = dialog({
 			id: 's2Settings',
 			width: 'auto',
 			html: html,
-			title: 'S2 Cells'
+			title: 'S2 & Pokemon Settings'
 		});
 
 		const div = container[0];
-		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
-		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
-		div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
-		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
+
 		const selects = div.querySelectorAll('select');
 		for (let i = 0; i < 2; i++) {
 			configureGridLevelSelect(selects[i], i);
@@ -1264,18 +1257,28 @@
 		OPTIONS 
 	*/
 	// Manual import, export and reset data
-	thisPlugin.manualOpt = function () {
+	thisPlugin.pogoActionsDialog = function () {
 		const content = `<div id="pogoSetbox">
-				<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
-				<a onclick="window.plugin.pogo.optImport();return false;">Import pogo</a>
-				<a onclick="window.plugin.pogo.optExport();return false;">Export pogo</a>
-				<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>
+			<a id="save-json" title="Save as a JSON file the data about the Gyms and Pokestops on screen">Save Gyms and Stops as JSON</a>
+			<a id="save-gymscsv" title="Save as a CSV file the data about the Gyms on screen">Save Gyms as CSV</a>
+			<a id="show-summary" title="Shows an analysis grouping the Gyms according to the selected S2 level">Show Analysis</a>
+			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
+			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
+			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
+			<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>
 			</div>`;
 
-		dialog({
+		const container = dialog({
 			html: content,
-			title: 'PoGo Options'
+			title: 'S2 & Pokemon Actions'
 		});
+
+		const div = container[0];
+		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
+		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
+		//div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
+		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
+
 	};
 
 	thisPlugin.optAlert = function (message) {
@@ -1650,14 +1653,14 @@
 		const toolbox = document.getElementById('toolbox');
 
 		const buttonPoGo = document.createElement('a');
-		buttonPoGo.textContent = 'PoGo Opt';
+		buttonPoGo.textContent = 'PoGo Actions';
 		buttonPoGo.title = 'Actions on Pokemon Go data';
-		buttonPoGo.addEventListener('click', thisPlugin.manualOpt);
+		buttonPoGo.addEventListener('click', thisPlugin.pogoActionsDialog);
 		toolbox.appendChild(buttonPoGo);
 
 		const buttonGrid = document.createElement('a');
-		buttonGrid.textContent = 'S2 Grid';
-		buttonGrid.title = 'Find S2 distribution';
+		buttonGrid.textContent = 'PoGo-S2 Settings';
+		buttonGrid.title = 'Settings for S2 & PokemonGo';
 		buttonGrid.addEventListener('click', e => {
 			if (window.isSmartphone()) window.show('map');
 			showS2Dialog();
