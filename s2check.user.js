@@ -451,6 +451,7 @@
 	let settings = {
 		highlightGymCandidateCells: false,
 		highlightGymCenter: false,
+		hideIngressPortalDetails: false,
 		grids: [
 			{
 				level: 14,
@@ -475,6 +476,7 @@
 			settings = JSON.parse(tmp);
 		} catch (e) {
 		}
+		document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
 	}
 
 	let colorScheme = {
@@ -750,6 +752,7 @@
 			selectRow +
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
+			<p><label title='Hide in the Portal info the details about Mods, resonators and stats in Ingress'><input type="checkbox" id="chkHidePortalDetails">Hide Ingress portal details</label></p>
 			 `;
 
 		const container = dialog({
@@ -781,6 +784,14 @@
 			settings.highlightGymCenter = chkHighlightCenters.checked;
 			saveSettings();
 			updateMapGrid();
+		});
+
+		const chkHidePortalDetails = div.querySelector('#chkHidePortalDetails');
+		chkHidePortalDetails.checked = !!settings.hidePortalDetails;
+		chkHidePortalDetails.addEventListener('change', e => {
+			settings.hidePortalDetails = chkHidePortalDetails.checked;
+			saveSettings();
+			document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
 		});
 
 	}
@@ -1622,6 +1633,15 @@
 .isGym #PogoGymInfo {
 	display: block;
 }
+
+.hideIngressPortalDetails .mods,
+.hideIngressPortalDetails #randdetails,
+.hideIngressPortalDetails #resodetails,
+.hideIngressPortalDetails .linkdetails {
+	display: none;
+}
+
+
 `).appendTo('head');
 	};
 
@@ -1659,7 +1679,7 @@
 		toolbox.appendChild(buttonPoGo);
 
 		const buttonGrid = document.createElement('a');
-		buttonGrid.textContent = 'PoGo-S2 Settings';
+		buttonGrid.textContent = 'PoGo Settings';
 		buttonGrid.title = 'Settings for S2 & PokemonGo';
 		buttonGrid.addEventListener('click', e => {
 			if (window.isSmartphone()) window.show('map');
