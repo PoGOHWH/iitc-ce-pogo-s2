@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.43
+// @version      0.44
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -330,8 +330,6 @@ function initSvgIcon() {
 			} else {
 				options.iconAnchor = L.point(options.iconAnchor);
 			}
-
-			//options.html = options.svg;
 		},
 
 		// https://github.com/tonekk/Leaflet-Extended-Div-Icon/blob/master/extended.divicon.js#L13
@@ -367,10 +365,6 @@ function initSvgIcon() {
 		},
 		onAdd: function (map) {
 			L.Marker.prototype.onAdd.call(this, map);
-		},
-		setStyle: function (style) {
-			if (this._icon) {
-			}
 		}
 	});
 
@@ -1603,7 +1597,7 @@ function initSvgIcon() {
 				iconOptions: {
 					id: 'gym' + guid.replace('.', ''),
 					className: className,
-					html:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 410"><g id="g4565" transform="translate(-62 -45)">
+					html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 410"><g transform="translate(-62 -45)">
 			<path class="gym-main-outline" d="M436.23 45.87C368.38 181.94 300.54 318.02 232.7 454.09c-12.48-46.6-24.97-93.19-37.45-139.78l-1.67-6.2s-7.37-.21-12.03-.72c-57.77-3.97-109.7-50.53-117.27-107.86-11.31-57.8 25.24-118.19 79.1-139.79 57.74-24.6 130.02 2.07 160 56.72 39.96-20.87 80.14-42.63 120.19-63.84z" />
 			<g class='gym-inner'><path class="ball-outline-top" d="M286.17 115.42l-59.41 31.59a48.157 48.157 0 0 0-35.7-15.96c-26.61 0-48.17 21.57-48.17 48.17.02 3.91.51 7.81 1.47 11.6l-59.45 31.62c-5.61-13.72-8.51-28.4-8.53-43.22 0-63.34 51.34-114.68 114.68-114.68 38.2.06 73.86 19.13 95.11 50.88z"/>
 			<path d="M404.7 78.26L297.06 135.6l-59.42 31.6a48.252 48.252 0 0 1 1.58 12.02c0 26.6-21.56 48.16-48.16 48.16a48.138 48.138 0 0 1-36-16.27l-59.35 31.56c21.21 31.94 57 51.17 95.35 51.23 4.26-.02 8.52-.28 12.76-.77l32.78 122.31z" class="ball-outline-bottom"/>
