@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.44
+// @version      0.45
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -502,8 +502,9 @@ function initSvgIcon() {
 
 	let pokestops = {};
 	let gyms = {};
-	/*
 	// Portals that aren't marked as PoGo items
+	let notpogo = {};
+	/*
 	let newPortals = {};
 	// PoGo items that aren't in Intel
 	let removedPortals = {};
@@ -1151,7 +1152,7 @@ function initSvgIcon() {
 
 	// Update the localStorage
 	thisPlugin.saveStorage = function () {
-		localStorage[KEY_STORAGE] = JSON.stringify({gyms: gyms, pokestops: pokestops});
+		localStorage[KEY_STORAGE] = JSON.stringify({gyms: gyms, pokestops: pokestops, notpogo: notpogo});
 	};
 
 	// Load the localStorage
@@ -1159,6 +1160,7 @@ function initSvgIcon() {
 		const tmp = JSON.parse(localStorage[KEY_STORAGE]);	
 		gyms = tmp.gyms;
 		pokestops = tmp.pokestops;
+		notpogo = tmp.notpogo || {};
 	};
 
 	thisPlugin.createStorage = function () {
@@ -1170,6 +1172,7 @@ function initSvgIcon() {
 	thisPlugin.createEmptyStorage = function () {
 		gyms = {};
 		pokestops = {};
+		notpogo = {};
 		thisPlugin.saveStorage();
 	};
 
@@ -1182,6 +1185,9 @@ function initSvgIcon() {
 		if (pokestops[guid]) {
 			return {'type': 'pokestops', 'store': pokestops};
 		}
+		if (notpogo[guid]) {
+			return {'type': 'notpogo', 'store': notpogo};
+		}
 		return null;
 	};
 
@@ -1190,6 +1196,7 @@ function initSvgIcon() {
 	thisPlugin.onPortalSelected = function () {
 		$('.pogoStop').remove();
 		$('.pogoGym').remove();
+		$('.notPogo').remove();
 		document.getElementById('portaldetails').classList.remove('isGym');
 
 		if (window.selectedPortal == null) {
@@ -1204,6 +1211,7 @@ function initSvgIcon() {
 
 				$('.pogoStop').remove();
 				$('.pogoGym').remove();
+				$('.notPogo').remove();
 
 				// Prepend a star to mobile status-bar
 				if (thisPlugin.isSmart) {
@@ -1258,6 +1266,7 @@ function initSvgIcon() {
 	thisPlugin.updateStarPortal = function () {
 		$('.pogoStop').removeClass('favorite');
 		$('.pogoGym').removeClass('favorite');
+		$('.notPogo').removeClass('favorite');
 		document.getElementById('portaldetails').classList.remove('isGym');
 
 		const guid = window.selectedPortal;
@@ -1276,6 +1285,9 @@ function initSvgIcon() {
 				}
 				document.getElementById('PogoGymEx').checked = gym.isEx;
 
+			}
+			if (pogoData.type === 'notpogo') {
+				$('.notPogo').addClass('favorite');
 			}
 		}
 	};
@@ -1330,8 +1342,12 @@ function initSvgIcon() {
 		const obj = {'guid': guid, 'lat': lat, 'lng': lng, 'name': name};
 		if (type == 'gyms') {
 			gyms[guid] = obj;
-		} else {
+		}
+		if (type == 'pokestops') {
 			pokestops[guid] = obj;
+		}
+		if (type == 'notpogo') {
+			notpogo[guid] = obj;
 		}
 
 		thisPlugin.saveStorage();
@@ -1426,6 +1442,7 @@ function initSvgIcon() {
 		const portalsInView = filterItemsByMapBounds(window.portals);
 		const stopsInView = filterItemsByMapBounds(pokestops);
 		const gymsInView = filterItemsByMapBounds(gyms);
+		const notpogoInView = filterItemsByMapBounds(notpogo);
 
 		// Compare data
 		Object.keys(gymsInView).forEach(id => {
@@ -1439,6 +1456,13 @@ function initSvgIcon() {
 			if (portalsInView[id]) {
 				delete portalsInView[id];
 				delete stopsInView[id];
+			}
+		});
+
+		Object.keys(notpogoInView).forEach(id => {
+			if (portalsInView[id]) {
+				delete portalsInView[id];
+				delete notpogoInView[id];
 			}
 		});
 
@@ -1608,6 +1632,9 @@ function initSvgIcon() {
 			});
 		}
 
+		if (!star)
+			return;
+
 		window.registerMarkerForOMS(star);
 		star.on('spiderfiedclick', function () { 
 			// don't try to render fake portals
@@ -1690,6 +1717,21 @@ function initSvgIcon() {
 }
 .pogoGym span {
 	background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAPCAMAAACyXj0lAAAC7lBMVEUAAAD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEAAAAAAAAAAAAAAAAAAAABAQEAAAABAQEBAQEAAAAAAAAAAAAAAAAAAAADAwMAAAAAAAABAQIAAAAAAAAAAAAAAAAAAAACAgIAAAAAAAABAAAAAAAAAAAAAAAAAAACAgIAAAAHBwcAAAACAgIAAAAbBgYBAQEBAQEZBgcAAAAAAAAAAAABAQEXFxcCAgICAgIHBAUBAQEGBgdyFRcRERFsFRYCAgIDAwMFBQUODg4EBAQFBQUREREFBQUGBgYTExMRCQoEBAQGBAVcIiYaGhoaGhsFBQUUFBRaJSgGBgYdFBgDAwMEBAQNDQ0ODg4fHyAjIyNYWFheLTEHBgcHBwgJCQkLCwsNDQ0PDw8RERESEhIUFBQVFRYWFhYXFxcYGBgZGRkZGRoaGhocHBwdHR0eHh4eHx8fHx8iIiIlJSUmJiYnJycpKSkqKiotLS0uLi4uLi8wMDAyMjIzMzM0NDQ2NjY4ODg6Ojo7Ozs7Oz09PT4+Pj4/Pz9DKS9DQ0NJSUpLS0xMTE1NTU1PT09QUFBRUVFSUlNXV1dZWVlbW1tcXFxeXl5eXl9jY2NkZGRmZmZoaGlsbG1wcHBycnJ1dXV7e3t/f3+AgYGBgYGFhYWIh4mPj4+THyGTk5SVlZWYmJqbm5ygoKCnp6irq6uvr6+wr7KwsLGxsbO1tbW3tri4t7m5ubu9HyDGxcjGxsfJJyjOzs7PHR7QIyTQ0NDR0dHSICHS0tLU1NTY2NjZ2dndIiPd3d3e3t7fIyTi4uLj4+PnICHn5+jq6urs6+zs7Ozu7u7w8PDw8PHx8fHx8fLy8fLy8vLzHR329vb29vf39/j4+Pj5+fn6Hh76Hx/7+/v7+/z8Hx/8/Pz8/P39Hh79/f3///+f+BszAAAAcXRSTlMAAAECAwQFBwoPFhskJSYqKy4yMzU4OTw/Q0hRW1xjZGVmb294e3+Fi4+QkZibnaWmqq+2t7m+x8nKzM3Oz9HR19fd3d/h4eLk5ebm5+rq7O7v8PDy8vP09fX19/f3+Pn5+fr6/Pz8/f3+/v7+/v7+/k5HHiYAAAGUSURBVHgBY2BkFHMMizAVYmRk5NLSVAJSUg5uwYHOlmIMjFzq+soMbHrZ3WsWNyfJ8Gh7pOTxMjJKW6fd/v79S6IFn4FXciUvg3HNoqXNk5Y3ZcXXLSrVBRooW3Dvw/lTr75nZM7Yvd6dgcF37YqGxTOrayZsubkgkpOBkd3v7MddLX2zL7cef3srSoWBIWh1z6yL2zo2XH9wpRLIZeSKu3Bj4uGj03tOv/+60IaBgSG0cWrnypldO5+8nubPDLSBI6GwpGje5KoDn3/uCxAEKvBctH9Oe+/GOy83lykyABUw+aw7sbV/yt4XPx83aTEAgXzxwSeX7t78ca3DDiTPyKBQsePd/YfPP71f5crGAAJGOduP3X3/aHW6AEQBg1ru3DM/fn47kioHFACpMHSy3/PsULc5SB6sQtI2Ov/pm2UeDEAREGLRsPK+uilaAqoApEku/NzJWHGQAASLurd1m4CYcBUuS+abQW0E8xXLQ4RBTLgS1foYfpgCEClSqwFiIYBIqzZEACrMrceKqoBbhxmqAAABho1+nW2udAAAAABJRU5ErkJggg==);
+}
+
+.notPogo span {
+    color: #FFF;
+    background: #000;
+    border-radius: 50%;
+    font-size: 10px;
+    letter-spacing: -0.15em;
+    display: inline-block;
+    padding: 2px;
+	opacity: 0.6;
+}
+
+.notPogo:focus span, .notPogo.favorite span {
+	opacity: 1;
 }
 
 .s2-gymnames {
@@ -1823,7 +1865,10 @@ path.pokestop-circle {
 		// Load data from localStorage
 		thisPlugin.loadStorage();
 
-		thisPlugin.htmlStar = '<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal(\'pokestops\');return false;" title="Mark this portal as a pokestop [p]"><span></span></a><a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal(\'gyms\');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>';
+		thisPlugin.htmlStar = `<a class="pogoStop" accesskey="p" onclick="window.plugin.pogo.switchStarPortal('pokestops');return false;" title="Mark this portal as a pokestop [p]"><span></span></a>
+			<a class="pogoGym" accesskey="g" onclick="window.plugin.pogo.switchStarPortal('gyms');return false;" title="Mark this portal as a PokeGym [g]"><span></span></a>
+			<a class="notPogo" onclick="window.plugin.pogo.switchStarPortal('notpogo');return false;" title="Mark this portal as a removed from Pokemon Go"><span>N/A</span></a>
+			`;
 
 		thisPlugin.setupCSS();
 
