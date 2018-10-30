@@ -9,6 +9,7 @@
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
 // @match        https://ingress.com/intel*
+// @match        https://intel.ingress.com/*
 // @grant        none
 // ==/UserScript==
 
