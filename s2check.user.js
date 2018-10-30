@@ -1214,10 +1214,11 @@ function initSvgIcon() {
 				$('.pogoGym').remove();
 				$('.notPogo').remove();
 
-				// Prepend a star to mobile status-bar
+				// Show PoGo icons in the mobile status-bar
 				if (thisPlugin.isSmart) {
-					$('#updatestatus').prepend(thisPlugin.htmlStar);
-					$('#updatestatus .pogoStop').attr('title', '');
+					$('.PogoStatus').remove();
+					$('#updatestatus').prepend('<div class="PogoStatus">' + thisPlugin.htmlStar + '</div>');
+					$('.PogoStatus > a').attr('title', '');
 				}
 
 				$('#portaldetails').append('<div class="PogoButtons">Pokemon Go: ' + thisPlugin.htmlStar + '</div>' +
@@ -1675,16 +1676,6 @@ function initSvgIcon() {
 .pogoStop:focus span, .pogoStop.favorite span,
 .pogoGym:focus span, .pogoGym.favorite span {
 	background-position:right top;
-}
-
-/**********************************************
-	MOBILE
-**********************************************/
-#updatestatus .pogoStop{
-	float:left;
-	margin:-19px 0 0 -5px;
-	padding:0 3px 1px 4px;
-	background:#262c32;
 }
 
 /**********************************************
