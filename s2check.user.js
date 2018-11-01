@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.48
+// @version      0.49
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2147,7 +2147,8 @@ path.pokestop-circle {
 				// continue
 				promptToClassifyGyms(groups);
 			} else {
-				row.parentNode.removeChild(row);
+				jQuery(row).fadeOut(200);
+				document.querySelector('.ui-dialog-title-active').textContent = missingGyms == 1 ? 'Which one is a Gym?' : 'Which ' + missingGyms + ' are Gyms?';
 			}
 		});
 	}
