@@ -853,15 +853,10 @@ function initSvgIcon() {
 			saveSettings();
 			document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
 		});
-
 	}
 
 	function mapPanTo(lat, lng) {
-		if (typeof L != 'undefined') {
-			map.panTo(new L.LatLng(lat, lng));
-		} else {
-			map.panTo({lat, lng});
-		}
+		map.panTo(new L.LatLng(lat, lng));
 	}
 
 	/**
