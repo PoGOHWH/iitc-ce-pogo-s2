@@ -676,14 +676,10 @@ function initSvgIcon() {
 	}
 
 	function isPointOnScreen(mapBounds, point) {
-		if (typeof L != 'undefined') {
-			if (point._latlng)
-				return mapBounds.contains(point._latlng);
+		if (point._latlng)
+			return mapBounds.contains(point._latlng);
 
-			return mapBounds.contains(L.latLng(point));
-		}
-
-		return mapBounds.contains(point);
+		return mapBounds.contains(L.latLng(point));
 	}
 
 	function groupByCell(level) {
