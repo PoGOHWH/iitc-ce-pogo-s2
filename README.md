@@ -21,5 +21,7 @@ When the Highlight cells that might get a Gym is selected, the L17 cells will be
 If a cell has enough portals but you have forgot to mark one of the stops as gyms the L14 cell will be marked as orange and in case that there are more gyms than expected then it will be red.
  
 Adding Pokestops/Gyms  
-When you select a portal, in the sidebar there will be two little icons of a pokeball and a gym so you can mark this portal as a Pokestop or Gym.
+When you select a portal, in the sidebar there will be two little icons of a pokeball and a gym so you can mark this portal as a Pokestop or Gym.  
+
+Since version 0.48 the script will try to automatically mark any portal in its own l17 cell as a pokestop and if you enable the prompt in the settings dialog it will ask you about all the portals where it find more than one in the same cell or if there are pokestops that should be marked as Gyms.
  
