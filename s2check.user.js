@@ -505,11 +505,14 @@ function initSvgIcon() {
 	let gyms = {};
 	// Portals that aren't marked as PoGo items
 	let notpogo = {};
-	/*
+
+	let allPortals = {};
 	let newPortals = {};
-	// PoGo items that aren't in Intel
-	let removedPortals = {};
-	*/
+	let checkNewPortalsTimout;
+
+	// Portals that the user hasn't classified as Pokestops (2 or more in the same Lvl17 cell)
+	let skippedPortals = {};
+
 	let regionLayer;
 
 	let settings = {
@@ -684,59 +687,42 @@ function initSvgIcon() {
 
 	function groupByCell(level) {
 		const cells = {};
-		Object.keys(gyms).forEach(id => {
-			const gym = gyms[id];
-			if (!gym.cells) {
-				gym.cells = {};
+		classifyGroup(cells, gyms, level, (cell, item) => cell.gyms.push(item));
+		classifyGroup(cells, pokestops, level, (cell, item) => cell.stops.push(item));
+		classifyGroup(cells, newPortals, level, (cell, item) => cell.notClassified.push(item));
+		classifyGroup(cells, notpogo, level, (cell, item) => {/* */});
+
+		return cells;
+	}
+
+	function classifyGroup(cells, items, level, callback) {
+		Object.keys(items).forEach(id => {
+			const item = items[id];
+			if (!item.cells) {
+				item.cells = {};
 			}
 			let cell;
 			// Compute the cell only once for each level
-			if (!gym.cells[level]) {
-				cell = window.S2.S2Cell.FromLatLng(gym, level);
-				gym.cells[level] = cell.toString();
+			if (!item.cells[level]) {
+				cell = window.S2.S2Cell.FromLatLng(item, level);
+				item.cells[level] = cell.toString();
 			}
-			const cellId = gym.cells[level];
+			const cellId = item.cells[level];
 
 			// Add it to the array of gyms of that cell
 			if (!cells[cellId]) {
 				if (!cell) {
-					cell = window.S2.S2Cell.FromLatLng(gym, level);
+					cell = window.S2.S2Cell.FromLatLng(item, level);
 				}
 				cells[cellId] = {
 					cell: cell,
 					gyms: [],
-					stops: []
+					stops: [],
+					notClassified: []
 				};
 			}
-			cells[cellId].gyms.push(gym);
+			callback(cells[cellId], item);
 		});
-
-		Object.keys(pokestops).forEach(id => {
-			const pokestop = pokestops[id];
-			if (!pokestop.cells) {
-				pokestop.cells = {};
-			}
-			let cell;
-			// Compute the cell only once for each level
-			if (!pokestop.cells[level]) {
-				cell = window.S2.S2Cell.FromLatLng(pokestop, level);
-				pokestop.cells[level] = cell.toString();
-			}
-			const cellId = pokestop.cells[level];
-			// Add it to the array of stops of that cell
-			if (!cells[cellId]) {
-				if (!cell) {
-					cell = window.S2.S2Cell.FromLatLng(pokestop, level);
-				}
-				cells[cellId] = {
-					cell: cell,
-					gyms: [],
-					stops: []
-				};
-			}
-			cells[cellId].stops.push(pokestop);
-		});
-		return cells;
 	}
 
 	/**
@@ -1127,7 +1113,6 @@ function initSvgIcon() {
 	}
 
 	// PLUGIN START ////////////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////////
 
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
@@ -1166,9 +1151,12 @@ function initSvgIcon() {
 		pokestops = {};
 		notpogo = {};
 		thisPlugin.saveStorage();
+
+		allPortals = {};
+		newPortals = {};
 	};
 
-	/***************************************************************************************************************************************************************/
+	/*************************************************************************/
 
 	thisPlugin.findByGuid = function (guid) {
 		if (gyms[guid]) {
@@ -1426,6 +1414,9 @@ function initSvgIcon() {
 			thisPlugin.createEmptyStorage();
 			thisPlugin.updateStarPortal();
 			thisPlugin.resetAllMarkers();
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
 			thisPlugin.optAlert('Successful.');
 		}
 	};
@@ -1850,8 +1841,165 @@ path.pokestop-circle {
     stroke: #2370DA;
 }
 
+.PogoClassification div {
+    display: grid;
+    grid-template-columns: 200px 60px 60px;
+    text-align: center;
+    align-items: center;
+    height: 140px;
+    overflow: hidden;
+}
+
+.PogoClassification img {
+    max-width: 200px;
+	max-height: 140px;
+    display: block;
+    margin: 0 auto;
+}
+
 `).appendTo('head');
 	};
+
+	// A portal has been received.
+	function onPortalAdded(data) {
+		const guid = data.portal.options.guid;
+		// analyze each portal only once, but sometimes the first time there's no additional data of the portal
+		if (allPortals[guid] && allPortals[guid].name)
+			return;
+	
+		const portal = {
+			guid: guid,
+			name: data.portal.options.data.title,
+			lat: data.portal._latlng.lat,
+			lng: data.portal._latlng.lng,
+			image: data.portal.options.data.image,
+			cells: {}
+		};
+
+		allPortals[guid] = portal;
+
+		// If it's already classified in Pokemon, get out
+		const pogoData = thisPlugin.findByGuid(guid);
+		if (pogoData)
+			return;
+
+		if (skippedPortals[guid])
+			return;
+
+		newPortals[guid] = portal;
+		if (checkNewPortalsTimout)
+			clearTimeout(checkNewPortalsTimout);
+		checkNewPortalsTimout = setTimeout(checkNewPortals, 500);
+	}
+
+	// A potential new portal has been received
+	function checkNewPortals() {
+		const notClassifiedPokestops = [];
+
+		// try to guess new pokestops if they are the only items in a cell
+		const allCells = groupByCell(17);
+		// analyze first the items on screen
+		const cells = filterByMapBounds(allCells);
+
+		Object.keys(cells).forEach(id => {
+			const data = cells[id];
+			if (data.notClassified.length == 0)
+				return;
+			const notClassified = data.notClassified;
+
+			if (data.gyms.length == 1 || data.stops.length == 1) {
+				// Already a pogo item, mark the rest as non-pogo
+				notClassified.forEach(portal => {
+					const obj = {'guid': portal.guid, 'lat': portal.lat, 'lng': portal.lng, 'name': portal.name};
+					notpogo[portal.guid] = obj;
+
+					delete newPortals[portal.guid];
+				});
+				return;
+			}
+			// only one, let's guess it's a pokestop by default
+			if (notClassified.length == 1) {
+				const portal = notClassified[0];
+				const obj = {'guid': portal.guid, 'lat': portal.lat, 'lng': portal.lng, 'name': portal.name};
+				pokestops[portal.guid] = obj;
+				delete newPortals[portal.guid];
+				thisPlugin.addStar(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
+				return;
+			}
+			// too many items to guess
+			//console.log('too many items not classified: ', data.notClassified);
+			notClassifiedPokestops.push(data.notClassified);
+
+		});
+
+		thisPlugin.saveStorage();
+		if (settings.highlightGymCandidateCells) {
+			updateMapGrid();
+		}
+
+		if (notClassifiedPokestops.length > 0) {
+			promptToClassifyPokestops(notClassifiedPokestops);
+		}
+	}
+
+	function promptToClassifyPokestops(groups) {
+		if (!groups || groups.length == 0)
+			return;
+
+		const group = groups.shift();
+		const div = document.createElement('div');
+		div.className = 'PogoClassification';
+		group.forEach(portal => {
+			const wrapper = document.createElement('div');
+			wrapper.setAttribute('data-guid', portal.guid);
+			const img = portal.image ? '<img src="' + portal.image.replace('http:', 'https:') + '">' + '</span>' : '';
+			wrapper.innerHTML = '<span class="PogoName">' + portal.name +
+				img +
+				'<a data-type="pokestops">' + 'STOP' + '</a>' +
+				'<a data-type="gyms">' + 'GYM' + '</a>';
+			div.appendChild(wrapper);
+		});
+		const container = dialog({
+			id: 'classifyPokestop',
+			html: div,
+			width: '360px',
+			title: 'Which one is Pokestop or Gym?',
+			buttons: {
+				// Button to allow skip this cell
+				Skip: function () {
+					container.dialog('close');
+					group.forEach(portal => {
+						delete newPortals[portal.guid];
+						skippedPortals[portal.guid] = true;
+					});
+					// continue
+					promptToClassifyPokestops(groups);
+				}
+			}
+		});
+		// Remove ok button
+		const outer = container.parent().parent();
+		outer.find('.ui-dialog-buttonset button:first').remove();
+
+		// mark the selected one as pokestop or gym
+		container.on('click', 'a', function (e) {
+			const type = this.getAttribute('data-type');
+			const guid = this.parentNode.getAttribute('data-guid');
+			const portal = newPortals[guid];
+			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
+
+			group.forEach(tmpPortal => {
+				delete newPortals[tmpPortal.guid];
+			});
+
+			container.dialog('close');
+			// continue
+			promptToClassifyPokestops(groups);
+		});
+	}
 
 	const setup = function () {
 		thisPlugin.isSmart = window.isSmartphone();
@@ -1874,6 +2022,8 @@ path.pokestop-circle {
 		thisPlugin.setupCSS();
 
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
+
+		window.addHook('portalAdded', onPortalAdded);
 
 		// Layer - pokemon go portals
 		thisPlugin.stopLayerGroup = new L.LayerGroup();
