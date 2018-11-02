@@ -4,7 +4,7 @@
 // @category     Layer
 // @namespace    http://tampermonkey.net/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
-// @version      0.49
+// @version      0.50
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -512,6 +512,10 @@ function initSvgIcon() {
 
 	// Portals that the user hasn't classified as Pokestops (2 or more in the same Lvl17 cell)
 	let skippedPortals = {};
+	let newPokestops = {};
+	let notClassifiedPokestops = [];
+
+	let autoAddPokestops;
 
 	let regionLayer;
 
@@ -1919,7 +1923,7 @@ path.pokestop-circle {
 		if (pogoData)
 			return;
 
-		if (skippedPortals[guid])
+		if (skippedPortals[guid] || newPokestops[guid])
 			return;
 
 		newPortals[guid] = portal;
@@ -1933,25 +1937,21 @@ path.pokestop-circle {
 	 * A potential new portal has been received
 	 */
 	function checkNewPortals() {
-		const notClassifiedPokestops = [];
+		newPokestops = {};
+		notClassifiedPokestops = [];
 
 		// try to guess new pokestops if they are the only items in a cell
 		const allCells = groupByCell(17);
-		// analyze first the items on screen
-		const cells = filterByMapBounds(allCells);
-
-		Object.keys(cells).forEach(id => {
-			const data = cells[id];
+		Object.keys(allCells).forEach(id => {
+			const data = allCells[id];
 			if (data.notClassified.length == 0)
 				return;
 			const notClassified = data.notClassified;
 
 			if (data.gyms.length == 1 || data.stops.length == 1) {
-				// Already a pogo item, mark the rest as non-pogo
+				// Already has a pogo item, ignore the rest
 				notClassified.forEach(portal => {
-					const obj = {'guid': portal.guid, 'lat': portal.lat, 'lng': portal.lng, 'name': portal.name};
-					notpogo[portal.guid] = obj;
-
+					skippedPortals[portal.guid] = true;
 					delete newPortals[portal.guid];
 				});
 				return;
@@ -1960,20 +1960,46 @@ path.pokestop-circle {
 			if (notClassified.length == 1) {
 				const portal = notClassified[0];
 				const obj = {'guid': portal.guid, 'lat': portal.lat, 'lng': portal.lng, 'name': portal.name};
-				pokestops[portal.guid] = obj;
+
+				newPokestops[portal.guid] = obj;
 				delete newPortals[portal.guid];
-				thisPlugin.addStar(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
 				return;
 			}
-			// too many items to guess
-			//console.log('too many items not classified: ', data.notClassified);
-			notClassifiedPokestops.push(data.notClassified);
+		});
 
+		// check now only the items on the screen to prompt about them
+		const cells = filterByMapBounds(allCells);
+
+		Object.keys(cells).forEach(id => {
+			const data = cells[id];
+			if (data.notClassified.length == 0)
+				return;
+
+			// too many items to guess
+			notClassifiedPokestops.push(data.notClassified);
 		});
 
 		thisPlugin.saveStorage();
+		/*
 		if (settings.highlightGymCandidateCells) {
 			updateMapGrid();
+		}
+		*/
+
+		if (typeof autoAddPokestops == 'undefined' && Object.keys(pokestops).length == 0 && Object.keys(newPokestops).length > 0) {
+			autoAddPokestops = window.confirm('Do you want to automatically create the detected pokestops in this session?');
+		}
+
+		if (autoAddPokestops) {
+			Object.keys(newPokestops).forEach(id => {
+				const portal = newPokestops[id];
+				pokestops[portal.guid] = portal;
+				thisPlugin.addStar(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
+				delete newPokestops[id];
+			});
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
 		}
 
 		if (settings.promptForMissingData && notClassifiedPokestops.length > 0) {
@@ -2005,7 +2031,7 @@ path.pokestop-circle {
 			id: 'classifyPokestop',
 			html: div,
 			width: '360px',
-			title: 'Which one is Pokestop or Gym?',
+			title: 'Which one is in Pokemon Go?',
 			buttons: {
 				// Button to allow skip this cell
 				Skip: function () {
@@ -2147,7 +2173,7 @@ path.pokestop-circle {
 				// continue
 				promptToClassifyGyms(groups);
 			} else {
-				jQuery(row).fadeOut(200);
+				$(row).fadeOut(200);
 				document.querySelector('.ui-dialog-title-active').textContent = missingGyms == 1 ? 'Which one is a Gym?' : 'Which ' + missingGyms + ' are Gyms?';
 			}
 		});
