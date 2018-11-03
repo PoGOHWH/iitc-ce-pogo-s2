@@ -1006,7 +1006,7 @@ function initSvgIcon() {
 				if (!isThereAnyOpenDialog()) {
 					promptToClassifyGyms(cellsWithMissingGyms);
 				}
-			}, 200);
+			}, 1000);
 		}
 	}
 
@@ -1930,14 +1930,18 @@ path.pokestop-circle {
 
 		if (checkNewPortalsTimout)
 			clearTimeout(checkNewPortalsTimout);
-		checkNewPortalsTimout = setTimeout(checkNewPortals, 500);
+		checkNewPortalsTimout = setTimeout(checkNewPortals, 1000);
 	}
 
 	/**
 	 * A potential new portal has been received
 	 */
 	function checkNewPortals() {
-		newPokestops = {};
+		// don't try to classify if we don't have all the portal data
+		if (map.getZoom() < 15)
+			return;
+
+		//newPokestops = {};
 		notClassifiedPokestops = [];
 
 		// try to guess new pokestops if they are the only items in a cell
@@ -1979,8 +1983,8 @@ path.pokestop-circle {
 			notClassifiedPokestops.push(data.notClassified);
 		});
 
-		thisPlugin.saveStorage();
 		/*
+		thisPlugin.saveStorage();
 		if (settings.highlightGymCandidateCells) {
 			updateMapGrid();
 		}
@@ -2103,6 +2107,10 @@ path.pokestop-circle {
 	 * In a level 14 cell there's some missing Gyms, prompt which ones
 	 */
 	function promptToClassifyGyms(groups) {
+		// don't try to classify if we don't have all the portal data
+		if (map.getZoom() < 15)
+			return;
+
 		if (!groups || groups.length == 0)
 			return;
 
