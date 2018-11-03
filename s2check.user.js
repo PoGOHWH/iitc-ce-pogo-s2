@@ -2017,7 +2017,7 @@ path.pokestop-circle {
 		const group = groups.shift();
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		group.forEach(portal => {
+		group.sort(sortGyms).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			const img = portal.image ? '<img src="' + portal.image.replace('http:', 'https:') + '">' : '';
