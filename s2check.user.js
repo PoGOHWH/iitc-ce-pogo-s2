@@ -667,6 +667,27 @@ function initSvgIcon() {
 		return cellBounds.intersects(mapBounds);
 	}
 
+	// return only the cells that are visible by the map bounds to ignore far away data that might not be complete
+	function filterWithinScreen(cells) {
+		const bounds = map.getBounds();
+		const filtered = {};
+		Object.keys(cells).forEach(cellId => {
+			const cellData = cells[cellId];
+			const cell = cellData.cell;
+
+			if (isCellInsideScreen(bounds, cell)) {
+				filtered[cellId] = cellData;
+			}
+		});
+		return filtered;
+	}
+
+	function isCellInsideScreen(mapBounds, cell) {
+		const corners = cell.getCornerLatLngs();
+		const cellBounds = L.latLngBounds([corners[0],corners[1]]).extend(corners[2]).extend(corners[3]);
+		return mapBounds.contains(cellBounds);
+	}
+
 	/**
 	* Filter a group of items (gyms/stops) excluding those out of the screen
 	*/
@@ -1004,7 +1025,7 @@ function initSvgIcon() {
 		if (settings.promptForMissingData && cellsWithMissingGyms.length > 0 && Object.keys(window.portals).length > 0) {
 			setTimeout(function () {
 				if (!isThereAnyOpenDialog()) {
-					promptToClassifyGyms(cellsWithMissingGyms);
+					promptToClassifyGyms(filterWithinScreen(cellsWithMissingGyms));
 				}
 			}, 1000);
 		}
@@ -1944,9 +1965,16 @@ path.pokestop-circle {
 		//newPokestops = {};
 		notClassifiedPokestops = [];
 
-		// try to guess new pokestops if they are the only items in a cell
 		const allCells = groupByCell(17);
-		Object.keys(allCells).forEach(id => {
+
+		// Check only the items inside the screen, 
+		// the server might provide info about remote portals if they are part of a link 
+		// and we don't know anything else about nearby portals of that one.
+		// In this case (vs drawing) we want to filter only cells fully within the screen
+		const cells = filterWithinScreen(allCells);
+
+		// try to guess new pokestops if they are the only items in a cell
+		Object.keys(cells).forEach(id => {
 			const data = allCells[id];
 			if (data.notClassified.length == 0)
 				return;
@@ -1969,15 +1997,6 @@ path.pokestop-circle {
 				delete newPortals[portal.guid];
 				return;
 			}
-		});
-
-		// check now only the items on the screen to prompt about them
-		const cells = filterByMapBounds(allCells);
-
-		Object.keys(cells).forEach(id => {
-			const data = cells[id];
-			if (data.notClassified.length == 0)
-				return;
 
 			// too many items to guess
 			notClassifiedPokestops.push(data.notClassified);
