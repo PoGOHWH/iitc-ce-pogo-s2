@@ -25,3 +25,4 @@ When you select a portal, in the sidebar there will be two little icons of a pok
 
 Since version 0.48 the script will try to automatically mark any portal in its own l17 cell as a pokestop and if you enable the prompt in the settings dialog it will ask you about all the portals where it find more than one in the same cell or if there are pokestops that should be marked as Gyms.
  
+I'll try to publish announcements about changes and how to use the features in https://twitter.com/PogoCells so follow that account, it won't have too many posts and all of them focused on this plugin or very related things (but not news about Pokémon Go in general)
