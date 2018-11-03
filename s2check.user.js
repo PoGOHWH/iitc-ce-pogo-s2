@@ -2020,6 +2020,7 @@ path.pokestop-circle {
 				thisPlugin.addStar(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
 				delete newPokestops[id];
 			});
+			thisPlugin.saveStorage();
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
 			}
