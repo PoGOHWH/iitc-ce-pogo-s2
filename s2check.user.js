@@ -979,7 +979,10 @@ function initSvgIcon() {
 						const missingGyms = computeMissingGyms(cellData);
 						if (missingGyms > 0) {
 							fillCell(cell, 'orange', 0.5);
-							cellsWithMissingGyms.push(cellData);
+							// prompt for gyms only in the cells where all the lvl17 cells have been processed
+							if (cellData.notClassified.length == 0)
+								cellsWithMissingGyms.push(cellData);
+
 						} else if (missingGyms < 0) {
 							fillCell(cell, 'red', 0.5);
 						} 
@@ -1025,7 +1028,9 @@ function initSvgIcon() {
 		if (settings.promptForMissingData && cellsWithMissingGyms.length > 0 && Object.keys(window.portals).length > 0) {
 			setTimeout(function () {
 				if (!isThereAnyOpenDialog()) {
-					promptToClassifyGyms(filterWithinScreen(cellsWithMissingGyms));
+					const filtered = filterWithinScreen(cellsWithMissingGyms);
+					const array = Object.values(filtered);
+					promptToClassifyGyms(array);
 				}
 			}, 1000);
 		}
@@ -1331,6 +1336,10 @@ function initSvgIcon() {
 	// Switch the status of the star
 	thisPlugin.switchStarPortal = function (type) {
 		const guid = window.selectedPortal;
+
+		// It has been manually classified, remove from the detection
+		if (newPortals[guid])
+			delete newPortals[guid];
 
 		// If portal is saved in pogo: Remove this pogo
 		const pogoData = thisPlugin.findByGuid(guid);
