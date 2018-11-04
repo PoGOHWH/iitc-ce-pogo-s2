@@ -1929,6 +1929,60 @@ path.pokestop-circle {
     margin: 0 auto;
 }
 
+img.photo {
+    cursor: zoom-in;
+}
+
+.PoGo-PortalAnimation {
+	width: 30px;
+	height: 30px;
+	background-color: rgba(255, 255, 255, 0.5);
+	border-radius: 50%;
+	box-shadow: 0px 0px 4px white;
+	animation-duration: 1s;
+	animation-name: shrink;
+}
+
+@keyframes shrink {
+	from {
+		width: 30px;
+		height: 30px;
+		top: 0px;
+		left: 0px;
+	}
+
+	to {
+		width: 10px;
+		height: 10px;
+		top: 10px;
+		left: 10px;
+	}
+}
+
+.PoGo-PortalAnimationHover {
+	background-color: rgb(255, 102, 0, 0.8);
+	border-radius: 50%;
+	animation-duration: 1s;
+	animation-name: shrinkHover;
+	animation-iteration-count: infinite;
+}
+
+@keyframes shrinkHover {
+	from {
+		width: 40px;
+		height: 40px;
+		top: 0px;
+		left: 0px;
+	}
+
+	to {
+		width: 20px;
+		height: 20px;
+		top: 10px;
+		left: 10px;
+	}
+}
+
 `).appendTo('head');
 	};
 
@@ -2055,7 +2109,7 @@ path.pokestop-circle {
 		group.sort(sortGyms).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
-			const img = portal.image ? '<img src="' + portal.image.replace('http:', 'https:') + '">' : '';
+			const img = portal.image ? '<img src="' + portal.image.replace('http:', 'https:') + '" class="photo">' : '';
 			wrapper.innerHTML = '<span class="PogoName">' + portal.name +
 				img + '</span>' +
 				'<a data-type="pokestops">' + 'STOP' + '</a>' +
@@ -2102,11 +2156,59 @@ path.pokestop-circle {
 			// continue
 			promptToClassifyPokestops(groups);
 		});
+		container.on('click', 'img.photo', centerPortal);
+
+		let hoverMarker;
+		container.find('img.photo').hover( 
+			function hIn() {
+				const guid = this.parentNode.parentNode.getAttribute('data-guid');
+				const portal = window.portals[guid];
+				const center = portal._latlng;
+				hoverMarker = L.marker(center, {
+						icon: L.divIcon({
+							className: 'PoGo-PortalAnimationHover',
+							iconSize: [40, 40],
+							iconAnchor: [20, 20],
+							html: ''
+						}),
+						interactive: false
+					});
+				stopLayerGroup.addLayer(hoverMarker);
+			}, function hOut() {
+				stopLayerGroup.removeLayer(hoverMarker);
+			});
+	}
+
+	/**
+	 * Center the map on the clicked portal to help tracking it (the user will have to manually move the dialog)
+	 */
+	function centerPortal(e) {
+		const guid = this.parentNode.parentNode.getAttribute('data-guid');
+		const portal = window.portals[guid];
+		map.panTo(portal._latlng);
+		drawClickAnimation(portal._latlng);
+	}
+
+	function drawClickAnimation(center) {
+		const marker = L.marker(center, {
+			icon: L.divIcon({
+				className: 'PoGo-PortalAnimation',
+				iconSize: [30, 30],
+				iconAnchor: [15, 15],
+				html: ''
+			}),
+			interactive: false
+		});
+		stopLayerGroup.addLayer(marker);
+
+		setTimeout(function () {
+			stopLayerGroup.removeLayer(marker);
+		}, 2000);
 	}
 
 	function getPortalImage(pokestop) {
 		if (pokestop.image)
-			return '<img src="' + pokestop.image.replace('http:', 'https:') + '">';
+			return '<img src="' + pokestop.image.replace('http:', 'https:') + '" class="photo">';
 
 		const portal = window.portals[pokestop.guid];
 		if (!portal)
@@ -2114,7 +2216,7 @@ path.pokestop-circle {
 
 		if (portal && portal.options && portal.options.data && portal.options.data.image) {
 			pokestop.image = portal.options.data.image;
-			return '<img src="' + pokestop.image.replace('http:', 'https:') + '">';
+			return '<img src="' + pokestop.image.replace('http:', 'https:') + '" class="photo">';
 		}
 		return '';
 	}
@@ -2156,9 +2258,9 @@ path.pokestop-circle {
 
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
-			wrapper.innerHTML = '<a data-type="gyms">' +
+			wrapper.innerHTML =
 				'<span class="PogoName">' + getPortalName(portal) +
-				getPortalImage(portal) + '</span>' + '</a>' +
+				getPortalImage(portal) + '</span>' + 
 				'<a data-type="gyms">' + 'GYM' + '</a>';
 			div.appendChild(wrapper);
 		});
@@ -2216,6 +2318,7 @@ path.pokestop-circle {
 				document.querySelector('.ui-dialog-title-active').textContent = missingGyms == 1 ? 'Which one is a Gym?' : 'Which ' + missingGyms + ' are Gyms?';
 			}
 		});
+		container.on('click', 'img.photo', centerPortal);
 	}
 
 	const setup = function () {
@@ -2266,7 +2369,6 @@ path.pokestop-circle {
 			showS2Dialog();
 		});
 		toolbox.appendChild(buttonGrid);
-
 
 		regionLayer = L.layerGroup();
 		window.addLayerGroup('S2 Grid', regionLayer, true);
