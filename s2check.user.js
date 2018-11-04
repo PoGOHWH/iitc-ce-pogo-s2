@@ -517,7 +517,14 @@ function initSvgIcon() {
 
 	let autoAddPokestops;
 
-	let regionLayer;
+	// Leaflet layers
+	let regionLayer; // s2 grid
+	let stopLayerGroup; // pokestops
+	let gymLayerGroup; // gyms
+
+	// Group of items added to the layer
+	let stopLayers = {};
+	let gymLayers = {};
 
 	let settings = {
 		highlightGymCandidateCells: false,
@@ -1181,11 +1188,6 @@ function initSvgIcon() {
 	const thisPlugin = window.plugin.pogo;
 	const KEY_STORAGE = 'plugin-pogo';
 
-	thisPlugin.stopLayers = {};
-	thisPlugin.stopLayerGroup = null;
-	thisPlugin.gymLayers = {};
-	thisPlugin.gymLayerGroup = null;
-
 	/*********************************************************************************************************************/
 
 	// Update the localStorage
@@ -1351,14 +1353,14 @@ function initSvgIcon() {
 			thisPlugin.updateStarPortal();
 	
 			if (existingType === 'pokestops') {
-				const starInLayer = thisPlugin.stopLayers[guid];
-				thisPlugin.stopLayerGroup.removeLayer(starInLayer);
-				delete thisPlugin.stopLayers[guid];
+				const starInLayer = stopLayers[guid];
+				stopLayerGroup.removeLayer(starInLayer);
+				delete stopLayers[guid];
 			}
 			if (existingType === 'gyms') {
-				const gymInLayer = thisPlugin.gymLayers[guid];
-				thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
-				delete thisPlugin.gymLayers[guid];
+				const gymInLayer = gymLayers[guid];
+				gymLayerGroup.removeLayer(gymInLayer);
+				delete gymLayers[guid];
 			}
 
 			if (existingType !== type) {
@@ -1590,9 +1592,9 @@ function initSvgIcon() {
 		thisPlugin.saveStorage();
 		thisPlugin.updateStarPortal();
 	
-		const gymInLayer = thisPlugin.gymLayers[guid];
-		thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
-		delete thisPlugin.gymLayers[guid];
+		const gymInLayer = gymLayers[guid];
+		gymLayerGroup.removeLayer(gymInLayer);
+		delete gymLayers[guid];
 
 		const tr = link.parentNode.parentNode;
 		tr.parentNode.removeChild(tr);
@@ -1603,9 +1605,9 @@ function initSvgIcon() {
 		thisPlugin.saveStorage();
 		thisPlugin.updateStarPortal();
 
-		const starInLayer = thisPlugin.stopLayers[guid];
-		thisPlugin.stopLayerGroup.removeLayer(starInLayer);
-		delete thisPlugin.stopLayers[guid];
+		const starInLayer = stopLayers[guid];
+		stopLayerGroup.removeLayer(starInLayer);
+		delete stopLayers[guid];
 
 		const tr = link.parentNode.parentNode;
 		tr.parentNode.removeChild(tr);
@@ -1629,15 +1631,15 @@ function initSvgIcon() {
 	};
 
 	thisPlugin.resetAllMarkers = function () {
-		for (let guid in thisPlugin.stopLayers) {
-			const starInLayer = thisPlugin.stopLayers[guid];
-			thisPlugin.stopLayerGroup.removeLayer(starInLayer);
-			delete thisPlugin.stopLayers[guid];
+		for (let guid in stopLayers) {
+			const starInLayer = stopLayers[guid];
+			stopLayerGroup.removeLayer(starInLayer);
+			delete stopLayers[guid];
 		}
-		for (let gymGuid in thisPlugin.gymLayers) {
-			const gymInLayer = thisPlugin.gymLayers[gymGuid];
-			thisPlugin.gymLayerGroup.removeLayer(gymInLayer);
-			delete thisPlugin.gymLayers[gymGuid];
+		for (let gymGuid in gymLayers) {
+			const gymInLayer = gymLayers[gymGuid];
+			gymLayerGroup.removeLayer(gymInLayer);
+			delete gymLayers[gymGuid];
 		}
 		thisPlugin.addAllMarkers();
 	};
@@ -1692,12 +1694,12 @@ function initSvgIcon() {
 		});
 
 		if (type === 'pokestops') {
-			thisPlugin.stopLayers[guid] = star;
-			star.addTo(thisPlugin.stopLayerGroup);
+			stopLayers[guid] = star;
+			star.addTo(stopLayerGroup);
 		}
 		if (type === 'gyms') {
-			thisPlugin.gymLayers[guid] = star;
-			star.addTo(thisPlugin.gymLayerGroup);
+			gymLayers[guid] = star;
+			star.addTo(gymLayerGroup);
 		}
 	};
 
@@ -2196,9 +2198,9 @@ path.pokestop-circle {
 			const portal = pokestops[guid];
 
 			delete pokestops[guid];
-			const starInLayer = thisPlugin.stopLayers[guid];
-			thisPlugin.stopLayerGroup.removeLayer(starInLayer);
-			delete thisPlugin.stopLayers[guid];
+			const starInLayer = stopLayers[guid];
+			stopLayerGroup.removeLayer(starInLayer);
+			delete stopLayers[guid];
 
 			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
 			if (settings.highlightGymCandidateCells) {
@@ -2241,10 +2243,10 @@ path.pokestop-circle {
 		window.addHook('portalAdded', onPortalAdded);
 
 		// Layer - pokemon go portals
-		thisPlugin.stopLayerGroup = new L.LayerGroup();
-		window.addLayerGroup('PokeStops', thisPlugin.stopLayerGroup, true);
-		thisPlugin.gymLayerGroup = new L.LayerGroup();
-		window.addLayerGroup('Gyms', thisPlugin.gymLayerGroup, true);
+		stopLayerGroup = new L.LayerGroup();
+		window.addLayerGroup('PokeStops', stopLayerGroup, true);
+		gymLayerGroup = new L.LayerGroup();
+		window.addLayerGroup('Gyms', gymLayerGroup, true);
 
 		thisPlugin.addAllMarkers();
 
