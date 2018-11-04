@@ -530,7 +530,7 @@ function initSvgIcon() {
 		highlightGymCandidateCells: false,
 		highlightGymCenter: false,
 		hideIngressPortalDetails: false,
-		promptForMissingData: false,
+		analyzeForMissingData: true,
 		grids: [
 			{
 				level: 14,
@@ -553,7 +553,13 @@ function initSvgIcon() {
 			return;
 		try	{
 			settings = JSON.parse(tmp);
-		} catch (e) {
+		} catch (e) { // eslint-disable-line no-empty
+		}
+		if (typeof settings.analyzeForMissingData == 'undefined') {
+			settings.analyzeForMissingData = true;
+		}
+		if (typeof settings.promptForMissingData != 'undefined') {
+			delete settings.promptForMissingData;
 		}
 		document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
 	}
@@ -832,7 +838,7 @@ function initSvgIcon() {
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
 			<p><label title='Hide in the Portal info the details about Mods, resonators and stats in Ingress'><input type="checkbox" id="chkHidePortalDetails">Hide Ingress portal details</label></p>
-			<p><label title="Prompt to fill missing pokestops and gyms that can't be guessed automatically"><input type="checkbox" id="chkPromptForMissingData">Prompt on missing Pokestops & Gyms</label></p>
+			<p><label title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms"><input type="checkbox" id="chkanalyzeForMissingData">Analyze portal data</label></p>
 			 `;
 
 		const container = dialog({
@@ -874,10 +880,10 @@ function initSvgIcon() {
 			document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
 		});
 
-		const chkPromptForMissingData = div.querySelector('#chkPromptForMissingData');
-		chkPromptForMissingData.checked = !!settings.promptForMissingData;
-		chkPromptForMissingData.addEventListener('change', e => {
-			settings.promptForMissingData = chkPromptForMissingData.checked;
+		const chkanalyzeForMissingData = div.querySelector('#chkanalyzeForMissingData');
+		chkanalyzeForMissingData.checked = !!settings.analyzeForMissingData;
+		chkanalyzeForMissingData.addEventListener('change', e => {
+			settings.analyzeForMissingData = chkanalyzeForMissingData.checked;
 			saveSettings();
 			if (newPortals.length > 0) {
 				checkNewPortals();
@@ -970,8 +976,6 @@ function initSvgIcon() {
 			3: []
 		};
 		
-		const cellsWithMissingGyms = [];
-
 		const drawCellAndNeighbors = function (cell) {
 			const cellStr = cell.toString();
 
@@ -986,10 +990,6 @@ function initSvgIcon() {
 						const missingGyms = computeMissingGyms(cellData);
 						if (missingGyms > 0) {
 							fillCell(cell, 'orange', 0.5);
-							// prompt for gyms only in the cells where all the lvl17 cells have been processed
-							if (cellData.notClassified.length == 0)
-								cellsWithMissingGyms.push(cellData);
-
 						} else if (missingGyms < 0) {
 							fillCell(cell, 'red', 0.5);
 						} 
@@ -1031,23 +1031,6 @@ function initSvgIcon() {
 			const color = colorScheme.missingStops[missingStops];
 			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
 		}
-
-		if (settings.promptForMissingData && cellsWithMissingGyms.length > 0 && Object.keys(window.portals).length > 0) {
-			setTimeout(function () {
-				if (!isThereAnyOpenDialog()) {
-					const filtered = filterWithinScreen(cellsWithMissingGyms);
-					const array = Object.values(filtered);
-					promptToClassifyGyms(array);
-				}
-			}, 1000);
-		}
-	}
-
-	/**
-	 * Returns true if there's any dialog open
-	 */
-	function isThereAnyOpenDialog() {
-		return $('.ui-dialog:visible').length > 0;
 	}
 
 	/**
@@ -1910,7 +1893,7 @@ path.pokestop-circle {
 
 .PogoClassification div {
     display: grid;
-    grid-template-columns: 200px 60px 60px;
+    grid-template-columns: 200px 60px 60px 60px;
     text-align: center;
     align-items: center;
     height: 140px;
@@ -1983,6 +1966,21 @@ img.photo {
 	}
 }
 
+#sidebarPogo {
+    color: #eee;
+    padding: 2px 5px;
+}
+
+#sidebarPogo span {
+    margin-right: 5px;
+}
+
+.refreshingData,
+.refreshingPortalCount {
+    opacity: 0.5;
+	pointer-events: none;
+}
+
 `).appendTo('head');
 	};
 
@@ -2014,8 +2012,18 @@ img.photo {
 
 		newPortals[guid] = portal;
 
-		if (checkNewPortalsTimout)
+		refreshNewPortalsCounter();
+	}
+
+	function refreshNewPortalsCounter() {
+		if (!settings.analyzeForMissingData)
+			return;
+
+		if (checkNewPortalsTimout) {
 			clearTimeout(checkNewPortalsTimout);
+		} else {
+			document.getElementById('sidebarPogo').classList.add('refreshingPortalCount');
+		}	
 		checkNewPortalsTimout = setTimeout(checkNewPortals, 1000);
 	}
 
@@ -2023,11 +2031,15 @@ img.photo {
 	 * A potential new portal has been received
 	 */
 	function checkNewPortals() {
+		checkNewPortalsTimout = null;
+
 		// don't try to classify if we don't have all the portal data
 		if (map.getZoom() < 15)
 			return;
 
-		//newPokestops = {};
+		document.getElementById('sidebarPogo').classList.remove('refreshingPortalCount');
+
+		newPokestops = {};
 		notClassifiedPokestops = [];
 
 		const allCells = groupByCell(17);
@@ -2059,20 +2071,13 @@ img.photo {
 				const obj = {'guid': portal.guid, 'lat': portal.lat, 'lng': portal.lng, 'name': portal.name};
 
 				newPokestops[portal.guid] = obj;
-				delete newPortals[portal.guid];
+				//delete newPortals[portal.guid];
 				return;
 			}
 
 			// too many items to guess
 			notClassifiedPokestops.push(data.notClassified);
 		});
-
-		/*
-		thisPlugin.saveStorage();
-		if (settings.highlightGymCandidateCells) {
-			updateMapGrid();
-		}
-		*/
 
 		if (typeof autoAddPokestops == 'undefined' && Object.keys(pokestops).length == 0 && Object.keys(newPokestops).length > 0) {
 			autoAddPokestops = window.confirm('Do you want to automatically create the detected pokestops in this session?');
@@ -2090,27 +2095,136 @@ img.photo {
 				updateMapGrid();
 			}
 		}
+		updateCounter('pokestops', Object.values(newPokestops));
+		updateCounter('classification', notClassifiedPokestops);
 
-		if (settings.promptForMissingData && notClassifiedPokestops.length > 0) {
-			promptToClassifyPokestops(notClassifiedPokestops);
+		// Now gyms
+		checkNewGyms();
+	}
+
+	function checkNewGyms() {
+		const cellsWithMissingGyms = [];
+
+		const allCells = groupByCell(14);
+
+		// Check only the items inside the screen, 
+		// the server might provide info about remote portals if they are part of a link 
+		// and we don't know anything else about nearby portals of that one.
+		// In this case (vs drawing) we want to filter only cells fully within the screen
+		const cells = filterWithinScreen(allCells);
+
+		// Find the cells where new Gyms can be identified
+		Object.keys(cells).forEach(id => {
+			const data = allCells[id];
+			// Only cells with all the portals already analyzed
+			if (data.notClassified.length > 0)
+				return;
+			const missingGyms = computeMissingGyms(data);
+			if (missingGyms > 0) {
+				cellsWithMissingGyms.push(data);
+			} 
+		});
+
+		if (cellsWithMissingGyms.length > 0) {
+			const filtered = filterWithinScreen(cellsWithMissingGyms);
+			updateCounter('gyms', Object.values(filtered));
+		} else {
+			updateCounter('gyms', []);
 		}
+	}
+
+	/**
+	 * Display new pokestops so they can be added
+	 */
+	function promptForNewPokestops(data) {
+		if (data.length == 0)
+			return;
+		let pending = data.length;
+
+		const div = document.createElement('div');
+		div.className = 'PogoClassification';
+		data.sort(sortGyms).forEach(portal => {
+			const wrapper = document.createElement('div');
+			wrapper.setAttribute('data-guid', portal.guid);
+			const img = getPortalImage(portal);
+			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
+				img + '</span>' +
+				'<a data-type="pokestops">' + 'STOP' + '</a>' +
+				'<a data-type="gyms">' + 'GYM' + '</a>' +
+				'<a data-type="notpogo">' + 'N/A' + '</a>';
+			div.appendChild(wrapper);
+		});
+		const container = dialog({
+			id: 'classifyPokestop',
+			html: div,
+			width: '420px',
+			title: 'Are all of these Pokestops or Gyms?',
+			buttons: {
+				// Button to allow skip this cell
+				'Skip': function () {
+					container.dialog('close');
+					data.forEach(portal => {
+						delete newPokestops[portal.guid];
+						skippedPortals[portal.guid] = true;
+					});
+					updateCounter('pokestops', Object.values(newPokestops));
+				},
+				'Mark all as Pokestops': function () {
+					container.dialog('close');
+					data.forEach(portal => {
+						delete newPokestops[portal.guid];
+						thisPlugin.addPortalpogo(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
+					});
+					if (settings.highlightGymCandidateCells) {
+						updateMapGrid();
+					}
+					updateCounter('pokestops', Object.values(newPokestops));
+				}
+			}
+		});
+		// Remove ok button
+		const outer = container.parent().parent();
+		outer.find('.ui-dialog-buttonset button:first').remove();
+
+		// mark the selected one as pokestop or gym
+		container.on('click', 'a', function (e) {
+			const type = this.getAttribute('data-type');
+			const row = this.parentNode;
+			const guid = row.getAttribute('data-guid');
+			const portal = allPortals[guid];
+			delete newPokestops[portal.guid];
+			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
+			$(row).fadeOut(200);
+			pending--;
+			if (pending == 0) {
+				container.dialog('close');
+			}
+			updateCounter('pokestops', Object.values(newPokestops));
+		});
+
+		container.on('click', 'img.photo', centerPortal);
+		configureHoverMarker(container);
 	}
 
 	/**
 	 * In a level 17 cell there's more than one portal, ask which one is Pokestop or Gym
 	 */
-	function promptToClassifyPokestops(groups) {
-		if (!groups || groups.length == 0)
+	function promptToClassifyPokestops() {
+		updateCounter('classification', notClassifiedPokestops);
+		if (notClassifiedPokestops.length == 0)
 			return;
 
-		const group = groups.shift();
+		const group = notClassifiedPokestops.shift();
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
 		group.sort(sortGyms).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
-			const img = portal.image ? '<img src="' + portal.image.replace('http:', 'https:') + '" class="photo">' : '';
-			wrapper.innerHTML = '<span class="PogoName">' + portal.name +
+			const img = getPortalImage(portal);
+			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
 				img + '</span>' +
 				'<a data-type="pokestops">' + 'STOP' + '</a>' +
 				'<a data-type="gyms">' + 'GYM' + '</a>';
@@ -2130,7 +2244,7 @@ img.photo {
 						skippedPortals[portal.guid] = true;
 					});
 					// continue
-					promptToClassifyPokestops(groups);
+					promptToClassifyPokestops();
 				}
 			}
 		});
@@ -2154,10 +2268,13 @@ img.photo {
 
 			container.dialog('close');
 			// continue
-			promptToClassifyPokestops(groups);
+			promptToClassifyPokestops();
 		});
 		container.on('click', 'img.photo', centerPortal);
+		configureHoverMarker(container);
+	}
 
+	function configureHoverMarker(container) {
 		let hoverMarker;
 		container.find('img.photo').hover( 
 			function hIn() {
@@ -2165,14 +2282,14 @@ img.photo {
 				const portal = window.portals[guid];
 				const center = portal._latlng;
 				hoverMarker = L.marker(center, {
-						icon: L.divIcon({
-							className: 'PoGo-PortalAnimationHover',
-							iconSize: [40, 40],
-							iconAnchor: [20, 20],
-							html: ''
-						}),
-						interactive: false
-					});
+					icon: L.divIcon({
+						className: 'PoGo-PortalAnimationHover',
+						iconSize: [40, 40],
+						iconAnchor: [20, 20],
+						html: ''
+					}),
+					interactive: false
+				});
 				stopLayerGroup.addLayer(hoverMarker);
 			}, function hOut() {
 				stopLayerGroup.removeLayer(hoverMarker);
@@ -2318,7 +2435,9 @@ img.photo {
 				document.querySelector('.ui-dialog-title-active').textContent = missingGyms == 1 ? 'Which one is a Gym?' : 'Which ' + missingGyms + ' are Gyms?';
 			}
 		});
+
 		container.on('click', 'img.photo', centerPortal);
+		configureHoverMarker(container);
 	}
 
 	const setup = function () {
@@ -2341,15 +2460,36 @@ img.photo {
 
 		thisPlugin.setupCSS();
 
+		const sidebarPogo = document.createElement('div');
+		sidebarPogo.id = 'sidebarPogo';
+		sidebarPogo.style.display = 'none';
+		document.getElementById('sidebar').appendChild(sidebarPogo);
+		sidebarPogo.appendChild(createCounter('New pokestops', 'pokestops', promptForNewPokestops));
+		sidebarPogo.appendChild(createCounter('Review required', 'classification', promptToClassifyPokestops));
+		sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
+
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
 
 		window.addHook('portalAdded', onPortalAdded);
+		window.addHook('mapDataRefreshStart', function () {
+			sidebarPogo.classList.add('refreshingData');
+		});
+		window.addHook('mapDataRefreshEnd', function () {
+			sidebarPogo.classList.remove('refreshingData');
+			refreshNewPortalsCounter();
+		});
+		map.on('moveend', function () {
+			refreshNewPortalsCounter();
+		});
+		sidebarPogo.classList.add('refreshingData');
 
 		// Layer - pokemon go portals
 		stopLayerGroup = new L.LayerGroup();
 		window.addLayerGroup('PokeStops', stopLayerGroup, true);
 		gymLayerGroup = new L.LayerGroup();
 		window.addLayerGroup('Gyms', gymLayerGroup, true);
+		regionLayer = L.layerGroup();
+		window.addLayerGroup('S2 Grid', regionLayer, true);
 
 		thisPlugin.addAllMarkers();
 
@@ -2370,12 +2510,49 @@ img.photo {
 		});
 		toolbox.appendChild(buttonGrid);
 
-		regionLayer = L.layerGroup();
-		window.addLayerGroup('S2 Grid', regionLayer, true);
-
 		map.on('moveend', updateMapGrid);
 		updateMapGrid();
 	};
+
+	function createCounter(title, type, callback) {
+		const div = document.createElement('div');
+		div.style.display = 'none';
+		const sTitle = document.createElement('span');
+		sTitle.textContent = title;
+		const counter = document.createElement('a');
+		counter.id = 'PogoCounter-' + type;
+		counter.addEventListener('click', function (e) {
+			callback(counter.PogoData);
+			return false;
+		});
+		div.appendChild(sTitle);
+		div.appendChild(counter);
+		return div;
+	}
+
+	function updateCounter(type, data) {
+		const counter = document.querySelector('#PogoCounter-' + type);
+		counter.PogoData = data;
+		counter.textContent = data.length;
+		counter.parentNode.style.display = data.length > 0 ? '' : 'none';
+
+		// Adjust visibility of the pane to avoid the small gap due to padding
+		const pane = counter.parentNode.parentNode;
+		if (data.length > 0) {
+			pane.style.display = '';
+			return;
+		} 
+		let node = pane.firstElementChild;
+		while (node) {
+			const rowData = node.lastElementChild.PogoData;
+			if (rowData && rowData.length > 0) {
+				pane.style.display = '';
+				return;
+			}
+			node = node.nextElementSibling;
+		}
+		pane.style.display = 'none';
+	}
 
 	// PLUGIN END //////////////////////////////////////////////////////////
 
