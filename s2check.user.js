@@ -517,8 +517,6 @@ function initSvgIcon() {
 	let newPokestops = {};
 	let notClassifiedPokestops = [];
 
-	let autoAddPokestops;
-
 	// Leaflet layers
 	let regionLayer; // s2 grid
 	let stopLayerGroup; // pokestops
@@ -2090,22 +2088,6 @@ img.photo {
 			notClassifiedPokestops.push(data.notClassified);
 		});
 
-		if (typeof autoAddPokestops == 'undefined' && Object.keys(pokestops).length == 0 && Object.keys(newPokestops).length > 0) {
-			autoAddPokestops = window.confirm('Do you want to automatically create the detected pokestops in this session?');
-		}
-
-		if (autoAddPokestops) {
-			Object.keys(newPokestops).forEach(id => {
-				const portal = newPokestops[id];
-				pokestops[portal.guid] = portal;
-				thisPlugin.addStar(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
-				delete newPokestops[id];
-			});
-			thisPlugin.saveStorage();
-			if (settings.highlightGymCandidateCells) {
-				updateMapGrid();
-			}
-		}
 		updateCounter('pokestops', Object.values(newPokestops));
 		updateCounter('classification', notClassifiedPokestops);
 
