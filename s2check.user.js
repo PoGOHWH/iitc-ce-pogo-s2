@@ -1243,8 +1243,7 @@ function initSvgIcon() {
 
 				// Show PoGo icons in the mobile status-bar
 				if (thisPlugin.isSmart) {
-					$('.PogoStatus').remove();
-					$('#updatestatus').prepend('<div class="PogoStatus">' + thisPlugin.htmlStar + '</div>');
+					document.querySelector('.PogoStatus').innerHTML = thisPlugin.htmlStar;
 					$('.PogoStatus > a').attr('title', '');
 				}
 
@@ -1983,6 +1982,16 @@ img.photo {
 	pointer-events: none;
 }
 
+#sidebarPogo.mobile {
+    width: 100%;
+    background: rebeccapurple;
+    display: flex;
+}
+
+#sidebarPogo.mobile > div {
+    margin-right: 1em;
+}
+
 `).appendTo('head');
 	};
 
@@ -2465,7 +2474,18 @@ img.photo {
 		const sidebarPogo = document.createElement('div');
 		sidebarPogo.id = 'sidebarPogo';
 		sidebarPogo.style.display = 'none';
-		document.getElementById('sidebar').appendChild(sidebarPogo);
+		if (thisPlugin.isSmart) {
+			const status = document.getElementById('updatestatus');
+			sidebarPogo.classList.add('mobile');
+			status.insertBefore(sidebarPogo, status.firstElementChild);
+
+			var dStatus = document.createElement('div');
+			dStatus.className = 'PogoStatus';
+			status.insertBefore(dStatus, status.firstElementChild);
+		} else {
+			document.getElementById('sidebar').appendChild(sidebarPogo);
+		}
+
 		sidebarPogo.appendChild(createCounter('New pokestops', 'pokestops', promptForNewPokestops));
 		sidebarPogo.appendChild(createCounter('Review required', 'classification', promptToClassifyPokestops));
 		sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
@@ -2507,7 +2527,8 @@ img.photo {
 		buttonGrid.textContent = 'PoGo Settings';
 		buttonGrid.title = 'Settings for S2 & PokemonGo';
 		buttonGrid.addEventListener('click', e => {
-			if (window.isSmartphone()) window.show('map');
+			if (thisPlugin.isSmart)
+				window.show('map');
 			showS2Dialog();
 		});
 		toolbox.appendChild(buttonGrid);
