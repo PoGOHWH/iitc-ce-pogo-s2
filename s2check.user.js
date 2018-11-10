@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.54
+// @version      0.55
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2066,7 +2066,7 @@ img.photo {
 				return;
 			const notClassified = data.notClassified;
 
-			if (data.gyms.length == 1 || data.stops.length == 1) {
+			if (data.gyms.length > 0 || data.stops.length > 0) {
 				// Already has a pogo item, ignore the rest
 				notClassified.forEach(portal => {
 					skippedPortals[portal.guid] = true;
