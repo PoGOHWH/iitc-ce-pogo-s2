@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.55
+// @version      0.56
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -529,7 +529,7 @@ function initSvgIcon() {
 	let settings = {
 		highlightGymCandidateCells: false,
 		highlightGymCenter: false,
-		hideIngressPortalDetails: false,
+		thisIsPogo: false,
 		analyzeForMissingData: true,
 		grids: [
 			{
@@ -561,7 +561,35 @@ function initSvgIcon() {
 		if (typeof settings.promptForMissingData != 'undefined') {
 			delete settings.promptForMissingData;
 		}
-		document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
+		setThisIsPogo();
+	}
+
+	let originalHighlightPortal;
+
+	function setThisIsPogo() {
+		document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
+
+		if (settings.thisIsPogo) {
+			removeIngressLayers();
+			if (window._current_highlighter == window._no_highlighter) {
+				// extracted from IITC plugin: Hide portal ownership
+				
+				originalHighlightPortal = window.highlightPortal;
+				window.highlightPortal = portal => {
+					window.portalMarkerScale();
+					const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
+					portal.setStyle(hidePortalOwnershipStyles);
+				};
+				window.resetHighlightedPortals();
+			}
+		} else {
+			restoreIngressLayers();
+			if (originalHighlightPortal != null) {
+				window.highlightPortal = originalHighlightPortal;
+				originalHighlightPortal = null;
+				window.resetHighlightedPortals();
+			}
+		}
 	}
 
 	let colorScheme = {
@@ -837,7 +865,7 @@ function initSvgIcon() {
 			selectRow +
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
-			<p><label title='Hide in the Portal info the details about Mods, resonators and stats in Ingress'><input type="checkbox" id="chkHidePortalDetails">Hide Ingress portal details</label></p>
+			<p><label title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'><input type="checkbox" id="chkThisIsPogo">This is PoGo!</label></p>
 			<p><label title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms"><input type="checkbox" id="chkanalyzeForMissingData">Analyze portal data</label></p>
 			 `;
 
@@ -872,12 +900,12 @@ function initSvgIcon() {
 			updateMapGrid();
 		});
 
-		const chkHidePortalDetails = div.querySelector('#chkHidePortalDetails');
-		chkHidePortalDetails.checked = !!settings.hidePortalDetails;
-		chkHidePortalDetails.addEventListener('change', e => {
-			settings.hidePortalDetails = chkHidePortalDetails.checked;
+		const chkThisIsPogo = div.querySelector('#chkThisIsPogo');
+		chkThisIsPogo.checked = !!settings.thisIsPogo;
+		chkThisIsPogo.addEventListener('change', e => {
+			settings.thisIsPogo = chkThisIsPogo.checked;
 			saveSettings();
-			document.querySelector('#sidebar').classList[settings.hidePortalDetails ? 'add' : 'remove']('hideIngressPortalDetails');
+			setThisIsPogo();
 		});
 
 		const chkanalyzeForMissingData = div.querySelector('#chkanalyzeForMissingData');
@@ -1223,7 +1251,8 @@ function initSvgIcon() {
 		$('.pogoStop').remove();
 		$('.pogoGym').remove();
 		$('.notPogo').remove();
-		document.getElementById('portaldetails').classList.remove('isGym');
+		const portalDetails = document.getElementById('portaldetails');
+		portalDetails.classList.remove('isGym');
 
 		if (window.selectedPortal == null) {
 			return;
@@ -1235,6 +1264,9 @@ function initSvgIcon() {
 			setTimeout(function () { // the sidebar is constructed after firing the hook
 				thisPlugin.onPortalSelectedPending = false;
 
+				portalDetails.classList.remove('res', 'enl');
+				portalDetails.classList.add('none');
+
 				$('.pogoStop').remove();
 				$('.pogoGym').remove();
 				$('.notPogo').remove();
@@ -1245,7 +1277,7 @@ function initSvgIcon() {
 					$('.PogoStatus > a').attr('title', '');
 				}
 
-				$('#portaldetails').append('<div class="PogoButtons">Pokemon Go: ' + thisPlugin.htmlStar + '</div>' +
+				$(portalDetails).append('<div class="PogoButtons">Pokemon Go: ' + thisPlugin.htmlStar + '</div>' +
 					`<div id="PogoGymInfo">
 					<label for='PogoGymMedal'>Medal:</label> <select id='PogoGymMedal'>
 							<option value='None'>None</option>
@@ -1811,11 +1843,22 @@ function initSvgIcon() {
 	display: block;
 }
 
-.hideIngressPortalDetails .mods,
-.hideIngressPortalDetails #randdetails,
-.hideIngressPortalDetails #resodetails,
-.hideIngressPortalDetails .linkdetails {
-	display: none;
+.thisIsPogo .mods,
+.thisIsPogo #randdetails,
+.thisIsPogo #resodetails,
+.thisIsPogo #level {
+    display: none;
+}
+
+.thisIsPogo #playerstat,
+.thisIsPogo #gamestat,
+.thisIsPogo #redeem,
+.thisIsPogo #chat,
+.thisIsPogo #artifactLink,
+.thisIsPogo #scoresLink,
+.thisIsPogo #chatinput,
+.thisIsPogo #chatcontrols {
+    display: none;
 }
 
 .gym-main-outline {
@@ -2433,6 +2476,107 @@ img.photo {
 		configureHoverMarker(container);
 	}
 
+	function removeLayer(name) {
+		const layers = window.layerChooser._layers;
+		const layersIds = Object.keys(layers);
+
+		let layerId = null;
+		let leafletLayer;
+		let isBase;
+		layersIds.forEach(id => {
+			const layer = layers[id];
+			if (layer.name == name) {
+				leafletLayer = layer.layer;
+				layerId = id;
+				isBase = !layer.overlay;
+			}
+		});
+
+		const enabled = map._layers[layerId] != null;
+		if (enabled) {
+			map.removeLayer(leafletLayer);
+		}
+		
+		delete window.layerChooser._layers[layerId];
+		window.layerChooser._update();
+		removedLayers[name] = {
+			layer: leafletLayer, 
+			enabled: enabled,
+			isBase: isBase
+		};
+		window.updateDisplayedLayerGroup(name, enabled);
+	}
+	const removedLayers = {};
+	let portalsLayerGroup;
+
+	function removeIngressLayers() {
+		removeLayer('CartoDB Dark Matter');
+		removeLayer('CartoDB Positron');
+		removeLayer('Google Default Ingress Map');
+
+
+		removeLayer('Fields');
+		removeLayer('Links');
+		removeLayer('DEBUG Data Tiles');
+		removeLayer('Artifacts');
+		removeLayer('Ornaments');
+		removeLayer('Beacons');
+		removeLayer('Frackers');
+
+		removeLayer('Unclaimed/Placeholder Portals');
+		for (let i = 1; i <= 8; i++) {
+			removeLayer('Level ' + i + ' Portals');
+		}
+		//removeLayer('Resistance');
+		//removeLayer('Enlightened');
+		mergePortalLayers();
+	}
+	
+	/**
+	 * Put all the layers for Ingress portals under a single one
+	 */
+	function mergePortalLayers() {
+		portalsLayerGroup = new L.LayerGroup();
+		window.addLayerGroup('Ingress Portals', portalsLayerGroup, true);
+		portalsLayerGroup.addLayer(removedLayers['Unclaimed/Placeholder Portals'].layer);
+		for (let i = 1; i <= 8; i++) {
+			portalsLayerGroup.addLayer(removedLayers['Level ' + i + ' Portals'].layer);
+		}
+		//portalsLayerGroup.addLayer(removedLayers['Resistance'].layer);
+		//portalsLayerGroup.addLayer(removedLayers['Enlightened'].layer);
+	}
+
+	/**
+	 * Remove the single layer for all the portals
+	 */
+	function revertPortalLayers() {
+		if (!portalsLayerGroup) {
+			return;
+		}
+		const name = 'Ingress Portals';
+		const layerId = portalsLayerGroup._leaflet_id;
+		const enabled = map._layers[layerId] != null;
+		if (enabled) {
+			map.removeLayer(portalsLayerGroup);
+		}
+		
+		delete window.layerChooser._layers[layerId];
+		window.layerChooser._update();
+		window.updateDisplayedLayerGroup(name, enabled);
+	}
+
+	function restoreIngressLayers() {
+		revertPortalLayers();
+
+		Object.keys(removedLayers).forEach(name => {
+			const info = removedLayers[name];
+			if (info.isBase)
+				window.layerChooser.addBaseLayer(info.layer, name);
+			else
+				window.addLayerGroup(name, info.layer, info.enabled);
+		});
+	}
+
 	const setup = function () {
 		thisPlugin.isSmart = window.isSmartphone();
 
@@ -2461,7 +2605,7 @@ img.photo {
 			sidebarPogo.classList.add('mobile');
 			status.insertBefore(sidebarPogo, status.firstElementChild);
 
-			var dStatus = document.createElement('div');
+			const dStatus = document.createElement('div');
 			dStatus.className = 'PogoStatus';
 			status.insertBefore(dStatus, status.firstElementChild);
 		} else {
@@ -2517,6 +2661,19 @@ img.photo {
 
 		map.on('moveend', updateMapGrid);
 		updateMapGrid();
+
+		// add ids to the links that we want to be able to hide
+		const links = document.querySelectorAll('#toolbox > a');
+		links.forEach(a => {
+			const text = a.textContent;
+			if (text == 'Region scores') {
+				a.id = 'scoresLink';
+			}
+			if (text == 'Artifacts') {
+				a.id = 'artifactLink';
+			}
+		});
+
 	};
 
 	function createCounter(title, type, callback) {
