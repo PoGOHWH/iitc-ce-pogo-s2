@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.58
+// @version      0.59
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -1426,7 +1426,7 @@ function initSvgIcon() {
 			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
 			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
 			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
-			<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been added or removed">Find portal changes</a>
+			<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been removed">Find removed portals</a>
 			</div>`;
 
 		const container = dialog({
@@ -1546,20 +1546,6 @@ function initSvgIcon() {
 
 		// Create report
 		const summary = [];
-		summary.push('<p>Portals not in Pokemon:</p>');
-		const portalKeys = Object.keys(portalsInView);
-		if (portalKeys.length == 0) {
-			summary.push('<p>-none-</p>');
-		} else {
-			summary.push('<table>');
-			portalKeys.forEach(id => {
-				const portal = portalsInView[id];
-				const latlng = portal._latlng;
-				summary.push('<tr><td><a onclick="selectPortalByLatLng(' + latlng.lat + ',' + latlng.lng + '); return false">' + portal.options.data.title + '</a></td>' +
-					'</tr>');
-			});
-			summary.push('</table>');
-		}
 
 		summary.push('<p>Gyms not in Ingress:</p>');
 		const gymKeys = Object.keys(gymsInView);
