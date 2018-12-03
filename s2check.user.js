@@ -2197,6 +2197,9 @@ img.photo {
 				'Mark all as Pokestops': function () {
 					container.dialog('close');
 					data.forEach(portal => {
+						if (!newPokestops[portal.guid])
+							return;
+
 						delete newPokestops[portal.guid];
 						thisPlugin.addPortalpogo(portal.guid, portal.lat, portal.lng, portal.name, 'pokestops');
 					});
