@@ -1,12 +1,12 @@
 // ==UserScript==
 // @id           s2check@alfonsoml
-// @name         S2 Check
+// @name         Pogo Tools
 // @category     Layer
 // @namespace    https://gitlab.com/AlfonsoML/pogo-s2/
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.59
+// @version      0.60
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
