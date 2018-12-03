@@ -517,6 +517,9 @@ function initSvgIcon() {
 	let newPokestops = {};
 	let notClassifiedPokestops = [];
 
+	// Portals that we know, but that have been moved from our stored location.
+	let movedPortals = [];
+
 	// Leaflet layers
 	let regionLayer; // s2 grid
 	let stopLayerGroup; // pokestops
@@ -1228,6 +1231,8 @@ function initSvgIcon() {
 
 		allPortals = {};
 		newPortals = {};
+
+		movedPortals = [];
 	};
 
 	/*************************************************************************/
@@ -1943,7 +1948,9 @@ path.pokestop-circle {
     margin: 0 auto;
 }
 
-img.photo {
+img.photo,
+.ingressLocation,
+.pogoLocation {
     cursor: zoom-in;
 }
 
@@ -2045,8 +2052,14 @@ img.photo {
 
 		// If it's already classified in Pokemon, get out
 		const pogoData = thisPlugin.findByGuid(guid);
-		if (pogoData)
+		if (pogoData) {
+			const pogoItem = pogoData.store[guid];
+			if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
+				movedPortals.push(pogoItem);
+				updateCounter('moved', movedPortals);
+			}
 			return;
+		}
 
 		if (skippedPortals[guid] || newPokestops[guid])
 			return;
@@ -2302,13 +2315,110 @@ img.photo {
 		configureHoverMarker(container);
 	}
 
+	/**
+	 * List of portals that have been moved
+	 */
+	function promptToMovePokestops() {
+		updateCounter('moved', movedPortals);
+		if (movedPortals.length == 0)
+			return;
+
+		const portal = movedPortals[0];
+		const div = document.createElement('div');
+		div.className = 'PogoClassification';
+		//movedPortals.sort(sortGyms).forEach(portal => {
+		const wrapper = document.createElement('div');
+		wrapper.setAttribute('data-guid', portal.guid);
+		const img = getPortalImage(portal);
+		wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
+			img + '</span>' +
+			'<span><span class="ingressLocation">' + 'Ingress location' + '</span></span>' +
+			'<span><span class="pogoLocation" data-lat="' + portal.lat + '" data-lng="' + portal.lng + '">' + 'Pogo location' + '</span><br>' +
+			'<a>' + 'Update' + '</a></span>';
+		div.appendChild(wrapper);
+		//});
+		const container = dialog({
+			id: 'movedPortals',
+			html: div,
+			width: '360px',
+			title: 'This portal has been moved in Ingress',
+			buttons: {
+			}
+		});
+
+		// Update location
+		container.on('click', 'a', function (e) {
+			const guid = this.parentNode.parentNode.getAttribute('data-guid');
+			const portal = window.portals[guid];
+			const pogoData = thisPlugin.findByGuid(guid);
+			const ll = portal.getLatLng();
+
+			const existingType = pogoData.type;
+			// remove marker
+			if (existingType === 'pokestops') {
+				const starInLayer = stopLayers[guid];
+				stopLayerGroup.removeLayer(starInLayer);
+				delete stopLayers[guid];
+			}
+			if (existingType === 'gyms') {
+				const gymInLayer = gymLayers[guid];
+				gymLayerGroup.removeLayer(gymInLayer);
+				delete gymLayers[guid];
+			}
+
+			pogoData.store[guid].lat = ll.lat;
+			pogoData.store[guid].lng = ll.lng;
+			thisPlugin.saveStorage();
+
+			// Draw new marker
+			thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, portal.options.data.title, existingType);
+
+
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
+
+			container.dialog('close');
+			// continue
+			movedPortals.shift();
+			promptToMovePokestops();
+		});
+		container.on('click', 'img.photo', centerPortal);
+		container.on('click', '.ingressLocation', centerPortal);
+		container.on('click', '.pogoLocation', centerPortalAlt);
+		configureHoverMarker(container);
+		configureHoverMarkerAlt(container);
+	}
+
 	function configureHoverMarker(container) {
 		let hoverMarker;
-		container.find('img.photo').hover( 
+		container.find('img.photo, .ingressLocation').hover( 
 			function hIn() {
 				const guid = this.parentNode.parentNode.getAttribute('data-guid');
 				const portal = window.portals[guid];
 				const center = portal._latlng;
+				hoverMarker = L.marker(center, {
+					icon: L.divIcon({
+						className: 'PoGo-PortalAnimationHover',
+						iconSize: [40, 40],
+						iconAnchor: [20, 20],
+						html: ''
+					}),
+					interactive: false
+				});
+				stopLayerGroup.addLayer(hoverMarker);
+			}, function hOut() {
+				stopLayerGroup.removeLayer(hoverMarker);
+			});
+	}
+
+	function configureHoverMarkerAlt(container) {
+		let hoverMarker;
+		container.find('.pogoLocation').hover( 
+			function hIn() {
+				const lat = this.getAttribute('data-lat');
+				const lng = this.getAttribute('data-lng');
+				const center = new L.LatLng(lat, lng);
 				hoverMarker = L.marker(center, {
 					icon: L.divIcon({
 						className: 'PoGo-PortalAnimationHover',
@@ -2332,6 +2442,14 @@ img.photo {
 		const portal = window.portals[guid];
 		map.panTo(portal._latlng);
 		drawClickAnimation(portal._latlng);
+	}
+
+	function centerPortalAlt(e) {
+		const lat = this.getAttribute('data-lat');
+		const lng = this.getAttribute('data-lng');
+		const center = new L.LatLng(lat, lng);
+		map.panTo(center);
+		drawClickAnimation(center);
 	}
 
 	function drawClickAnimation(center) {
@@ -2606,6 +2724,7 @@ img.photo {
 
 		sidebarPogo.appendChild(createCounter('New pokestops', 'pokestops', promptForNewPokestops));
 		sidebarPogo.appendChild(createCounter('Review required', 'classification', promptToClassifyPokestops));
+		sidebarPogo.appendChild(createCounter('Moved portals', 'moved', promptToMovePokestops));
 		sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
 
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
