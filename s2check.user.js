@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.60
+// @version      0.61
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -519,6 +519,9 @@ function initSvgIcon() {
 
 	// Portals that we know, but that have been moved from our stored location.
 	let movedPortals = [];
+
+	// Pogo items that are no longer available.
+	let missingPortals = {};
 
 	// Leaflet layers
 	let regionLayer; // s2 grid
@@ -1254,6 +1257,7 @@ function initSvgIcon() {
 		newPortals = {};
 
 		movedPortals = [];
+		missingPortals = {};
 	};
 
 	/*************************************************************************/
@@ -2075,6 +2079,15 @@ img.photo,
 		const pogoData = thisPlugin.findByGuid(guid);
 		if (pogoData) {
 			const pogoItem = pogoData.store[guid];
+
+			// Mark that it still exists in Ingress
+			pogoItem.exists = true;
+			if (missingPortals[guid]) {
+				delete missingPortals[guid];
+				updateCounter('missing', Object.keys(missingPortals));
+			}
+
+			// Check if it has been moved
 			if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
 				movedPortals.push(pogoItem);
 				updateCounter('moved', movedPortals);
@@ -2128,6 +2141,10 @@ img.photo,
 		// try to guess new pokestops if they are the only items in a cell
 		Object.keys(cells).forEach(id => {
 			const data = allCells[id];
+			checkIsPortalMissing(data.gyms);
+			checkIsPortalMissing(data.stops);
+			//checkIsPortalMissing(data.notpogo);
+
 			if (data.notClassified.length == 0)
 				return;
 			const notClassified = data.notClassified;
@@ -2154,11 +2171,26 @@ img.photo,
 			notClassifiedPokestops.push(data.notClassified);
 		});
 
-		updateCounter('pokestops', Object.values(newPokestops));
+		updateCounter('pokestops', Object.keys(newPokestops));
 		updateCounter('classification', notClassifiedPokestops);
 
 		// Now gyms
 		checkNewGyms();
+	}
+
+	/**
+	 * Given an array of pogo items checks if they have been removed from Ingress
+	 */
+	function checkIsPortalMissing(array) {
+		array.forEach(item => {
+			if (item.exists)
+				return;
+			const guid = item.guid;
+			if (!missingPortals[guid]) {
+				missingPortals[guid] = true;
+				updateCounter('missing', Object.keys(missingPortals));
+			}
+		});
 	}
 
 	function checkNewGyms() {
@@ -2408,6 +2440,72 @@ img.photo,
 		container.on('click', '.ingressLocation', centerPortal);
 		container.on('click', '.pogoLocation', centerPortalAlt);
 		configureHoverMarker(container);
+		configureHoverMarkerAlt(container);
+	}
+
+	/**
+	 * Pogo items that aren't in Ingress
+	 */
+	function promptToRemovePokestops() {
+		const div = document.createElement('div');
+		div.className = 'PogoClassification';
+		const fullData = Object.keys(missingPortals).map(guid => {
+			const pogoData = thisPlugin.findByGuid(guid);
+			return pogoData.store[guid];
+		});
+		fullData.sort(sortGyms).forEach(portal => {
+			const wrapper = document.createElement('div');
+			wrapper.setAttribute('data-guid', portal.guid);
+			const name = portal.name || 'Unknown';
+			wrapper.innerHTML = '<span class="PogoName"><span class="pogoLocation" data-lat="' + portal.lat + '" data-lng="' + portal.lng + '">' + name + '</span></span>' +
+				'<span><a>' + 'Remove' + '</a></span>';
+			div.appendChild(wrapper);
+		});
+		const container = dialog({
+			id: 'missingPortals',
+			html: div,
+			width: '360px',
+			title: 'These portals are missing in Ingress',
+			buttons: {
+			}
+		});
+
+		// Update location
+		container.on('click', 'a', function (e) {
+			const row = this.parentNode.parentNode;
+			const guid = row.getAttribute('data-guid');
+			const pogoData = thisPlugin.findByGuid(guid);
+			const existingType = pogoData.type;
+
+			// remove marker
+			if (existingType === 'pokestops') {
+				const starInLayer = stopLayers[guid];
+				stopLayerGroup.removeLayer(starInLayer);
+				delete stopLayers[guid];
+			}
+			if (existingType === 'gyms') {
+				const gymInLayer = gymLayers[guid];
+				gymLayerGroup.removeLayer(gymInLayer);
+				delete gymLayers[guid];
+			}
+
+			delete pogoData.store[guid];
+			thisPlugin.saveStorage();
+
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
+
+			$(row).fadeOut(200);
+
+			delete missingPortals[guid];
+			updateCounter('missing', Object.keys(missingPortals));
+
+			if (Object.keys(missingPortals).length == 0) {
+				container.dialog('close');
+			}
+		});
+		container.on('click', '.pogoLocation', centerPortalAlt);
 		configureHoverMarkerAlt(container);
 	}
 
@@ -2746,6 +2844,7 @@ img.photo,
 		sidebarPogo.appendChild(createCounter('New pokestops', 'pokestops', promptForNewPokestops));
 		sidebarPogo.appendChild(createCounter('Review required', 'classification', promptToClassifyPokestops));
 		sidebarPogo.appendChild(createCounter('Moved portals', 'moved', promptToMovePokestops));
+		sidebarPogo.appendChild(createCounter('Missing portals', 'missing', promptToRemovePokestops));
 		sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
 
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
