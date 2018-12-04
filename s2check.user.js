@@ -1206,8 +1206,29 @@ function initSvgIcon() {
 
 	// Update the localStorage
 	thisPlugin.saveStorage = function () {
-		localStorage[KEY_STORAGE] = JSON.stringify({gyms: gyms, pokestops: pokestops, notpogo: notpogo});
+		localStorage[KEY_STORAGE] = JSON.stringify({
+			gyms: cleanUpExtraData(gyms), 
+			pokestops: cleanUpExtraData(pokestops), 
+			notpogo: cleanUpExtraData(notpogo)
+		});
 	};
+
+	/**
+	 * Create a new object where the extra properties of each pokestop/gym have been removed. Store only the minimum.
+	 */
+	function cleanUpExtraData(group) {
+		let newGroup = {};
+		Object.keys(group).forEach(id => {
+			const data = group[id];
+			newGroup[id] = {
+				guid: data.guid,
+				lat: data.lat,
+				lng: data.lng,
+				name: data.name
+			};
+		});
+		return newGroup;
+	}
 
 	// Load the localStorage
 	thisPlugin.loadStorage = function () {
