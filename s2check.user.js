@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.61
+// @version      0.62
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -1223,12 +1223,20 @@ function initSvgIcon() {
 		let newGroup = {};
 		Object.keys(group).forEach(id => {
 			const data = group[id];
-			newGroup[id] = {
+			const newData = {
 				guid: data.guid,
 				lat: data.lat,
 				lng: data.lng,
 				name: data.name
 			};
+
+			if (data.isEx)
+				newData.isEx = data.isEx;
+
+			if (data.medal)
+				newData.medal = data.medal;
+
+			newGroup[id] = newData;
 		});
 		return newGroup;
 	}
