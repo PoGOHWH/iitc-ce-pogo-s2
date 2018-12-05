@@ -2096,7 +2096,7 @@ img.photo,
 			pogoItem.exists = true;
 			if (missingPortals[guid]) {
 				delete missingPortals[guid];
-				updateCounter('missing', Object.keys(missingPortals));
+				updateMissingPortalsCount();
 			}
 
 			// Check if it has been moved
@@ -2185,9 +2185,30 @@ img.photo,
 
 		updateCounter('pokestops', Object.values(newPokestops));
 		updateCounter('classification', notClassifiedPokestops);
+		updateMissingPortalsCount();
 
 		// Now gyms
 		checkNewGyms();
+	}
+
+	/**
+	 * Filter the missing portals detection to show only those on screen and reduce false positives
+	 */
+	function updateMissingPortalsCount() {
+		const keys = Object.keys(missingPortals);
+		if (keys.length == 0)
+			updateCounter('missing', []);
+
+		const bounds = map.getBounds();
+		const filtered = [];
+		keys.forEach(guid => {
+			const pogoData = thisPlugin.findByGuid(guid);
+			const item = pogoData.store[guid];
+			if (isPointOnScreen(bounds, item)) {
+				filtered.push(item);
+			}
+		});
+		updateCounter('missing', filtered);
 	}
 
 	/**
@@ -2200,7 +2221,7 @@ img.photo,
 			const guid = item.guid;
 			if (!missingPortals[guid]) {
 				missingPortals[guid] = true;
-				updateCounter('missing', Object.keys(missingPortals));
+				updateMissingPortalsCount();
 			}
 		});
 	}
@@ -2458,14 +2479,10 @@ img.photo,
 	/**
 	 * Pogo items that aren't in Ingress
 	 */
-	function promptToRemovePokestops() {
+	function promptToRemovePokestops(missing) {
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		const fullData = Object.keys(missingPortals).map(guid => {
-			const pogoData = thisPlugin.findByGuid(guid);
-			return pogoData.store[guid];
-		});
-		fullData.sort(sortGyms).forEach(portal => {
+		missing.sort(sortGyms).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			const name = portal.name || 'Unknown';
@@ -2511,7 +2528,7 @@ img.photo,
 			$(row).fadeOut(200);
 
 			delete missingPortals[guid];
-			updateCounter('missing', Object.keys(missingPortals));
+			updateMissingPortalsCount();
 
 			if (Object.keys(missingPortals).length == 0) {
 				container.dialog('close');
