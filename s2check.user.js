@@ -1981,6 +1981,10 @@ path.pokestop-circle {
     margin: 0 auto;
 }
 
+#dialog-missingPortals .PogoClassification div {
+	height: 50px;
+}
+
 img.photo,
 .ingressLocation,
 .pogoLocation {
