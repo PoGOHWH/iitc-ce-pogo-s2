@@ -2179,7 +2179,7 @@ img.photo,
 			notClassifiedPokestops.push(data.notClassified);
 		});
 
-		updateCounter('pokestops', Object.keys(newPokestops));
+		updateCounter('pokestops', Object.values(newPokestops));
 		updateCounter('classification', notClassifiedPokestops);
 
 		// Now gyms
