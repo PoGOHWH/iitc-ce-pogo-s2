@@ -1698,7 +1698,8 @@ function initSvgIcon() {
 						<path class="pokestop-pole" d="M380.387 818.725h65.085v465.159h-65.085z" stroke-width="4.402"/>
 						<ellipse class="pokestop-base" cx="415.185" cy="1345.949" rx="305.686" ry="115.202" stroke-width="6"/>
 						</svg>`,
-					iconSize: L.point(24, 32)
+					iconSize: L.point(24, 32),
+					iconAnchor: [12, 38]
 				}
 			});
 
