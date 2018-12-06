@@ -2109,10 +2109,10 @@ img.photo,
 				if (missingPortals[guid]) {
 					delete missingPortals[guid];
 					updateMissingPortalsCount();
-			}
+				}
 
-			// Check if it has been moved
-			if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
+				// Check if it has been moved
+				if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
 					movedPortals.push(pogoItem);
 					updateCounter('moved', movedPortals);
 				}
@@ -2425,20 +2425,19 @@ img.photo,
 		if (movedPortals.length == 0)
 			return;
 
-		const portal = movedPortals[0];
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		//movedPortals.sort(sortGyms).forEach(portal => {
-		const wrapper = document.createElement('div');
-		wrapper.setAttribute('data-guid', portal.guid);
-		const img = getPortalImage(portal);
-		wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
-			img + '</span>' +
-			'<span><span class="ingressLocation">' + 'Ingress location' + '</span></span>' +
-			'<span><span class="pogoLocation" data-lat="' + portal.lat + '" data-lng="' + portal.lng + '">' + 'Pogo location' + '</span><br>' +
-			'<a>' + 'Update' + '</a></span>';
-		div.appendChild(wrapper);
-		//});
+		movedPortals.sort(sortGyms).forEach(portal => {
+			const wrapper = document.createElement('div');
+			wrapper.setAttribute('data-guid', portal.guid);
+			const img = getPortalImage(portal);
+			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
+				img + '</span>' +
+				'<span><span class="ingressLocation">' + 'Ingress location' + '</span></span>' +
+				'<span><span class="pogoLocation" data-lat="' + portal.lat + '" data-lng="' + portal.lng + '">' + 'Pogo location' + '</span><br>' +
+				'<a>' + 'Update' + '</a></span>';
+			div.appendChild(wrapper);
+		});
 		const container = dialog({
 			id: 'movedPortals',
 			html: div,
@@ -2450,7 +2449,8 @@ img.photo,
 
 		// Update location
 		container.on('click', 'a', function (e) {
-			const guid = this.parentNode.parentNode.getAttribute('data-guid');
+			const row = this.parentNode.parentNode;
+			const guid = row.getAttribute('data-guid');
 			const portal = window.portals[guid];
 			const pogoData = thisPlugin.findByGuid(guid);
 			const ll = portal.getLatLng();
@@ -2475,15 +2475,18 @@ img.photo,
 			// Draw new marker
 			thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, portal.options.data.title, existingType);
 
-
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
 			}
 
-			container.dialog('close');
-			// continue
-			movedPortals.shift();
-			promptToMovePokestops();
+			$(row).fadeOut(200);
+
+			// remove it from the list of portals
+			const idx = movedPortals.findIndex(x => x.guid == guid);
+			movedPortals.splice(idx, 1);
+
+			if (movedPortals.length == 0)
+				container.dialog('close');
 		});
 		container.on('click', 'img.photo', centerPortal);
 		container.on('click', '.ingressLocation', centerPortal);
