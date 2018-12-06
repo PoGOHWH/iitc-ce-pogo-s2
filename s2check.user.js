@@ -1884,6 +1884,11 @@ function initSvgIcon() {
     display: none;
 }
 
+.thisIsPogo #mobileinfo .portallevel,
+.thisIsPogo #mobileinfo .resonator {
+    display: none;
+}
+
 .thisIsPogo #sidebar #portaldetails h3.title {
 	color: #fff;
 }
