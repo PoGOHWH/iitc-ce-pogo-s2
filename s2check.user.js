@@ -2114,7 +2114,10 @@ img.photo,
 
 				// Check if it has been moved
 				if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
-					movedPortals.push(pogoItem);
+					movedPortals.push({
+						pogo: pogoItem,
+						ingress: portal
+					});
 					updateCounter('moved', movedPortals);
 				}
 			}
@@ -2427,14 +2430,17 @@ img.photo,
 
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		movedPortals.sort(sortGyms).forEach(portal => {
+		movedPortals.sort(sortGyms).forEach(pair => {
+			const portal = pair.ingress;
+			const pogoItem = pair.pogo;
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
+			wrapper.dataPortal = portal;
 			const img = getPortalImage(portal);
 			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
 				img + '</span>' +
 				'<span><span class="ingressLocation">' + 'Ingress location' + '</span></span>' +
-				'<span><span class="pogoLocation" data-lat="' + portal.lat + '" data-lng="' + portal.lng + '">' + 'Pogo location' + '</span><br>' +
+				'<span><span class="pogoLocation" data-lat="' + pogoItem.lat + '" data-lng="' + pogoItem.lng + '">' + 'Pogo location' + '</span><br>' +
 				'<a>' + 'Update' + '</a></span>';
 			div.appendChild(wrapper);
 		});
@@ -2442,8 +2448,25 @@ img.photo,
 			id: 'movedPortals',
 			html: div,
 			width: '360px',
-			title: 'This portal has been moved in Ingress',
+			title: 'These portals have been moved in Ingress',
 			buttons: {
+				// Button to move all the portals at once
+				'Update all': function () {
+					container.dialog('close');
+					movedPortals.forEach(pair => {
+						const portal = pair.ingress;
+						const pogoItem = pair.pogo;
+						movePogo(portal, pogoItem.guid);
+					});
+					movedPortals.length = 0;
+					updateCounter('moved', movedPortals);
+
+					thisPlugin.saveStorage();
+					if (settings.highlightGymCandidateCells) {
+						updateMapGrid();
+					}
+
+				}
 			}
 		});
 
@@ -2451,30 +2474,10 @@ img.photo,
 		container.on('click', 'a', function (e) {
 			const row = this.parentNode.parentNode;
 			const guid = row.getAttribute('data-guid');
-			const portal = window.portals[guid];
-			const pogoData = thisPlugin.findByGuid(guid);
-			const ll = portal.getLatLng();
+			const portal = row.dataPortal;
+			movePogo(portal, guid);
 
-			const existingType = pogoData.type;
-			// remove marker
-			if (existingType === 'pokestops') {
-				const starInLayer = stopLayers[guid];
-				stopLayerGroup.removeLayer(starInLayer);
-				delete stopLayers[guid];
-			}
-			if (existingType === 'gyms') {
-				const gymInLayer = gymLayers[guid];
-				gymLayerGroup.removeLayer(gymInLayer);
-				delete gymLayers[guid];
-			}
-
-			pogoData.store[guid].lat = ll.lat;
-			pogoData.store[guid].lng = ll.lng;
 			thisPlugin.saveStorage();
-
-			// Draw new marker
-			thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, portal.options.data.title, existingType);
-
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
 			}
@@ -2494,6 +2497,33 @@ img.photo,
 		container.on('click', '.pogoLocation', centerPortalAlt);
 		configureHoverMarker(container);
 		configureHoverMarkerAlt(container);
+	}
+
+	/**
+	 * Update location of a pogo item
+	 */
+	function movePogo(portal, pogoGuid) {
+		const guid = portal.guid;
+		const pogoData = thisPlugin.findByGuid(pogoGuid);
+
+		const existingType = pogoData.type;
+		// remove marker
+		if (existingType == 'pokestops') {
+			const starInLayer = stopLayers[guid];
+			stopLayerGroup.removeLayer(starInLayer);
+			delete stopLayers[guid];
+		}
+		if (existingType == 'gyms') {
+			const gymInLayer = gymLayers[guid];
+			gymLayerGroup.removeLayer(gymInLayer);
+			delete gymLayers[guid];
+		}
+
+		pogoData.store[guid].lat = portal.lat;
+		pogoData.store[guid].lng = portal.lng;
+
+		// Draw new marker
+		thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name || pogoData.name, existingType);
 	}
 
 	/**
@@ -2562,11 +2592,12 @@ img.photo,
 		let hoverMarker;
 		container.find('img.photo, .ingressLocation').hover( 
 			function hIn() {
-				const guid = this.parentNode.parentNode.getAttribute('data-guid');
-				const portal = window.portals[guid];
+				const row = this.parentNode.parentNode;
+				const guid = row.getAttribute('data-guid');
+				const portal = row.dataPortal || window.portals[guid];
 				if (!portal)
 					return;
-				const center = portal._latlng;
+				const center = portal._latlng || new L.LatLng(portal.lat, portal.lng);
 				hoverMarker = L.marker(center, {
 					icon: L.divIcon({
 						className: 'PoGo-PortalAnimationHover',
@@ -2610,10 +2641,14 @@ img.photo,
 	 * Center the map on the clicked portal to help tracking it (the user will have to manually move the dialog)
 	 */
 	function centerPortal(e) {
-		const guid = this.parentNode.parentNode.getAttribute('data-guid');
-		const portal = window.portals[guid];
-		map.panTo(portal._latlng);
-		drawClickAnimation(portal._latlng);
+		const row = this.parentNode.parentNode;
+		const guid = row.getAttribute('data-guid');
+		const portal = row.dataPortal || window.portals[guid];
+		if (!portal)
+			return;
+		const center = portal._latlng || new L.LatLng(portal.lat, portal.lng);
+		map.panTo(center);
+		drawClickAnimation(center);
 	}
 
 	function centerPortalAlt(e) {
