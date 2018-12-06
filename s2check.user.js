@@ -2670,6 +2670,8 @@ img.photo,
 			return;
 
 		const cellData = groups.shift();
+		updateCounter('gyms', groups);
+
 		let missingGyms = computeMissingGyms(cellData);
 
 		const div = document.createElement('div');
