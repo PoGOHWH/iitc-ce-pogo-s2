@@ -2102,18 +2102,23 @@ img.photo,
 		const pogoData = thisPlugin.findByGuid(guid);
 		if (pogoData) {
 			const pogoItem = pogoData.store[guid];
+			if (!pogoItem.exists) {
+				// Mark that it still exists in Ingress
+				pogoItem.exists = true;
 
-			// Mark that it still exists in Ingress
-			pogoItem.exists = true;
-			if (missingPortals[guid]) {
-				delete missingPortals[guid];
-				updateMissingPortalsCount();
+				if (missingPortals[guid]) {
+					delete missingPortals[guid];
+					updateMissingPortalsCount();
 			}
 
 			// Check if it has been moved
 			if (pogoItem.lat != portal.lat || pogoItem.lng != portal.lng) {
-				movedPortals.push(pogoItem);
-				updateCounter('moved', movedPortals);
+					movedPortals.push(pogoItem);
+					updateCounter('moved', movedPortals);
+				}
+			}
+			if (!pogoItem.name && portal.name) {
+				pogoData.store[guid].name = portal.name;
 			}
 			return;
 		}
