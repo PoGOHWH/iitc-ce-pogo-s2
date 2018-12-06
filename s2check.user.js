@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.63
+// @version      0.64
 // @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2421,7 +2421,6 @@ img.photo,
 	 * List of portals that have been moved
 	 */
 	function promptToMovePokestops() {
-		updateCounter('moved', movedPortals);
 		if (movedPortals.length == 0)
 			return;
 
@@ -2484,6 +2483,7 @@ img.photo,
 			// remove it from the list of portals
 			const idx = movedPortals.findIndex(x => x.guid == guid);
 			movedPortals.splice(idx, 1);
+			updateCounter('moved', movedPortals);
 
 			if (movedPortals.length == 0)
 				container.dialog('close');
