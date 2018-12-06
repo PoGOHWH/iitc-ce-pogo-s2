@@ -6,8 +6,8 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.64
-// @description  Find S2 properties and allow to mark Pokestops and Gyms on the Intel map
+// @version      0.65
+// @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
 // @match        https://ingress.com/intel*
