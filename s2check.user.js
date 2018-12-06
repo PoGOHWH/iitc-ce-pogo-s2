@@ -1436,6 +1436,12 @@ function initSvgIcon() {
 	thisPlugin.addPortalpogo = function (guid, lat, lng, name, type) {
 		// Add pogo in the localStorage
 		const obj = {'guid': guid, 'lat': lat, 'lng': lng, 'name': name};
+
+		// prevent that it would trigger the missing portal detection if it's in our data
+		if (window.portals[guid]) {
+			obj.exists = true;
+		}
+
 		if (type == 'gyms') {
 			gyms[guid] = obj;
 		}
