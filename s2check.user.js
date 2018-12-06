@@ -2560,6 +2560,8 @@ img.photo,
 			function hIn() {
 				const guid = this.parentNode.parentNode.getAttribute('data-guid');
 				const portal = window.portals[guid];
+				if (!portal)
+					return;
 				const center = portal._latlng;
 				hoverMarker = L.marker(center, {
 					icon: L.divIcon({
@@ -2572,7 +2574,8 @@ img.photo,
 				});
 				stopLayerGroup.addLayer(hoverMarker);
 			}, function hOut() {
-				stopLayerGroup.removeLayer(hoverMarker);
+				if (hoverMarker)
+					stopLayerGroup.removeLayer(hoverMarker);
 			});
 	}
 
@@ -2594,7 +2597,8 @@ img.photo,
 				});
 				stopLayerGroup.addLayer(hoverMarker);
 			}, function hOut() {
-				stopLayerGroup.removeLayer(hoverMarker);
+				if (hoverMarker)
+					stopLayerGroup.removeLayer(hoverMarker);
 			});
 	}
 
