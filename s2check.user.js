@@ -2607,10 +2607,10 @@ img.photo,
 					}),
 					interactive: false
 				});
-				stopLayerGroup.addLayer(hoverMarker);
+				map.addLayer(hoverMarker);
 			}, function hOut() {
 				if (hoverMarker)
-					stopLayerGroup.removeLayer(hoverMarker);
+					map.removeLayer(hoverMarker);
 			});
 	}
 
@@ -2630,10 +2630,10 @@ img.photo,
 					}),
 					interactive: false
 				});
-				stopLayerGroup.addLayer(hoverMarker);
+				map.addLayer(hoverMarker);
 			}, function hOut() {
 				if (hoverMarker)
-					stopLayerGroup.removeLayer(hoverMarker);
+					map.removeLayer(hoverMarker);
 			});
 	}
 
@@ -2669,10 +2669,10 @@ img.photo,
 			}),
 			interactive: false
 		});
-		stopLayerGroup.addLayer(marker);
+		map.addLayer(marker);
 
 		setTimeout(function () {
-			stopLayerGroup.removeLayer(marker);
+			map.removeLayer(marker);
 		}, 2000);
 	}
 
