@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.65
+// @version      0.66
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2173,8 +2173,8 @@ img.photo,
 		// try to guess new pokestops if they are the only items in a cell
 		Object.keys(cells).forEach(id => {
 			const data = allCells[id];
-			checkIsPortalMissing(data.gyms);
-			checkIsPortalMissing(data.stops);
+			checkIsPortalMissing(data.gyms, data);
+			checkIsPortalMissing(data.stops, data);
 			//checkIsPortalMissing(data.notpogo);
 
 			if (data.notClassified.length == 0)
@@ -2234,16 +2234,41 @@ img.photo,
 	/**
 	 * Given an array of pogo items checks if they have been removed from Ingress
 	 */
-	function checkIsPortalMissing(array) {
+	function checkIsPortalMissing(array, cellData) {
 		array.forEach(item => {
-			if (item.exists)
+			if (item.exists || item.newGuid)
 				return;
 			const guid = item.guid;
+
+			if (findCorrectGuid(item, cellData.notClassified)) {
+				return;
+			}
 			if (!missingPortals[guid]) {
 				missingPortals[guid] = true;
 				updateMissingPortalsCount();
 			}
 		});
+	}
+
+	/**
+	 * Check if there's another real portal in the same cell (we're checking a pogo that doesn't exist in Ingress)
+	 */
+	function findCorrectGuid(pogoItem, array) {
+		const portal = array.find(x => x.name == pogoItem.name && x.guid != pogoItem.guid);
+		if (portal != null) {
+			pogoItem.newGuid = portal.guid;
+			movedPortals.push({
+				pogo: pogoItem,
+				ingress: portal
+			});
+			updateCounter('moved', movedPortals);
+
+			delete missingPortals[pogoItem.guid];
+			updateMissingPortalsCount();
+
+			return true;
+		}
+		return false;
 	}
 
 	function checkNewGyms() {
@@ -2436,6 +2461,7 @@ img.photo,
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			wrapper.dataPortal = portal;
+			wrapper.dataPogoGuid = pogoItem.guid;
 			const img = getPortalImage(portal);
 			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
 				img + '</span>' +
@@ -2475,7 +2501,7 @@ img.photo,
 			const row = this.parentNode.parentNode;
 			const guid = row.getAttribute('data-guid');
 			const portal = row.dataPortal;
-			movePogo(portal, guid);
+			movePogo(portal, row.dataPogoGuid);
 
 			thisPlugin.saveStorage();
 			if (settings.highlightGymCandidateCells) {
@@ -2485,7 +2511,7 @@ img.photo,
 			$(row).fadeOut(200);
 
 			// remove it from the list of portals
-			const idx = movedPortals.findIndex(x => x.guid == guid);
+			const idx = movedPortals.findIndex(pair => pair.ingress.guid == pair.ingress.guid);
 			movedPortals.splice(idx, 1);
 			updateCounter('moved', movedPortals);
 
@@ -2509,18 +2535,17 @@ img.photo,
 		const existingType = pogoData.type;
 		// remove marker
 		if (existingType == 'pokestops') {
-			const starInLayer = stopLayers[guid];
+			const starInLayer = stopLayers[pogoGuid];
 			stopLayerGroup.removeLayer(starInLayer);
-			delete stopLayers[guid];
+			delete stopLayers[pogoGuid];
 		}
 		if (existingType == 'gyms') {
-			const gymInLayer = gymLayers[guid];
+			const gymInLayer = gymLayers[pogoGuid];
 			gymLayerGroup.removeLayer(gymInLayer);
-			delete gymLayers[guid];
+			delete gymLayers[pogoGuid];
 		}
 
-		pogoData.store[guid].lat = portal.lat;
-		pogoData.store[guid].lng = portal.lng;
+		delete pogoData.store[pogoGuid];
 
 		// Draw new marker
 		thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name || pogoData.name, existingType);
