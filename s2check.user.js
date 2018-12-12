@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.66
+// @version      0.67
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -392,11 +392,15 @@ function initSvgIcon() {
 			text = JSON.stringify(text);
 		}
 
+		if (typeof window.android !== 'undefined' && window.android.saveFile) { 
+			window.android.saveFile(filename, 'application/json', text);
+			return;
+		}
+
 		if (isIITCm()) {
 			promptForCopy(text);
 			return;
 		}
-
 
 		// http://stackoverflow.com/a/18197341/250294
 		const element = document.createElement('a');
@@ -423,6 +427,14 @@ function initSvgIcon() {
 	 * Callback signature: function( {string} contents ) {}
 	 */
 	function readFromFile(callback) {
+		// special hook from iitcm
+		if (typeof window.requestFile != 'undefined') {
+			window.requestFile(function (filename, content) {
+				callback(content);
+			});
+			return;
+		} 
+
 		if (isIITCm()) {
 			promptForPaste(callback);
 			return;
@@ -2497,7 +2509,6 @@ img.photo,
 		// Update location
 		container.on('click', 'a', function (e) {
 			const row = this.parentNode.parentNode;
-			const guid = row.getAttribute('data-guid');
 			const portal = row.dataPortal;
 			movePogo(portal, row.dataPogoGuid);
 
