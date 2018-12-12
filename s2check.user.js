@@ -2245,7 +2245,6 @@ img.photo,
 			}
 			if (!missingPortals[guid]) {
 				missingPortals[guid] = true;
-				updateMissingPortalsCount();
 			}
 		});
 	}
@@ -2264,7 +2263,6 @@ img.photo,
 			updateCounter('moved', movedPortals);
 
 			delete missingPortals[pogoItem.guid];
-			updateMissingPortalsCount();
 
 			return true;
 		}
