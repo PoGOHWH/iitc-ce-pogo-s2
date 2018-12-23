@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.67
+// @version      0.68
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -1077,6 +1077,27 @@ function initSvgIcon() {
 			const color = colorScheme.missingStops[missingStops];
 			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
 		}
+
+		drawAllNearbyCircles();
+	}
+
+	// Draw a 20m circle around each portal
+	function drawAllNearbyCircles() {
+		const settings = {
+			color: 'black', 
+			opacity: 0.6,
+			fillColor: 'black',
+			fillOpacity: 0.6,
+			weight: 1,
+			clickable: false
+		};
+
+		const screenPortals = filterItemsByMapBounds(window.portals);
+		Object.values(screenPortals).forEach(function drawNearbyCircle(portal) {
+			const center = portal._latlng;
+			const circle = L.circle(center, 20, settings);
+			regionLayer.addLayer(circle);
+		});
 	}
 
 	/**
@@ -2980,6 +3001,7 @@ img.photo,
 		window.addHook('mapDataRefreshEnd', function () {
 			sidebarPogo.classList.remove('refreshingData');
 			refreshNewPortalsCounter();
+			drawAllNearbyCircles();
 		});
 		map.on('moveend', function () {
 			refreshNewPortalsCounter();
