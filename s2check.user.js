@@ -649,15 +649,11 @@ function initSvgIcon() {
 		saveToFile(JSON.stringify(cells), filename);
 	}
 
-	function sortGyms(a, b) {
-		if (a.name > b.name) {
-			return 1;
-		}
-		if (a.name < b.name) {
+	function sortByName(a, b) {
+		if (!a.name)
 			return -1;
-		}
-		// a must be equal to b
-		return 0;
+
+		return a.name.localeCompare(b.name);
 	}
 
 	function showCellSummary(cells) {
@@ -670,7 +666,7 @@ function initSvgIcon() {
 		keys.forEach(name => {
 			const cellData = cells[name];
 			const cellCenter = cellData.cell.getLatLng();
-			const gymSummary = cellData.gyms.sort(sortGyms).map(gym => '<a data-lat="' + gym.lat + '" data-lng="' + gym.lng + '">' + gym.name.substr(0, 20) + '</a>').join(', ');
+			const gymSummary = cellData.gyms.sort(sortByName).map(gym => '<a data-lat="' + gym.lat + '" data-lng="' + gym.lng + '">' + gym.name.substr(0, 20) + '</a>').join(', ');
 			summary.push('<tr><td>' + i + '</td><td>' + '<a data-lat="' + cellCenter.lat + '" data-lng="' + cellCenter.lng + '">' + name + '</a></td><td>' + cellData.stops.length + '</td><td>' + cellData.gyms.length + '</td><td class="s2-gymnames">' + gymSummary + '</td></tr>');
 			i++;
 		});
@@ -2343,7 +2339,7 @@ img.photo,
 
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		data.sort(sortGyms).forEach(portal => {
+		data.sort(sortByName).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			const img = getPortalImage(portal);
@@ -2423,7 +2419,7 @@ img.photo,
 		const group = notClassifiedPokestops.shift();
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		group.sort(sortGyms).forEach(portal => {
+		group.sort(sortByName).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			const img = getPortalImage(portal);
@@ -2486,7 +2482,7 @@ img.photo,
 
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		movedPortals.sort(sortGyms).forEach(pair => {
+		movedPortals.sort(sortByName).forEach(pair => {
 			const portal = pair.ingress;
 			const pogoItem = pair.pogo;
 			const wrapper = document.createElement('div');
@@ -2587,7 +2583,7 @@ img.photo,
 	function promptToRemovePokestops(missing) {
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		missing.sort(sortGyms).forEach(portal => {
+		missing.sort(sortByName).forEach(portal => {
 			const wrapper = document.createElement('div');
 			wrapper.setAttribute('data-guid', portal.guid);
 			const name = portal.name || 'Unknown';
@@ -2779,7 +2775,7 @@ img.photo,
 
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
-		cellData.stops.sort(sortGyms).forEach(portal => {
+		cellData.stops.sort(sortByName).forEach(portal => {
 			if (skippedPortals[portal.guid])
 				return;
 
