@@ -640,85 +640,11 @@ function initSvgIcon() {
 		}
 	};
 
-	function analyzeData() {
-		const gridLevel = settings.grids[0].level;
-		const allCells = groupByCell(gridLevel);
-
-		const cells = filterByMapBounds(allCells);
-		showCellSummary(cells);
-	}
-
-	function saveGridAnalysis(cells) {
-		const gridLevel = settings.grids[0].level;
-		const filename = 'S2_' + gridLevel + '_' + new Date().getTime() + '.json';
-		saveToFile(JSON.stringify(cells), filename);
-	}
-
 	function sortByName(a, b) {
 		if (!a.name)
 			return -1;
 
 		return a.name.localeCompare(b.name);
-	}
-
-	function showCellSummary(cells) {
-		const keys = Object.keys(cells);
-		const summary = [];
-
-		summary.push('<div class="S2Analysis"><table>');
-		summary.push('<thead><tr><th> </th><th>Cell</th><th>Stops</th><th>Gyms</th><th>Gym names</th></tr></thead>');
-		let i = 1;
-		keys.forEach(name => {
-			const cellData = cells[name];
-			const cellCenter = cellData.cell.getLatLng();
-			const gymSummary = cellData.gyms.sort(sortByName).map(gym => '<a data-lat="' + gym.lat + '" data-lng="' + gym.lng + '">' + gym.name.substr(0, 20) + '</a>').join(', ');
-			summary.push('<tr><td>' + i + '</td><td>' + '<a data-lat="' + cellCenter.lat + '" data-lng="' + cellCenter.lng + '">' + name + '</a></td><td>' + cellData.stops.length + '</td><td>' + cellData.gyms.length + '</td><td class="s2-gymnames">' + gymSummary + '</td></tr>');
-			i++;
-		});
-		summary.push('</table></div>');
-
-		const container = dialog({
-			id: 's2analysys',
-			width: 'auto',
-			html: summary.join('\r\n'),
-			title: 'Analysis Results',
-			buttons: {
-				OK: function () {
-					container.dialog('close');
-				},
-				Save: function () {
-					saveGridAnalysis(cells);
-				}
-			}
-		});
-
-		// clicking on any of the 'a' elements in the dialog, close it and center the map there.
-		container.on('click', e => {
-			const target = e.target;
-			if (target.nodeName != 'A') {
-				return;
-			}
-			//container.dialog('close');
-			const lat = target.dataset.lat;
-			const lng = target.dataset.lng;
-			mapPanTo(lat, lng);
-		});
-
-	}
-	
-	// return only the cells that are visible by the map bounds to ignore far away data that might not be complete
-	function filterByMapBounds(cells) {
-		const bounds = map.getBounds();
-		const filtered = {};
-		Object.keys(cells).forEach(cellId => {
-			const cellData = cells[cellId];
-			const cell = cellData.cell;
-
-			if (isCellOnScreen(bounds, cell)) {
-				filtered[cellId] = cellData;
-			}
-		});
-		return filtered;
 	}
 
 	function isCellOnScreen(mapBounds, cell) {
@@ -947,10 +873,6 @@ function initSvgIcon() {
 		});
 	}
 
-	function mapPanTo(lat, lng) {
-		map.panTo(new L.LatLng(lat, lng));
-	}
-
 	/**
 	 * Refresh the S2 grid over the map
 	 */
@@ -1021,8 +943,6 @@ function initSvgIcon() {
 		const level = 14;
 		// All cells with items
 		const allCells = groupByCell(level);
-		// Get only cells in the screen
-		//const cells = filterByMapBounds(allCells);
 
 		const bounds = map.getBounds();
 		const seenCells = {};
@@ -1537,7 +1457,6 @@ function initSvgIcon() {
 		const content = `<div id="pogoSetbox">
 			<a id="save-json" title="Save as a JSON file the data about the Gyms and Pokestops on screen">Save Gyms and Stops as JSON</a>
 			<a id="save-gymscsv" title="Save as a CSV file the data about the Gyms on screen">Save Gyms as CSV</a>
-			<a id="show-summary" title="Shows an analysis grouping the Gyms according to the selected S2 level">Show Analysis</a>
 			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
 			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
 			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
@@ -1552,9 +1471,6 @@ function initSvgIcon() {
 		const div = container[0];
 		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
 		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
-		//div.querySelector('#save-stopscsv').addEventListener('click', e => saveCSV(pokestops, 'Pokestops'));
-		div.querySelector('#show-summary').addEventListener('click', e => analyzeData());
-
 	};
 
 	thisPlugin.optAlert = function (message) {
@@ -1906,23 +1822,6 @@ function initSvgIcon() {
 
 .notPogo:focus span, .notPogo.favorite span {
 	opacity: 1;
-}
-
-.s2-gymnames {
-	text-align: left;
-}
-
-.S2Analysis thead {
-	background: rgba(5, 31, 51, 0.9);
-}
-
-.S2Analysis tr:nth-child(odd) td {
-	background: rgba(7, 42, 69, 0.9);
-}
-
-.S2Analysis th {
-	text-align: center;
-	padding: 1px 5px 2px;
 }
 
 .s2check-text {
