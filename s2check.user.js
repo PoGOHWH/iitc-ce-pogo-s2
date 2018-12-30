@@ -1460,7 +1460,6 @@ function initSvgIcon() {
 			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
 			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
 			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
-			<a onclick="window.plugin.pogo.findPortalChanges();return false;" title="Check for portals that have been removed">Find removed portals</a>
 			</div>`;
 
 		const container = dialog({
@@ -1528,118 +1527,6 @@ function initSvgIcon() {
 			}
 			thisPlugin.optAlert('Successful.');
 		}
-	};
-
-	thisPlugin.findPortalChanges = function () {
-		const portalsInView = filterItemsByMapBounds(window.portals);
-		const stopsInView = filterItemsByMapBounds(pokestops);
-		const gymsInView = filterItemsByMapBounds(gyms);
-		const notpogoInView = filterItemsByMapBounds(notpogo);
-
-		// Compare data
-		Object.keys(gymsInView).forEach(id => {
-			if (portalsInView[id]) {
-				delete portalsInView[id];
-				delete gymsInView[id];
-			}
-		});
-
-		Object.keys(stopsInView).forEach(id => {
-			if (portalsInView[id]) {
-				delete portalsInView[id];
-				delete stopsInView[id];
-			}
-		});
-
-		Object.keys(notpogoInView).forEach(id => {
-			if (portalsInView[id]) {
-				delete portalsInView[id];
-				delete notpogoInView[id];
-			}
-		});
-
-		const keys = Object.keys(portalsInView);
-		if (keys.length > 0) {
-			// Ignore portals that are in the same cell that another one
-			const level = 17;
-			// All cells with pokemon items
-			const allCells = groupByCell(level);
-
-			keys.forEach(id => {
-				const portal = window.portals[id];
-				const cell = window.S2.S2Cell.FromLatLng(portal._latlng, level);
-				const cellId = cell.toString();
-				if (allCells[cellId]) {
-					delete portalsInView[id];
-				}
-			});
-		}
-
-		// Create report
-		const summary = [];
-
-		summary.push('<p>Gyms not in Ingress:</p>');
-		const gymKeys = Object.keys(gymsInView);
-		if (gymKeys.length == 0) {
-			summary.push('<p>-none-</p>');
-		} else {
-			summary.push('<table>');
-			gymKeys.forEach(id => {
-				const gym = gymsInView[id];
-				summary.push('<tr><td>' + gym.name + '</td>' +
-					'<td><a onclick="window.plugin.pogo.removeGym(\'' + id + '\', this); return false">Remove</a></td>' +
-					'</tr>');
-			});
-			summary.push('</table>');
-		}
-
-		summary.push('<p>Pokestops not in Ingress:</p>');
-		const stopKeys = Object.keys(stopsInView);
-		if (stopKeys.length == 0) {
-			summary.push('<p>-none-</p>');
-		} else {
-			summary.push('<table>');
-			stopKeys.forEach(id => {
-				const pokestop = stopsInView[id];
-				const name = pokestop.name ? pokestop.name : pokestop.lat + ',' + pokestop.lng;
-				summary.push('<tr><td><a onclick="map.panTo(new L.LatLng(' + pokestop.lat + ',' + pokestop.lng + ')); return false">' +
-					name + '</a></td>' +
-					'<td><a onclick="window.plugin.pogo.removePokestop(\'' + id + '\', this); return false">Remove</a></td>' +
-					'</tr>');
-			}); 
-			summary.push('</table>');
-		}
-
-		dialog({
-			html: summary.join(''),
-			title: 'Compare results'
-		});
-	};
-
-	thisPlugin.removeGym = function (guid, link) {
-		delete gyms[guid];
-		thisPlugin.saveStorage();
-		thisPlugin.updateStarPortal();
-	
-		const gymInLayer = gymLayers[guid];
-		gymLayerGroup.removeLayer(gymInLayer);
-		delete gymLayers[guid];
-
-		const tr = link.parentNode.parentNode;
-		tr.parentNode.removeChild(tr);
-	};
-
-	thisPlugin.removePokestop = function (guid, link) {
-		delete pokestops[guid];
-		thisPlugin.saveStorage();
-		thisPlugin.updateStarPortal();
-
-		const starInLayer = stopLayers[guid];
-		stopLayerGroup.removeLayer(starInLayer);
-		delete stopLayers[guid];
-
-		const tr = link.parentNode.parentNode;
-		tr.parentNode.removeChild(tr);
 	};
 
 	/* POKEMON GO PORTALS LAYER */
