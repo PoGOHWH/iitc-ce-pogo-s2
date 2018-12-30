@@ -535,6 +535,11 @@ function initSvgIcon() {
 	// Pogo items that are no longer available.
 	let missingPortals = {};
 
+	// Cells currently detected with extra gyms
+	let cellsExtraGyms = {};
+	// Cells that the user has marked to ignore extra gyms
+	let ignoredCellsExtraGyms = {};
+
 	// Leaflet layers
 	let regionLayer; // s2 grid
 	let stopLayerGroup; // pokestops
@@ -807,6 +812,15 @@ function initSvgIcon() {
 	}
 
 	/**
+	 * Returns the items that belong to the specified cell
+	 */
+	function findCellItems(cellId, level, items) {
+		return Object.values(items).filter(item => {
+			return item.cells[level] == cellId;
+		});
+	}
+
+	/**
 		Tries to add the portal photo when exporting from Ingress.com/intel
 	*/
 	function findPhotos(items) {
@@ -1032,8 +1046,12 @@ function initSvgIcon() {
 						const missingGyms = computeMissingGyms(cellData);
 						if (missingGyms > 0) {
 							fillCell(cell, 'orange', 0.5);
-						} else if (missingGyms < 0) {
+						} else if (missingGyms < 0 && !ignoredCellsExtraGyms[cellStr]) {
 							fillCell(cell, 'red', 0.5);
+							if (!cellsExtraGyms[cellStr]) {
+								cellsExtraGyms[cellStr] = true;
+								updateCounter('extraGyms', Object.keys(cellsExtraGyms));
+							}
 						} 
 						const missingStops = computeMissingStops(cellData);
 						switch (missingStops) {
@@ -1241,7 +1259,8 @@ function initSvgIcon() {
 		localStorage[KEY_STORAGE] = JSON.stringify({
 			gyms: cleanUpExtraData(gyms), 
 			pokestops: cleanUpExtraData(pokestops), 
-			notpogo: cleanUpExtraData(notpogo)
+			notpogo: cleanUpExtraData(notpogo),
+			ignoredCellsExtraGyms: ignoredCellsExtraGyms
 		});
 	};
 
@@ -1276,6 +1295,7 @@ function initSvgIcon() {
 		gyms = tmp.gyms;
 		pokestops = tmp.pokestops;
 		notpogo = tmp.notpogo || {};
+		ignoredCellsExtraGyms = tmp.ignoredCellsExtraGyms || {};
 	};
 
 	thisPlugin.createStorage = function () {
@@ -1288,6 +1308,7 @@ function initSvgIcon() {
 		gyms = {};
 		pokestops = {};
 		notpogo = {};
+		ignoredCellsExtraGyms = {};
 		thisPlugin.saveStorage();
 
 		allPortals = {};
@@ -1441,11 +1462,15 @@ function initSvgIcon() {
 				delete gymLayers[guid];
 			}
 
+			// Get portal name and coordinates
+			const p = window.portals[guid];
+			const ll = p.getLatLng();
 			if (existingType !== type) {
-				// Get portal name and coordinates
-				const p = window.portals[guid];
-				const ll = p.getLatLng();
 				thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
+			} else {
+				// we've removed one item from pogo, if the cell was marked as ignored, reset it.
+				if (updateExtraGymsCells(ll.lat, ll.lng))
+					thisPlugin.saveStorage();
 			}
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
@@ -1481,11 +1506,28 @@ function initSvgIcon() {
 			notpogo[guid] = obj;
 		}
 
+		updateExtraGymsCells(lat, lng);
 		thisPlugin.saveStorage();
 		thisPlugin.updateStarPortal();
 
 		thisPlugin.addStar(guid, lat, lng, name, type);
 	};
+
+	/**
+	 * An item has been changed in a cell, check if the cell should no longer be ignored
+	 */
+	function updateExtraGymsCells(lat, lng) {
+		if (Object.keys(ignoredCellsExtraGyms).length == 0)
+			return false;
+
+		const cell = window.S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), 14);
+		const cellId = cell.toString();
+		if (ignoredCellsExtraGyms) {
+			delete ignoredCellsExtraGyms[cellId];
+			return true;
+		}
+		return false;
+	}
 
 	/*
 		OPTIONS 
@@ -2846,6 +2888,79 @@ img.photo,
 		configureHoverMarker(container);
 	}
 
+	/**
+	 * In a level 14 cell there are too many Gyms
+	 */
+	function promptToVerifyGyms(cellIds) {
+		if (!cellIds)
+			cellIds = Object.keys(cellsExtraGyms);
+
+		if (cellIds.length == 0)
+			return;
+
+		const cellId = cellIds[0];
+		const group = findCellItems(cellId, 14, gyms);
+
+		const div = document.createElement('div');
+		div.className = 'PogoClassification';
+		group.sort(sortByName).forEach(portal => {
+			const wrapper = document.createElement('div');
+			wrapper.setAttribute('data-guid', portal.guid);
+			const img = getPortalImage(portal);
+			wrapper.innerHTML = '<span class="PogoName">' + getPortalName(portal) +
+				img + '</span>' +
+				'<a data-type="pokestops">' + 'STOP' + '</a>';
+			div.appendChild(wrapper);
+		});
+		const container = dialog({
+			id: 'classifyPokestop',
+			html: div,
+			width: '360px',
+			title: 'This cell has too many Gyms.',
+			buttons: {
+				// Button to allow skip this cell
+				'All are OK': function () {
+					ignoredCellsExtraGyms[cellId] = true;
+
+					if (settings.highlightGymCandidateCells) {
+						updateMapGrid();
+					}
+					container.dialog('close');
+					delete cellsExtraGyms[cellId];
+
+					thisPlugin.saveStorage();
+
+					updateCounter('extraGyms', Object.keys(cellsExtraGyms));
+					// continue
+					promptToVerifyGyms();
+				}
+			}
+		});
+		// Remove ok button
+		const outer = container.parent().parent();
+		outer.find('.ui-dialog-buttonset button:first').remove();
+
+		// mark the selected one as pokestop or gym
+		container.on('click', 'a', function (e) {
+			const type = this.getAttribute('data-type');
+			const guid = this.parentNode.getAttribute('data-guid');
+			const portal = gyms[guid];
+			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
+			if (settings.highlightGymCandidateCells) {
+				updateMapGrid();
+			}
+
+			container.dialog('close');
+			delete cellsExtraGyms[cellId];
+			updateCounter('extraGyms', Object.keys(cellsExtraGyms));
+			// continue
+			promptToVerifyGyms();
+		});
+		container.on('click', 'img.photo', centerPortal);
+		configureHoverMarker(container);
+	}
+
+
 	function removeLayer(name) {
 		const layers = window.layerChooser._layers;
 		const layersIds = Object.keys(layers);
@@ -2987,6 +3102,7 @@ img.photo,
 		sidebarPogo.appendChild(createCounter('Moved portals', 'moved', promptToMovePokestops));
 		sidebarPogo.appendChild(createCounter('Missing portals', 'missing', promptToRemovePokestops));
 		sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
+		sidebarPogo.appendChild(createCounter('Cells with extra Gyms', 'extraGyms', promptToVerifyGyms));
 
 		window.addHook('portalSelected', thisPlugin.onPortalSelected);
 
