@@ -544,10 +544,12 @@ function initSvgIcon() {
 	let regionLayer; // s2 grid
 	let stopLayerGroup; // pokestops
 	let gymLayerGroup; // gyms
+	let nearbyGroupLayer; // circles to mark the too near limit
 
 	// Group of items added to the layer
 	let stopLayers = {};
 	let gymLayers = {};
+	let nearbyCircles = {};
 
 	let settings = {
 		highlightGymCandidateCells: false,
@@ -919,6 +921,7 @@ function initSvgIcon() {
 		}
 		if (settings.highlightGymCandidateCells && 14 < (zoom + 2)) {
 			updateCandidateCells();
+			regionLayer.addLayer(nearbyGroupLayer);
 		}	
 		if (settings.highlightGymCenter && 20 < (zoom + 4)) {
 			updateGymCenters();
@@ -1011,27 +1014,6 @@ function initSvgIcon() {
 			const color = colorScheme.missingStops[missingStops];
 			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
 		}
-
-		drawAllNearbyCircles();
-	}
-
-	// Draw a 20m circle around each portal
-	function drawAllNearbyCircles() {
-		const settings = {
-			color: 'black', 
-			opacity: 0.6,
-			fillColor: 'black',
-			fillOpacity: 0.6,
-			weight: 1,
-			clickable: false
-		};
-
-		const screenPortals = filterItemsByMapBounds(window.portals);
-		Object.values(screenPortals).forEach(function drawNearbyCircle(portal) {
-			const center = portal._latlng;
-			const circle = L.circle(center, 20, settings);
-			regionLayer.addLayer(circle);
-		});
 	}
 
 	/**
@@ -1941,6 +1923,15 @@ img.photo,
 	// A portal has been received.
 	function onPortalAdded(data) {
 		const guid = data.portal.options.guid;
+
+		data.portal.on('add', function () {
+			addNearbyCircle(guid);
+		});
+
+		data.portal.on('remove', function () {
+			removeNearbyCircle(guid);
+		});
+
 		// analyze each portal only once, but sometimes the first time there's no additional data of the portal
 		if (allPortals[guid] && allPortals[guid].name)
 			return;
@@ -1990,6 +1981,37 @@ img.photo,
 		newPortals[guid] = portal;
 
 		refreshNewPortalsCounter();
+	}
+
+	/**
+	 * Draw a 20m circle around a portal
+	 */
+	function addNearbyCircle(guid) {
+		const settings = {
+			color: 'black', 
+			opacity: 0.6,
+			fillColor: 'black',
+			fillOpacity: 0.6,
+			weight: 1,
+			clickable: false
+		};
+
+		const portal = window.portals[guid];
+		const center = portal._latlng;
+		const circle = L.circle(center, 20, settings);
+		nearbyGroupLayer.addLayer(circle);
+		nearbyCircles[guid] = circle;
+	}
+
+	/**
+	 * Removes the 20m circle if a portal is purged
+	 */
+	function removeNearbyCircle(guid) {
+		const circle = nearbyCircles[guid];
+		if (circle != null) {
+			nearbyGroupLayer.removeLayer(circle);
+			delete nearbyCircles[guid];
+		}
 	}
 
 	function refreshNewPortalsCounter() {
@@ -2899,7 +2921,6 @@ img.photo,
 		window.addHook('mapDataRefreshEnd', function () {
 			sidebarPogo.classList.remove('refreshingData');
 			refreshNewPortalsCounter();
-			drawAllNearbyCircles();
 		});
 		map.on('moveend', function () {
 			refreshNewPortalsCounter();
@@ -2913,6 +2934,9 @@ img.photo,
 		window.addLayerGroup('Gyms', gymLayerGroup, true);
 		regionLayer = L.layerGroup();
 		window.addLayerGroup('S2 Grid', regionLayer, true);
+
+		// this layer will group all the nearby circles that are added or removed from it when the portals are added or removed
+		nearbyGroupLayer = L.layerGroup();
 
 		thisPlugin.addAllMarkers();
 
