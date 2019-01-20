@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.70
+// @version      0.71
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -49,7 +49,8 @@
  - i,j: they always use 30 bits, adjusting as needed. we use 0 to (1<<level)-1 instead
 				(so GetSizeIJ for a cell is always 1)
 */
-;(function () {	// eslint-disable-line no-extra-semi
+
+;function wrapperS2() {	// eslint-disable-line no-extra-semi
 
 	const S2 = window.S2 = {};
 
@@ -312,75 +313,75 @@
 		];
 		*/
 	};
-})();
-
-// based on https://github.com/iatkin/leaflet-svgicon
-function initSvgIcon() {
-	L.DivIcon.SVGIcon = L.DivIcon.extend({
-		options: {
-			'className': 'svg-icon',
-			'iconAnchor': null, //defaults to [iconSize.x/2, iconSize.y] (point tip)
-			'iconSize': L.point(48, 48)
-		},
-		initialize: function (options) {
-			options = L.Util.setOptions(this, options);
-        
-			//iconSize needs to be converted to a Point object if it is not passed as one
-			options.iconSize = L.point(options.iconSize);
-
-			if (!options.iconAnchor) {
-				options.iconAnchor = L.point(Number(options.iconSize.x) / 2, Number(options.iconSize.y));
-			} else {
-				options.iconAnchor = L.point(options.iconAnchor);
-			}
-		},
-
-		// https://github.com/tonekk/Leaflet-Extended-Div-Icon/blob/master/extended.divicon.js#L13
-		createIcon: function (oldIcon) {
-			let div = L.DivIcon.prototype.createIcon.call(this, oldIcon);
-
-			if (this.options.id) {
-				div.id = this.options.id;
-			}
-
-			if (this.options.style) {
-				for (let key in this.options.style) {
-					div.style[key] = this.options.style[key];
-				}
-			}
-			return div;
-		}
-	});
-
-	L.divIcon.svgIcon = function (options) {
-		return new L.DivIcon.SVGIcon(options);
-	};
-
-	L.Marker.SVGMarker = L.Marker.extend({
-		options: {
-			'iconFactory': L.divIcon.svgIcon,
-			'iconOptions': {}
-		},
-		initialize: function (latlng, options) {
-			options = L.Util.setOptions(this, options);
-			options.icon = options.iconFactory(options.iconOptions);
-			this._latlng = latlng;
-		},
-		onAdd: function (map) {
-			L.Marker.prototype.onAdd.call(this, map);
-		}
-	});
-
-	L.marker.svgMarker = function (latlng, options) {
-		return new L.Marker.SVGMarker(latlng, options);
-	};
 }
 
 /** Our code
 * For safety, S2 must be initialized before our code
 */
-(function () {
+function wrapperPlugin(plugin_info) {
 	'use strict';
+
+	// based on https://github.com/iatkin/leaflet-svgicon
+	function initSvgIcon() {
+		L.DivIcon.SVGIcon = L.DivIcon.extend({
+			options: {
+				'className': 'svg-icon',
+				'iconAnchor': null, //defaults to [iconSize.x/2, iconSize.y] (point tip)
+				'iconSize': L.point(48, 48)
+			},
+			initialize: function (options) {
+				options = L.Util.setOptions(this, options);
+			
+				//iconSize needs to be converted to a Point object if it is not passed as one
+				options.iconSize = L.point(options.iconSize);
+
+				if (!options.iconAnchor) {
+					options.iconAnchor = L.point(Number(options.iconSize.x) / 2, Number(options.iconSize.y));
+				} else {
+					options.iconAnchor = L.point(options.iconAnchor);
+				}
+			},
+
+			// https://github.com/tonekk/Leaflet-Extended-Div-Icon/blob/master/extended.divicon.js#L13
+			createIcon: function (oldIcon) {
+				let div = L.DivIcon.prototype.createIcon.call(this, oldIcon);
+
+				if (this.options.id) {
+					div.id = this.options.id;
+				}
+
+				if (this.options.style) {
+					for (let key in this.options.style) {
+						div.style[key] = this.options.style[key];
+					}
+				}
+				return div;
+			}
+		});
+
+		L.divIcon.svgIcon = function (options) {
+			return new L.DivIcon.SVGIcon(options);
+		};
+
+		L.Marker.SVGMarker = L.Marker.extend({
+			options: {
+				'iconFactory': L.divIcon.svgIcon,
+				'iconOptions': {}
+			},
+			initialize: function (latlng, options) {
+				options = L.Util.setOptions(this, options);
+				options.icon = options.iconFactory(options.iconOptions);
+				this._latlng = latlng;
+			},
+			onAdd: function (map) {
+				L.Marker.prototype.onAdd.call(this, map);
+			}
+		});
+
+		L.marker.svgMarker = function (latlng, options) {
+			return new L.Marker.SVGMarker(latlng, options);
+		};
+	}
 
 	/**
 	 * Saves a file to disk with the provided text
@@ -1132,14 +1133,6 @@ function initSvgIcon() {
 	// IITC code
 	// ***************************
 	
-	const plugin_info = {};
-	if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
-		plugin_info.script = {
-			version: GM_info.script.version,
-			name: GM_info.script.name,
-			description: GM_info.script.description
-		};
-	}
 
 	// ensure plugin framework is there, even if iitc is not yet loaded
 	if (typeof window.plugin !== 'function') {
@@ -3026,4 +3019,27 @@ img.photo,
 	if (window.iitcLoaded && typeof setup === 'function') {
 		setup();
 	}
-})();
+}
+
+const plugin_info = {};
+if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
+	plugin_info.script = {
+		version: GM_info.script.version,
+		name: GM_info.script.name,
+		description: GM_info.script.description
+	};
+}
+
+// Greasemonkey. It will be quite hard to debug
+if (typeof unsafeWindow != 'undefined') {
+	// inject code into site context
+	const script = document.createElement('script');
+	script.appendChild(document.createTextNode('(' + wrapperS2 + ')();'));
+	script.appendChild(document.createTextNode('(' + wrapperPlugin + ')(' + JSON.stringify(plugin_info) + ');'));
+	(document.body || document.head || document.documentElement).appendChild(script);
+} else {
+	// Tampermonkey, run code directly
+	wrapperS2();
+	wrapperPlugin(plugin_info);
+}
+
