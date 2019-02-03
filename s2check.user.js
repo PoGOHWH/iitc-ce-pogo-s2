@@ -922,7 +922,9 @@ function wrapperPlugin(plugin_info) {
 		}
 		if (settings.highlightGymCandidateCells && 14 < (zoom + 2)) {
 			updateCandidateCells();
-			regionLayer.addLayer(nearbyGroupLayer);
+			if (16 < zoom) {
+				regionLayer.addLayer(nearbyGroupLayer);
+			}
 		}	
 		if (settings.highlightGymCenter && 20 < (zoom + 4)) {
 			updateGymCenters();
