@@ -2772,12 +2772,14 @@ img.photo,
 		let layerId = null;
 		let leafletLayer;
 		let isBase;
+		let arrayIdx;
 		layersIds.forEach(id => {
 			const layer = layers[id];
 			if (layer.name == name) {
 				leafletLayer = layer.layer;
-				layerId = id;
+				layerId = leafletLayer._leaflet_id;
 				isBase = !layer.overlay;
+				arrayIdx = id;
 			}
 		});
 
@@ -2785,8 +2787,18 @@ img.photo,
 		if (enabled) {
 			map.removeLayer(leafletLayer);
 		}
+		if (typeof leafletLayer.off != 'undefined')
+			leafletLayer.off();
 		
-		delete window.layerChooser._layers[layerId];
+		// new Leaflet
+		if (Array.isArray(layers)) {
+			// remove from array
+			layers.splice(parseInt(arrayIdx, 10), 1);
+		} else {
+			// classic IITC, leaflet 0.7.7
+			// delete from object
+			delete layers[layerId];
+		}
 		window.layerChooser._update();
 		removedLayers[name] = {
 			layer: leafletLayer, 
@@ -2844,13 +2856,26 @@ img.photo,
 		const name = 'Ingress Portals';
 		const layerId = portalsLayerGroup._leaflet_id;
 		const enabled = map._layers[layerId] != null;
+		
+		const layers = window.layerChooser._layers;
+		if (Array.isArray(layers)) {
+			// remove from array
+			const idx = layers.findIndex(o => o.layer._leaflet_id == layerId);
+			layers.splice(idx, 1);
+		} else {
+			// classic IITC, leaflet 0.7.7
+			// delete from object
+			delete layers[layerId];
+		}
+		window.layerChooser._update();
+		window.updateDisplayedLayerGroup(name, enabled);
+
+		if (typeof portalsLayerGroup.off != 'undefined')
+			portalsLayerGroup.off();
 		if (enabled) {
 			map.removeLayer(portalsLayerGroup);
 		}
-		
-		delete window.layerChooser._layers[layerId];
-		window.layerChooser._update();
-		window.updateDisplayedLayerGroup(name, enabled);
+		portalsLayerGroup = null;
 	}
 
 	function restoreIngressLayers() {
