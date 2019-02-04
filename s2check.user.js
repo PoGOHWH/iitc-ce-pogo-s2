@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.72
+// @version      0.73
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2782,6 +2782,11 @@ img.photo,
 				arrayIdx = id;
 			}
 		});
+
+		// The Beacons and Frackers are not there in Firefox, why????
+		if (!leafletLayer) {
+			return;
+		}
 
 		const enabled = map._layers[layerId] != null;
 		if (enabled) {
