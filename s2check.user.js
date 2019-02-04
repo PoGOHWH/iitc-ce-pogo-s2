@@ -1707,6 +1707,7 @@ function wrapperPlugin(plugin_info) {
 	display: block;
 }
 
+.thisIsPogo .layer_off_warning,
 .thisIsPogo .mods,
 .thisIsPogo #randdetails,
 .thisIsPogo #resodetails,
@@ -2801,7 +2802,6 @@ img.photo,
 		removeLayer('CartoDB Dark Matter');
 		removeLayer('CartoDB Positron');
 		removeLayer('Google Default Ingress Map');
-
 
 		removeLayer('Fields');
 		removeLayer('Links');
