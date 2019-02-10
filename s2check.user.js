@@ -540,6 +540,8 @@ function wrapperPlugin(plugin_info) {
 	let cellsExtraGyms = {};
 	// Cells that the user has marked to ignore extra gyms
 	let ignoredCellsExtraGyms = {};
+	// Cells with missing Gyms
+	let ignoredCellsMissingGyms = {};
 
 	// Leaflet layers
 	let regionLayer; // s2 grid
@@ -970,7 +972,7 @@ function wrapperPlugin(plugin_info) {
 					const cellData = allCells[cellStr];
 					if (cellData) {
 						const missingGyms = computeMissingGyms(cellData);
-						if (missingGyms > 0) {
+						if (missingGyms > 0 && !ignoredCellsMissingGyms[cellStr]) {
 							fillCell(cell, 'orange', 0.5);
 						} else if (missingGyms < 0 && !ignoredCellsExtraGyms[cellStr]) {
 							fillCell(cell, 'red', 0.5);
@@ -1157,7 +1159,8 @@ function wrapperPlugin(plugin_info) {
 			gyms: cleanUpExtraData(gyms), 
 			pokestops: cleanUpExtraData(pokestops), 
 			notpogo: cleanUpExtraData(notpogo),
-			ignoredCellsExtraGyms: ignoredCellsExtraGyms
+			ignoredCellsExtraGyms: ignoredCellsExtraGyms,
+			ignoredCellsMissingGyms: ignoredCellsMissingGyms
 		});
 	};
 
@@ -1193,6 +1196,7 @@ function wrapperPlugin(plugin_info) {
 		pokestops = tmp.pokestops;
 		notpogo = tmp.notpogo || {};
 		ignoredCellsExtraGyms = tmp.ignoredCellsExtraGyms || {};
+		ignoredCellsMissingGyms = tmp.ignoredCellsMissingGyms || {};
 	};
 
 	thisPlugin.createStorage = function () {
@@ -1206,6 +1210,7 @@ function wrapperPlugin(plugin_info) {
 		pokestops = {};
 		notpogo = {};
 		ignoredCellsExtraGyms = {};
+		ignoredCellsMissingGyms = {};
 		thisPlugin.saveStorage();
 
 		allPortals = {};
@@ -1364,11 +1369,10 @@ function wrapperPlugin(plugin_info) {
 			const ll = p.getLatLng();
 			if (existingType !== type) {
 				thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
-			} else {
-				// we've removed one item from pogo, if the cell was marked as ignored, reset it.
-				if (updateExtraGymsCells(ll.lat, ll.lng))
-					thisPlugin.saveStorage();
 			}
+			// we've changed one item from pogo, if the cell was marked as ignored, reset it.
+			if (updateExtraGymsCells(ll.lat, ll.lng))
+				thisPlugin.saveStorage();
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
 	
@@ -1414,13 +1418,17 @@ function wrapperPlugin(plugin_info) {
 	 * An item has been changed in a cell, check if the cell should no longer be ignored
 	 */
 	function updateExtraGymsCells(lat, lng) {
-		if (Object.keys(ignoredCellsExtraGyms).length == 0)
+		if (Object.keys(ignoredCellsExtraGyms).length == 0 && Object.keys(ignoredCellsMissingGyms).length == 0)
 			return false;
 
 		const cell = window.S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), 14);
 		const cellId = cell.toString();
-		if (ignoredCellsExtraGyms) {
+		if (ignoredCellsExtraGyms[cellId]) {
 			delete ignoredCellsExtraGyms[cellId];
+			return true;
+		}
+		if (ignoredCellsMissingGyms[cellId]) {
+			delete ignoredCellsMissingGyms[cellId];
 			return true;
 		}
 		return false;
@@ -2174,6 +2182,8 @@ img.photo,
 			// Only cells with all the portals already analyzed
 			if (data.notClassified.length > 0)
 				return;
+			if (ignoredCellsMissingGyms[data.cell.toString()])
+				return;
 			const missingGyms = computeMissingGyms(data);
 			if (missingGyms > 0) {
 				cellsWithMissingGyms.push(data);
@@ -2665,6 +2675,21 @@ img.photo,
 					cellData.stops.forEach(portal => {
 						skippedPortals[portal.guid] = true;
 					});
+					// continue
+					promptToClassifyGyms(groups);
+				},
+				// Button to allow skip this cell
+				'There is no Gym': function () {
+					ignoredCellsMissingGyms[cellData.cell.toString()] = true;
+
+					if (settings.highlightGymCandidateCells) {
+						updateMapGrid();
+					}
+					container.dialog('close');
+
+					thisPlugin.saveStorage();
+
+					updateCounter('gyms', groups);
 					// continue
 					promptToClassifyGyms(groups);
 				}
