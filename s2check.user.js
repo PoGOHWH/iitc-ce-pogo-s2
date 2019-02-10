@@ -1807,6 +1807,19 @@ path.pokestop-circle {
     stroke: #2370DA;
 }
 
+.smallpokestops .pokestop {
+    opacity: 0.85;
+}
+
+.smallpokestops path.pokestop-pole,
+.smallpokestops ellipse.pokestop-base {
+	display: none;
+}
+
+.smallpokestops .pokestop svg {
+	transform: translateY(25px) scale(0.8);
+}
+
 .PogoClassification div {
     display: grid;
     grid-template-columns: 200px 60px 60px 60px;
@@ -2895,6 +2908,11 @@ img.photo,
 		});
 	}
 
+	function zoomListener() {
+		const zoom = map.getZoom();
+		document.body.classList.toggle('smallpokestops', zoom < 16);
+	}
+
 	const setup = function () {
 		thisPlugin.isSmart = window.isSmartphone();
 
@@ -2983,6 +3001,8 @@ img.photo,
 		});
 		toolbox.appendChild(buttonGrid);
 
+		map.on('zoomend', zoomListener);
+		zoomListener();
 		map.on('moveend', updateMapGrid);
 		updateMapGrid();
 
