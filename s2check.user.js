@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.74
+// @version      0.75
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -914,6 +914,14 @@ function wrapperPlugin(plugin_info) {
 		if (zoom < 5) {
 			return;
 		}
+		// first draw nearby circles at the bottom
+		if (settings.highlightGymCandidateCells && 12 < zoom) {
+			updateCandidateCells();
+			if (16 < zoom) {
+				regionLayer.addLayer(nearbyGroupLayer);
+			}
+		}
+		// then draw the cell grid
 		for (let i = 0; i < settings.grids.length; i++) {
 			const grid = settings.grids[i];
 			const gridLevel = grid.level;
@@ -922,13 +930,7 @@ function wrapperPlugin(plugin_info) {
 				drawCellAndNeighbors(cell, gridLevel, grid.width);
 			}
 		}
-		if (settings.highlightGymCandidateCells && 14 < (zoom + 2)) {
-			updateCandidateCells();
-			if (16 < zoom) {
-				regionLayer.addLayer(nearbyGroupLayer);
-			}
-		}	
-		if (settings.highlightGymCenter && 20 < (zoom + 4)) {
+		if (settings.highlightGymCenter && 16 < zoom) {
 			updateGymCenters();
 		}	
 	}
@@ -2008,7 +2010,7 @@ img.photo,
 			color: 'black', 
 			opacity: 0.6,
 			fillColor: 'black',
-			fillOpacity: 0.6,
+			fillOpacity: 0.4,
 			weight: 1,
 			clickable: false
 		};
