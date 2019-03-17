@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.75
+// @version      0.76
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -2006,6 +2006,10 @@ img.photo,
 	 * Draw a 20m circle around a portal
 	 */
 	function addNearbyCircle(guid) {
+		const portal = window.portals[guid];
+		if (!portal) 
+			return;
+
 		const settings = {
 			color: 'black', 
 			opacity: 0.6,
@@ -2015,7 +2019,6 @@ img.photo,
 			clickable: false
 		};
 
-		const portal = window.portals[guid];
 		const center = portal._latlng;
 		const circle = L.circle(center, 20, settings);
 		nearbyGroupLayer.addLayer(circle);
