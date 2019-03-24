@@ -1472,6 +1472,8 @@ function wrapperPlugin(plugin_info) {
 		readFromFile(function (content) {
 			try {
 				const list = JSON.parse(content); // try to parse JSON first
+				let importExStatus = true;
+				let importGymMedal = true;
 				for (let type in list) {
 					for (let idpogo in list[type]) {
 						const item = list[type][idpogo];
@@ -1489,6 +1491,15 @@ function wrapperPlugin(plugin_info) {
 
 						if (!thisPlugin.findByGuid(guid)) {
 							thisPlugin.addPortalpogo(guid, lat, lng, name, type);
+							if (type == 'gyms') {
+								if (importExStatus && item.isEx) {
+									gyms[guid].isEx = true;
+								}
+								// don't overwrite existing medals
+								if (importGymMedal && !gyms[guid].medal) {
+									gyms[guid].medal = item.medal;
+								}								
+							}
 						}
 					}
 				}
