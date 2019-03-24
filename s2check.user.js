@@ -943,11 +943,8 @@ function wrapperPlugin(plugin_info) {
 			return;
 		}
 		// first draw nearby circles at the bottom
-		if (settings.highlightGymCandidateCells && 12 < zoom) {
-			updateCandidateCells();
-			if (16 < zoom) {
-				regionLayer.addLayer(nearbyGroupLayer);
-			}
+		if (16 < zoom) {
+			regionLayer.addLayer(nearbyGroupLayer);
 		}
 		// then draw the cell grid
 		for (let i = 0; i < settings.grids.length; i++) {
@@ -957,6 +954,9 @@ function wrapperPlugin(plugin_info) {
 				const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
 				drawCellAndNeighbors(cell, grid.color, grid.width, grid.opacity);
 			}
+		}
+		if (settings.highlightGymCandidateCells && 12 < zoom) {
+			updateCandidateCells();
 		}
 		if (settings.highlightGymCenter && 16 < zoom) {
 			updateGymCenters();
