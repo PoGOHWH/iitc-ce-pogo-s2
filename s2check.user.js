@@ -831,7 +831,7 @@ function wrapperPlugin(plugin_info) {
 
 	function showS2Dialog() {
 		const selectRow = `
-			<p>Select the level of grid to display: <select>
+			<p>{{level}} level of grid to display: <select>
 			<option value=0>None</option>
 			<option value=9>9</option>
 			<option value=10>10</option>
@@ -848,12 +848,13 @@ function wrapperPlugin(plugin_info) {
 			</select></p>`;
 
 		const html = 
-			selectRow +
-			selectRow +
+			selectRow.replace('{{level}}', '1st') +
+			selectRow.replace('{{level}}', '2nd') +
 			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
 			<p><label title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'><input type="checkbox" id="chkThisIsPogo">This is PoGo!</label></p>
 			<p><label title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms"><input type="checkbox" id="chkanalyzeForMissingData">Analyze portal data</label></p>
+			<p><a id='PogoEditColors'>Colors</a></p>
 			 `;
 
 		const container = dialog({
@@ -904,6 +905,84 @@ function wrapperPlugin(plugin_info) {
 				checkNewPortals();
 			}
 		});
+
+		const PogoEditColors = div.querySelector('#PogoEditColors');
+		PogoEditColors.addEventListener('click', function(e) {
+			editColors();
+			e.preventDefault();
+			return false;
+		});
+	}
+
+	function editColors() {
+		const selectRow = `<p>{{title}}<br>
+			Color: <input type='color' id='{{id}}Color'> Opacity: <select id='{{id}}Opacity'>
+			<option value=0>0</option>
+			<option value=0.1>0.1</option>
+			<option value=0.2>0.2</option>
+			<option value=0.3>0.3</option>
+			<option value=0.4>0.4</option>
+			<option value=0.5>0.5</option>
+			<option value=0.6>0.6</option>
+			<option value=0.7>0.7</option>
+			<option value=0.8>0.8</option>
+			<option value=0.9>0.9</option>
+			<option value=1>1</option>
+			</select></p>`;
+
+		const html = 
+			selectRow.replace('{{title}}', '1st Grid').replace(/{{id}}/g, 'grid0') +
+			selectRow.replace('{{title}}', '2nd Grid').replace(/{{id}}/g, 'grid1') +
+			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms') +
+			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms') +
+			selectRow.replace('{{title}}', 'Cell 17 with a gym or stop').replace(/{{id}}/g, 'cell17Filled') +
+			selectRow.replace('{{title}}', 'Cell 14 with 3 gyms').replace(/{{id}}/g, 'cell14Filled') +
+			selectRow.replace('{{title}}', 'Border of too close circles').replace(/{{id}}/g, 'nearbyCircleBorder') +
+			selectRow.replace('{{title}}', 'Fill of too close circles').replace(/{{id}}/g, 'nearbyCircleFill') +
+			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1') +
+			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2') +
+			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3') +
+			'<p>Changes might not be updated immediately. Reload to be sure</p>'
+			;
+
+		const container = dialog({
+			id: 's2Colors',
+			width: 'auto',
+			html: html,
+			title: 'PoGo grid Colors'
+		});
+
+		const div = container[0];
+
+		const configureItems = function(key, item, id) {
+			if (!id)
+				id = item;
+
+			const entry = settings[key][item];
+			const select = div.querySelector('#' + id + 'Opacity');
+			select.value = entry.opacity;
+			select.addEventListener('change', function(event) {
+				settings[key][item].opacity = select.value;
+			});
+
+			const input = div.querySelector('#' + id + 'Color');
+			input.value = entry.color;
+			input.addEventListener('change', function(event) {
+				settings[key][item].color = input.value;
+			});
+		}
+
+		configureItems('grids', 0, 'grid0');
+		configureItems('grids', 1, 'grid1');
+		configureItems('colors', 'cellsExtraGyms');
+		configureItems('colors', 'cellsMissingGyms');
+		configureItems('colors', 'cell17Filled');
+		configureItems('colors', 'cell14Filled');
+		configureItems('colors', 'nearbyCircleBorder');
+		configureItems('colors', 'nearbyCircleFill');
+		configureItems('colors', 'missingStops1');
+		configureItems('colors', 'missingStops2');
+		configureItems('colors', 'missingStops3');
 	}
 
 	/**
