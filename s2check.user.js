@@ -554,7 +554,7 @@ function wrapperPlugin(plugin_info) {
 	let gymLayers = {};
 	let nearbyCircles = {};
 
-	let settings = {
+	const defaultSettings = {
 		highlightGymCandidateCells: false,
 		highlightGymCenter: false,
 		thisIsPogo: false,
@@ -562,14 +562,58 @@ function wrapperPlugin(plugin_info) {
 		grids: [
 			{
 				level: 14,
-				width: 5
+				width: 5,
+				color: '#004D40',
+				opacity: 0.5
 			},
 			{
 				level: 0,
-				width: 2
+				width: 2,
+				color: '#388E3C',
+				opacity: 0.5
 			}
-		]
+		],
+		colors: {
+			cellsExtraGyms: {
+				color: '#ff0000',
+				opacity: 0.5
+			},
+			cellsMissingGyms: {
+				color: '#ffa500',
+				opacity: 0.5
+			},
+			cell17Filled: {
+				color: '#000',
+				opacity: 0.6
+			},
+			cell14Filled: {
+				color: '#000',
+				opacity: 0.5
+			},
+			nearbyCircleBorder: {
+				color: '#000',
+				opacity: 0.6
+			},
+			nearbyCircleFill: {
+				color: '#000',
+				opacity: 0.4
+			},
+			missingStops1:  {
+				color: '#BF360C',
+				opacity: 1
+			},
+			missingStops2:  {
+				color: '#E64A19',
+				opacity: 1
+			},
+			missingStops3:  {
+				color: '#FF5722',
+				opacity: 1
+			}
+		}
 	};
+
+	let settings = defaultSettings;
 
 	function saveSettings() {
 		localStorage['s2check_settings'] = JSON.stringify(settings);
@@ -588,6 +632,15 @@ function wrapperPlugin(plugin_info) {
 		}
 		if (typeof settings.promptForMissingData != 'undefined') {
 			delete settings.promptForMissingData;
+		}
+		if (!settings.grids[0].color) {
+			settings.grids[0].color = defaultSettings.grids[0].color;
+			settings.grids[0].opacity = defaultSettings.grids[0].opacity;
+			settings.grids[1].color = defaultSettings.grids[1].color;
+			settings.grids[1].opacity = defaultSettings.grids[1].opacity;
+		}
+		if (!settings.colors) {
+			settings.colors = defaultSettings.colors;
 		}
 		setThisIsPogo();
 	}
@@ -619,31 +672,6 @@ function wrapperPlugin(plugin_info) {
 			}
 		}
 	}
-
-	let colorScheme = {
-		// https://www.materialui.co/colors
-		level: {
-			// teal
-			9: '#004D40',
-			10: '#00695C',
-			11: '#00796B',
-			12: '#00897B',
-			13: '#009688',
-			14: '#26A69A',
-			// Green
-			15: '#1B5E20',
-			16: '#2E7D32',
-			17: '#388E3C',
-			18: '#43A047',
-			19: '#4CAF50',
-			20: '#66BB6A'
-		},
-		missingStops: {
-			1: '#BF360C',
-			2: '#E64A19',
-			3: '#FF5722'
-		}
-	};
 
 	function sortByName(a, b) {
 		if (!a.name)
@@ -889,7 +917,7 @@ function wrapperPlugin(plugin_info) {
 
 		const bounds = map.getBounds();
 		const seenCells = {};
-		const drawCellAndNeighbors = function (cell, gridLevel, width) {
+		const drawCellAndNeighbors = function (cell, color, width, opacity) {
 			const cellStr = cell.toString();
 
 			if (!seenCells[cellStr]) {
@@ -898,12 +926,12 @@ function wrapperPlugin(plugin_info) {
 
 				if (isCellOnScreen(bounds, cell)) {
 					// on screen - draw it
-					drawCell(cell, colorScheme.level[gridLevel], width, 0.5);
+					drawCell(cell, color, width, opacity);
 
 					// and recurse to our neighbors
 					const neighbors = cell.getNeighbors();
 					for (let i = 0; i < neighbors.length; i++) {
-						drawCellAndNeighbors(neighbors[i], gridLevel, width);
+						drawCellAndNeighbors(neighbors[i], color, width, opacity);
 					}
 				}
 			}
@@ -927,7 +955,7 @@ function wrapperPlugin(plugin_info) {
 			const gridLevel = grid.level;
 			if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
 				const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
-				drawCellAndNeighbors(cell, gridLevel, grid.width);
+				drawCellAndNeighbors(cell, grid.color, grid.width, grid.opacity);
 			}
 		}
 		if (settings.highlightGymCenter && 16 < zoom) {
@@ -975,9 +1003,9 @@ function wrapperPlugin(plugin_info) {
 					if (cellData) {
 						const missingGyms = computeMissingGyms(cellData);
 						if (missingGyms > 0 && !ignoredCellsMissingGyms[cellStr]) {
-							fillCell(cell, 'orange', 0.5);
+							fillCell(cell, settings.colors.cellsMissingGyms.color, settings.colors.cellsMissingGyms.opacity);
 						} else if (missingGyms < 0 && !ignoredCellsExtraGyms[cellStr]) {
-							fillCell(cell, 'red', 0.5);
+							fillCell(cell, settings.colors.cellsExtraGyms.color, settings.colors.cellsExtraGyms.opacity);
 							if (!cellsExtraGyms[cellStr]) {
 								cellsExtraGyms[cellStr] = true;
 								updateCounter('extraGyms', Object.keys(cellsExtraGyms));
@@ -988,7 +1016,7 @@ function wrapperPlugin(plugin_info) {
 							case 0:
 								coverBlockedAreas(cellData);
 								if (missingGyms == 0) {
-									fillCell(cell, 'black', 0.5);
+									fillCell(cell, settings.colors.cell14Filled.color, settings.colors.cell14Filled.opacity);
 								}
 								break;
 							case 1:
@@ -1018,7 +1046,7 @@ function wrapperPlugin(plugin_info) {
 		drawCellAndNeighbors(cell);
 		// Draw missing cells in reverse order
 		for (let missingStops = 3; missingStops >= 1; missingStops--) {
-			const color = colorScheme.missingStops[missingStops];
+			const color = settings.colors['missingStops' + missingStops].color;
 			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
 		}
 	}
@@ -1058,7 +1086,7 @@ function wrapperPlugin(plugin_info) {
 
 	function coverLevel17Cell(point) {
 		const cell = S2.S2Cell.FromLatLng(point, 17);
-		fillCell(cell, 'black', 0.6);
+		fillCell(cell, settings.colors.cell17Filled.color, settings.colors.cell17Filled.opacity);
 	}
 
 	// Computes how many new stops must be added to the L14 Cell to get a new Gym
@@ -2021,17 +2049,17 @@ img.photo,
 		if (!portal) 
 			return;
 
-		const settings = {
-			color: 'black', 
-			opacity: 0.6,
-			fillColor: 'black',
-			fillOpacity: 0.4,
+		const circleSettings = {
+			color: settings.colors.nearbyCircleBorder.color, 
+			opacity: settings.colors.nearbyCircleBorder.opacity,
+			fillColor: settings.colors.nearbyCircleFill.color,
+			fillOpacity: settings.colors.nearbyCircleFill.opacity,
 			weight: 1,
 			clickable: false
 		};
 
 		const center = portal._latlng;
-		const circle = L.circle(center, 20, settings);
+		const circle = L.circle(center, 20, circleSettings);
 		nearbyGroupLayer.addLayer(circle);
 		nearbyCircles[guid] = circle;
 	}
