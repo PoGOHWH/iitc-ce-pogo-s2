@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.77
+// @version      0.78
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -915,7 +915,7 @@ function wrapperPlugin(plugin_info) {
 	}
 
 	function editColors() {
-		const selectRow = `<p>{{title}}<br>
+		const selectRow = `<p class='pogo-colors'>{{title}}<br>
 			Color: <input type='color' id='{{id}}Color'> Opacity: <select id='{{id}}Opacity'>
 			<option value=0>0</option>
 			<option value=0.1>0.1</option>
@@ -2062,6 +2062,11 @@ img.photo,
 
 #sidebarPogo.mobile > div {
     margin-right: 1em;
+}
+
+.pogo-colors input[type=color] {
+	border: 0;
+	padding: 0;
 }
 
 `).appendTo('head');
