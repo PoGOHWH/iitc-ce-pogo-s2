@@ -583,19 +583,19 @@ function wrapperPlugin(plugin_info) {
 				opacity: 0.5
 			},
 			cell17Filled: {
-				color: '#000',
+				color: '#000000',
 				opacity: 0.6
 			},
 			cell14Filled: {
-				color: '#000',
+				color: '#000000',
 				opacity: 0.5
 			},
 			nearbyCircleBorder: {
-				color: '#000',
+				color: '#000000',
 				opacity: 0.6
 			},
 			nearbyCircleFill: {
-				color: '#000',
+				color: '#000000',
 				opacity: 0.4
 			},
 			missingStops1:  {
@@ -941,8 +941,7 @@ function wrapperPlugin(plugin_info) {
 			selectRow.replace('{{title}}', 'Fill of too close circles').replace(/{{id}}/g, 'nearbyCircleFill') +
 			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1') +
 			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2') +
-			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3') +
-			'<p>Changes might not be updated immediately. Reload to be sure</p>'
+			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3')
 			;
 
 		const container = dialog({
@@ -954,6 +953,15 @@ function wrapperPlugin(plugin_info) {
 
 		const div = container[0];
 
+		const updatedSetting = function(id) {
+			saveSettings();
+			if (id == 'nearbyCircleBorder' || id == 'nearbyCircleFill') {
+				redrawNearbyCircles()
+			} else {
+				updateMapGrid();
+			}
+		};
+
 		const configureItems = function(key, item, id) {
 			if (!id)
 				id = item;
@@ -963,12 +971,14 @@ function wrapperPlugin(plugin_info) {
 			select.value = entry.opacity;
 			select.addEventListener('change', function(event) {
 				settings[key][item].opacity = select.value;
+				updatedSetting(id);
 			});
 
 			const input = div.querySelector('#' + id + 'Color');
 			input.value = entry.color;
 			input.addEventListener('change', function(event) {
 				settings[key][item].color = input.value;
+				updatedSetting(id);
 			});
 		}
 
@@ -2152,6 +2162,14 @@ img.photo,
 			nearbyGroupLayer.removeLayer(circle);
 			delete nearbyCircles[guid];
 		}
+	}
+
+	function redrawNearbyCircles() {
+		const keys = Object.keys(nearbyCircles);
+		keys.forEach(guid => {
+			removeNearbyCircle(guid);
+			addNearbyCircle(guid);
+		});
 	}
 
 	function refreshNewPortalsCounter() {
