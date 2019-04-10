@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.78
+// @version      0.79
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -1154,7 +1154,7 @@ function wrapperPlugin(plugin_info) {
 			// center point
 			const center = cell.getLatLng();
 
-			const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false};
+			const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false, interactive: false};
 			const line1 = L.polyline([corners[0], corners[2]], style);
 			regionLayer.addLayer(line1);
 
@@ -1218,7 +1218,7 @@ function wrapperPlugin(plugin_info) {
 		// the level 6 cells have noticible errors with non-geodesic lines - and the larger level 4 cells are worse
 		// NOTE: we only draw two of the edges. as we draw all cells on screen, the other two edges will either be drawn
 		// from the other cell, or be off screen so we don't care
-		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false});
+		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false, interactive: false});
 
 		regionLayer.addLayer(region);
 	}
@@ -1227,7 +1227,7 @@ function wrapperPlugin(plugin_info) {
 		// corner points
 		const corners = cell.getCornerLatLngs();
 
-		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false});
+		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false, interactive: false});
 		regionLayer.addLayer(region);
 	}
 
@@ -2149,7 +2149,8 @@ img.photo,
 			fillColor: settings.colors.nearbyCircleFill.color,
 			fillOpacity: settings.colors.nearbyCircleFill.opacity,
 			weight: 1,
-			clickable: false
+			clickable: false,
+			interactive: false
 		};
 
 		const center = portal._latlng;
