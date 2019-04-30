@@ -1267,20 +1267,14 @@ function wrapperPlugin(plugin_info) {
 
 	// Load the localStorage
 	thisPlugin.loadStorage = function () {
-		const tmp = JSON.parse(localStorage[KEY_STORAGE]);	
-		gyms = tmp.gyms;
-		pokestops = tmp.pokestops;
+		const tmp = JSON.parse(localStorage[KEY_STORAGE] || '{}');	
+		gyms = tmp.gyms || {};
+		pokestops = tmp.pokestops || {};
 		notpogo = tmp.notpogo || {};
 		ignoredCellsExtraGyms = tmp.ignoredCellsExtraGyms || {};
 		ignoredCellsMissingGyms = tmp.ignoredCellsMissingGyms || {};
 	};
 
-	thisPlugin.createStorage = function () {
-		if (!localStorage[KEY_STORAGE]) {
-			thisPlugin.saveStorage();
-		}
-	};
-	
 	thisPlugin.createEmptyStorage = function () {
 		gyms = {};
 		pokestops = {};
@@ -3048,9 +3042,6 @@ img.photo,
 		initSvgIcon();
 
 		loadSettings();
-
-		// If the storage not exists or is a old version
-		thisPlugin.createStorage();
 
 		// Load data from localStorage
 		thisPlugin.loadStorage();
