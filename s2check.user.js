@@ -569,15 +569,15 @@ function wrapperPlugin(plugin_info) {
 				color: '#000000',
 				opacity: 0.4
 			},
-			missingStops1:  {
+			missingStops1: {
 				color: '#BF360C',
 				opacity: 1
 			},
-			missingStops2:  {
+			missingStops2: {
 				color: '#E64A19',
 				opacity: 1
 			},
-			missingStops3:  {
+			missingStops3: {
 				color: '#FF5722',
 				opacity: 1
 			}
@@ -1427,6 +1427,29 @@ function wrapperPlugin(plugin_info) {
 		}
 	};
 
+	function removePogoObject(type, guid) {
+		let data = {};
+		if (type === 'pokestops') {
+			data = pokestops[guid];
+			delete pokestops[guid];
+			const starInLayer = stopLayers[guid];
+			stopLayerGroup.removeLayer(starInLayer);
+			delete stopLayers[guid];
+		}
+		if (type === 'gyms') {
+			data = gyms[guid];
+			delete gyms[guid];
+			const gymInLayer = gymLayers[guid];
+			gymLayerGroup.removeLayer(gymInLayer);
+			delete gymLayers[guid];
+		}
+		if (type === 'notpogo') {
+			data = notpogo[guid];
+			delete notpogo[guid];
+		}
+		thisPlugin.updatePogoObject(guid, data.lat, data.lng, data.name, 'none');
+	}
+
 	// Switch the status of the star
 	thisPlugin.switchStarPortal = function (type) {
 		const guid = window.selectedPortal;
@@ -1438,23 +1461,12 @@ function wrapperPlugin(plugin_info) {
 		// If portal is saved in pogo: Remove this pogo
 		const pogoData = thisPlugin.findByGuid(guid);
 		if (pogoData) {
-			delete pogoData.store[guid];
 			const existingType = pogoData.type;
+			removePogoObject(existingType, guid);
 
 			thisPlugin.saveStorage();
 			thisPlugin.updateStarPortal();
 	
-			if (existingType === 'pokestops') {
-				const starInLayer = stopLayers[guid];
-				stopLayerGroup.removeLayer(starInLayer);
-				delete stopLayers[guid];
-			}
-			if (existingType === 'gyms') {
-				const gymInLayer = gymLayers[guid];
-				gymLayerGroup.removeLayer(gymInLayer);
-				delete gymLayers[guid];
-			}
-
 			// Get portal name and coordinates
 			const p = window.portals[guid];
 			const ll = p.getLatLng();
@@ -2548,18 +2560,7 @@ img.photo,
 
 		const existingType = pogoData.type;
 		// remove marker
-		if (existingType == 'pokestops') {
-			const starInLayer = stopLayers[pogoGuid];
-			stopLayerGroup.removeLayer(starInLayer);
-			delete stopLayers[pogoGuid];
-		}
-		if (existingType == 'gyms') {
-			const gymInLayer = gymLayers[pogoGuid];
-			gymLayerGroup.removeLayer(gymInLayer);
-			delete gymLayers[pogoGuid];
-		}
-
-		delete pogoData.store[pogoGuid];
+		removePogoObject(existingType, guid);
 
 		// Draw new marker
 		thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name || pogoData.name, existingType);
@@ -2596,18 +2597,7 @@ img.photo,
 			const existingType = pogoData.type;
 
 			// remove marker
-			if (existingType === 'pokestops') {
-				const starInLayer = stopLayers[guid];
-				stopLayerGroup.removeLayer(starInLayer);
-				delete stopLayers[guid];
-			}
-			if (existingType === 'gyms') {
-				const gymInLayer = gymLayers[guid];
-				gymLayerGroup.removeLayer(gymInLayer);
-				delete gymLayers[guid];
-			}
-
-			delete pogoData.store[guid];
+			removePogoObject(existingType, guid);
 			thisPlugin.saveStorage();
 
 			if (settings.highlightGymCandidateCells) {
@@ -2825,10 +2815,7 @@ img.photo,
 			const guid = row.getAttribute('data-guid');
 			const portal = pokestops[guid];
 
-			delete pokestops[guid];
-			const starInLayer = stopLayers[guid];
-			stopLayerGroup.removeLayer(starInLayer);
-			delete stopLayers[guid];
+			removePogoObject('pokestops', guid);
 
 			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
 			if (settings.highlightGymCandidateCells) {
