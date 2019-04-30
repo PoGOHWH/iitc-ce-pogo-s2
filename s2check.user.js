@@ -176,38 +176,6 @@
 		];
 	}
 
-	// hilbert space-filling curve
-	// based on http://blog.notdot.net/2009/11/Damn-Cool-Algorithms-Spatial-indexing-with-Quadtrees-and-Hilbert-Curves
-	// note: rather then calculating the final integer hilbert position, we just return the list of quads
-	// this ensures no precision issues whth large orders (S3 cell IDs use up to 30), and is more
-	// convenient for pulling out the individual bits as needed later
-	function pointToHilbertQuadList(x,y,order) {
-		const hilbertMap = {
-			'a': [[0,'d'], [1,'a'], [3,'b'], [2,'a']],
-			'b': [[2,'b'], [1,'b'], [3,'a'], [0,'c']],
-			'c': [[2,'c'], [3,'d'], [1,'c'], [0,'b']],
-			'd': [[0,'a'], [3,'c'], [1,'d'], [2,'d']]
-		};
-
-		let currentSquare = 'a';
-		const positions = [];
-
-		for (let i = order - 1; i >= 0; i--) {
-
-			const mask = 1 << i;
-
-			const quad_x = x & mask ? 1 : 0;
-			const quad_y = y & mask ? 1 : 0;
-			const t = hilbertMap[currentSquare][quad_x * 2 + quad_y];
-
-			positions.push(t[0]);
-
-			currentSquare = t[1];
-		}
-
-		return positions;
-	}
-
 	// S2Cell class
 	S2.S2Cell = function () {};
 
@@ -259,12 +227,6 @@
 		});
 	};
 
-	S2.S2Cell.prototype.getFaceAndQuads = function () {
-		const quads = pointToHilbertQuadList(this.ij[0], this.ij[1], this.level);
-
-		return [this.face, quads];
-	};
-
 	S2.S2Cell.prototype.getNeighbors = function (deltas) {
 
 		const fromFaceIJWrap = function (face,ij,level) {
@@ -273,10 +235,10 @@
 				// no wrapping out of bounds
 				return S2.S2Cell.FromFaceIJ(face,ij,level);
 			}
+
 			// the new i,j are out of range.
 			// with the assumption that they're only a little past the borders we can just take the points as
 			// just beyond the cube face, project to XYZ, then re-create FaceUV from the XYZ vector
-
 			let st = IJToST(ij,level,[0.5, 0.5]);
 			let uv = STToUV(st);
 			let xyz = FaceUVToXYZ(face, uv);
@@ -304,14 +266,6 @@
 		return deltas.map(function (values) {
 			return fromFaceIJWrap(face, [i + values.a, j + values.b], level);
 		});
-		/*
-		return [
-			fromFaceIJWrap(face, [i - 1, j], level),
-			fromFaceIJWrap(face, [i, j - 1], level),
-			fromFaceIJWrap(face, [i + 1, j], level),
-			fromFaceIJWrap(face, [i, j + 1], level)
-		];
-		*/
 	};
 }
 
@@ -956,34 +910,34 @@ function wrapperPlugin(plugin_info) {
 
 		const div = container[0];
 
-		const updatedSetting = function(id) {
+		const updatedSetting = function (id) {
 			saveSettings();
 			if (id == 'nearbyCircleBorder' || id == 'nearbyCircleFill') {
-				redrawNearbyCircles()
+				redrawNearbyCircles();
 			} else {
 				updateMapGrid();
 			}
 		};
 
-		const configureItems = function(key, item, id) {
+		const configureItems = function (key, item, id) {
 			if (!id)
 				id = item;
 
 			const entry = settings[key][item];
 			const select = div.querySelector('#' + id + 'Opacity');
 			select.value = entry.opacity;
-			select.addEventListener('change', function(event) {
+			select.addEventListener('change', function (event) {
 				settings[key][item].opacity = select.value;
 				updatedSetting(id);
 			});
 
 			const input = div.querySelector('#' + id + 'Color');
 			input.value = entry.color;
-			input.addEventListener('change', function(event) {
+			input.addEventListener('change', function (event) {
 				settings[key][item].color = input.value;
 				updatedSetting(id);
 			});
-		}
+		};
 
 		configureItems('grids', 0, 'grid0');
 		configureItems('grids', 1, 'grid1');
@@ -3238,13 +3192,14 @@ img.photo,
 	// PLUGIN END //////////////////////////////////////////////////////////
 
 	setup.info = plugin_info; //add the script info data to the function as a property
-	if (!window.bootPlugins) {
-		window.bootPlugins = [];
-	}
-	window.bootPlugins.push(setup);
 	// if IITC has already booted, immediately run the 'setup' function
-	if (window.iitcLoaded && typeof setup === 'function') {
+	if (window.iitcLoaded) {
 		setup();
+	} else {
+		if (!window.bootPlugins) {
+			window.bootPlugins = [];
+		}
+		window.bootPlugins.push(setup);
 	}
 }
 
