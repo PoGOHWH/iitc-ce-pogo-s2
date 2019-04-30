@@ -456,6 +456,23 @@ function wrapperPlugin(plugin_info) {
 		});
 	}
 
+
+	const TIMERS = {};
+	function createThrottledTimer(name, callback, ms) {
+		if (TIMERS[name])
+			clearTimeout(TIMERS[name]);
+
+		// throttle if there are several calls to the functions
+		TIMERS[name] = setTimeout(function() {
+			delete TIMERS[name];
+			// and even now, wait for iddle
+			requestIdleCallback(function() {
+				callback();
+			}, { timeout: 2000 });
+
+		}, ms || 100);
+	}
+
 	/**
 	 * Try to identify if the browser is IITCm due to special bugs like file picker not working
 	 */
@@ -570,7 +587,9 @@ function wrapperPlugin(plugin_info) {
 	let settings = defaultSettings;
 
 	function saveSettings() {
-		localStorage['s2check_settings'] = JSON.stringify(settings);
+		createThrottledTimer('saveSettings', function() {
+			localStorage['s2check_settings'] = JSON.stringify(settings);
+		});
 	}
 
 	function loadSettings() {
@@ -864,7 +883,7 @@ function wrapperPlugin(plugin_info) {
 		});
 
 		const PogoEditColors = div.querySelector('#PogoEditColors');
-		PogoEditColors.addEventListener('click', function(e) {
+		PogoEditColors.addEventListener('click', function (e) {
 			editColors();
 			e.preventDefault();
 			return false;
@@ -1231,12 +1250,14 @@ function wrapperPlugin(plugin_info) {
 
 	// Update the localStorage
 	thisPlugin.saveStorage = function () {
-		localStorage[KEY_STORAGE] = JSON.stringify({
-			gyms: cleanUpExtraData(gyms), 
-			pokestops: cleanUpExtraData(pokestops), 
-			notpogo: cleanUpExtraData(notpogo),
-			ignoredCellsExtraGyms: ignoredCellsExtraGyms,
-			ignoredCellsMissingGyms: ignoredCellsMissingGyms
+		createThrottledTimer('saveStorage', function() {
+			localStorage[KEY_STORAGE] = JSON.stringify({
+				gyms: cleanUpExtraData(gyms), 
+				pokestops: cleanUpExtraData(pokestops), 
+				notpogo: cleanUpExtraData(notpogo),
+				ignoredCellsExtraGyms: ignoredCellsExtraGyms,
+				ignoredCellsMissingGyms: ignoredCellsMissingGyms
+			});
 		});
 	};
 
