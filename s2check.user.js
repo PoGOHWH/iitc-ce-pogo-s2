@@ -456,7 +456,6 @@ function wrapperPlugin(plugin_info) {
 		});
 	}
 
-
 	const TIMERS = {};
 	function createThrottledTimer(name, callback, ms) {
 		if (TIMERS[name])
@@ -606,16 +605,18 @@ function wrapperPlugin(plugin_info) {
 		if (typeof settings.promptForMissingData != 'undefined') {
 			delete settings.promptForMissingData;
 		}
-		if (!settings.grids[0].color) {
-			settings.grids[0].color = defaultSettings.grids[0].color;
-			settings.grids[0].opacity = defaultSettings.grids[0].opacity;
-			settings.grids[1].color = defaultSettings.grids[1].color;
-			settings.grids[1].opacity = defaultSettings.grids[1].opacity;
-		}
 		if (!settings.colors) {
-			settings.colors = defaultSettings.colors;
+			resetColors();
 		}
 		setThisIsPogo();
+	}
+
+	function resetColors() {
+		settings.grids[0].color = defaultSettings.grids[0].color;
+		settings.grids[0].opacity = defaultSettings.grids[0].opacity;
+		settings.grids[1].color = defaultSettings.grids[1].color;
+		settings.grids[1].opacity = defaultSettings.grids[1].opacity;
+		settings.colors = defaultSettings.colors;
 	}
 
 	let originalHighlightPortal;
@@ -917,7 +918,8 @@ function wrapperPlugin(plugin_info) {
 			selectRow.replace('{{title}}', 'Fill of too close circles').replace(/{{id}}/g, 'nearbyCircleFill') +
 			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1') +
 			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2') +
-			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3')
+			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3') +
+			'<a id="resetColorsLink">Reset all colors</a>'
 			;
 
 		const container = dialog({
@@ -969,6 +971,15 @@ function wrapperPlugin(plugin_info) {
 		configureItems('colors', 'missingStops1');
 		configureItems('colors', 'missingStops2');
 		configureItems('colors', 'missingStops3');
+
+		const resetColorsLink = div.querySelector('#resetColorsLink');
+		resetColorsLink.addEventListener('click', function() {
+			container.dialog('close');
+			resetColors();
+			updatedSetting('nearbyCircleBorder');
+			updatedSetting();
+			editColors();
+		});
 	}
 
 	/**
