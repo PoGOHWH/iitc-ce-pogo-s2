@@ -3223,7 +3223,7 @@ if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
 }
 
 // Greasemonkey. It will be quite hard to debug
-if (typeof unsafeWindow != 'undefined') {
+if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
 	// inject code into site context
 	const script = document.createElement('script');
 	script.appendChild(document.createTextNode('(' + wrapperS2 + ')();'));
