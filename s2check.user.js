@@ -2945,6 +2945,10 @@ img.photo,
 
 		const enabled = map._layers[layerId] != null;
 		if (enabled) {
+			// Don't remove base layer if it's used
+			if (isBase)
+				return;
+
 			map.removeLayer(leafletLayer);
 		}
 		if (typeof leafletLayer.off != 'undefined')
