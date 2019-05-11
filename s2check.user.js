@@ -2172,12 +2172,25 @@ img.photo,
 		if (!settings.analyzeForMissingData)
 			return;
 
-		if (checkNewPortalsTimout) {
-			clearTimeout(checkNewPortalsTimout);
-		} else {
-			document.getElementById('sidebarPogo').classList.add('refreshingPortalCount');
-		}	
-		checkNewPortalsTimout = setTimeout(checkNewPortals, 1000);
+		// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
+		try
+		{
+			if (checkNewPortalsTimout) {
+				clearTimeout(checkNewPortalsTimout);
+			} else {
+				document.getElementById('sidebarPogo').classList.add('refreshingPortalCount');
+			}	
+		} catch (e) {
+			// nothing
+		}
+
+		// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
+		try
+		{
+			checkNewPortalsTimout = setTimeout(checkNewPortals, 1000);
+		} catch (e) {
+			checkNewPortals();
+		}
 	}
 
 	/**
