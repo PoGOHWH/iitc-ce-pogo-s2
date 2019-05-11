@@ -2461,7 +2461,7 @@ img.photo,
 		container.on('click', 'a', function (e) {
 			const type = this.getAttribute('data-type');
 			const guid = this.parentNode.getAttribute('data-guid');
-			const portal = newPortals[guid];
+			const portal = getPortalSummaryFromGuid(guid);
 			thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name, type);
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
@@ -2709,6 +2709,25 @@ img.photo,
 		setTimeout(function () {
 			map.removeLayer(marker);
 		}, 2000);
+	}
+
+	function getPortalSummaryFromGuid(guid) {
+		const newPortal = newPortals[guid];
+		if (newPortal)
+			return newPortal;
+
+		const portal = window.portals[guid];
+		if (!portal)
+			return {};
+
+		return {
+			guid: guid,
+			name: portal.options.data.title,
+			lat: portal._latlng.lat,
+			lng: portal._latlng.lng,
+			image: portal.options.data.image,
+			cells: {}
+		};
 	}
 
 	function getPortalImage(pokestop) {
