@@ -1458,7 +1458,6 @@ function wrapperPlugin(plugin_info) {
 			data = notpogo[guid];
 			delete notpogo[guid];
 		}
-		thisPlugin.updatePogoObject(guid, data.lat, data.lng, data.name, 'none');
 	}
 
 	// Switch the status of the star
