@@ -1439,23 +1439,19 @@ function wrapperPlugin(plugin_info) {
 	};
 
 	function removePogoObject(type, guid) {
-		let data = {};
 		if (type === 'pokestops') {
-			data = pokestops[guid];
 			delete pokestops[guid];
 			const starInLayer = stopLayers[guid];
 			stopLayerGroup.removeLayer(starInLayer);
 			delete stopLayers[guid];
 		}
 		if (type === 'gyms') {
-			data = gyms[guid];
 			delete gyms[guid];
 			const gymInLayer = gymLayers[guid];
 			gymLayerGroup.removeLayer(gymInLayer);
 			delete gymLayers[guid];
 		}
 		if (type === 'notpogo') {
-			data = notpogo[guid];
 			delete notpogo[guid];
 		}
 	}
