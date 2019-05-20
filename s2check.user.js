@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.83
+// @version      0.84
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -464,10 +464,13 @@ function wrapperPlugin(plugin_info) {
 		// throttle if there are several calls to the functions
 		TIMERS[name] = setTimeout(function() {
 			delete TIMERS[name];
-			// and even now, wait for iddle
-			requestIdleCallback(function() {
+			if (typeof window.requestIdleCallback == 'undefined')
 				callback();
-			}, { timeout: 2000 });
+			else
+				// and even now, wait for iddle
+				requestIdleCallback(function() {
+					callback();
+				}, { timeout: 2000 });
 
 		}, ms || 100);
 	}
