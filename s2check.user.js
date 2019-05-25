@@ -583,7 +583,9 @@ function wrapperPlugin(plugin_info) {
 				color: '#FF5722',
 				opacity: 1
 			}
-		}
+		},
+		saveDataType: 'Gyms',
+		saveDataFormat: 'CSV'
 	};
 
 	let settings = defaultSettings;
@@ -611,6 +613,13 @@ function wrapperPlugin(plugin_info) {
 		if (!settings.colors) {
 			resetColors();
 		}
+		if (typeof settings.saveDataType == 'undefined') {
+			settings.saveDataType = 'Gyms';
+		}
+		if (typeof settings.saveDataFormat == 'undefined') {
+			settings.saveDataFormat = 'CSV';
+		}
+
 		setThisIsPogo();
 	}
 
@@ -774,27 +783,6 @@ function wrapperPlugin(plugin_info) {
 			}
 		});
 		return items;
-	}
-
-	function saveGymStopsJSON() {
-		const filename = 'gyms+stops_' + new Date().getTime() + '.json';
-		const data = {
-			gyms: findPhotos(filterItemsByMapBounds(gyms)), 
-			pokestops: findPhotos(filterItemsByMapBounds(pokestops))
-		};
-		saveToFile(JSON.stringify(data), filename);
-	}
-
-	function saveCSV(allData, title) {
-		const data = filterItemsByMapBounds(allData);
-		const keys = Object.keys(data);
-		const contents = keys.map(id => {
-			const gym = data[id];
-			return (gym.name ? gym.name.replace(/,/g, ' ') + ',' : '') + gym.lat + ',' + gym.lng;
-		});
-		const filename = title + '_' + new Date().getTime() + '.csv';
-
-		saveToFile(contents.join('\n'), filename);
 	}
 
 	function configureGridLevelSelect(select, i) {
@@ -1552,8 +1540,7 @@ function wrapperPlugin(plugin_info) {
 	// Manual import, export and reset data
 	thisPlugin.pogoActionsDialog = function () {
 		const content = `<div id="pogoSetbox">
-			<a id="save-json" title="Save as a JSON file the data about the Gyms and Pokestops on screen">Save Gyms and Stops as JSON</a>
-			<a id="save-gymscsv" title="Save as a CSV file the data about the Gyms on screen">Save Gyms as CSV</a>
+			<a id="save-dialog" title="Select the data to save from the info on screen">Save...</a>
 			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
 			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
 			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
@@ -1565,8 +1552,71 @@ function wrapperPlugin(plugin_info) {
 		});
 
 		const div = container[0];
-		div.querySelector('#save-json').addEventListener('click', e => saveGymStopsJSON());
-		div.querySelector('#save-gymscsv').addEventListener('click', e => saveCSV(gyms, 'Gyms'));
+		div.querySelector('#save-dialog').addEventListener('click', e => saveDialog());
+	};
+
+	function saveDialog() {
+		const content = `<div>
+			<p>Select the data to save from the info on screen</p>
+			<fieldset><legend>Which data?</legend>
+			<input type='radio' name='PogoSaveDataType' value='Gyms' id='PogoSaveDataTypeGyms'><label for='PogoSaveDataTypeGyms'>Gyms</label><br>
+			<input type='radio' name='PogoSaveDataType' value='PokeStopsGyms' id='PogoSaveDataTypePokeStopsGyms'><label for='PogoSaveDataTypePokeStopsGyms'>Pokestops + Gyms</label>
+			</fieldset>
+			<fieldset><legend>Format</legend>
+			<input type='radio' name='PogoSaveDataFormat' value='CSV' id='PogoSaveDataFormatCSV'><label for='PogoSaveDataFormatCSV'>CSV</label><br>
+			<input type='radio' name='PogoSaveDataFormat' value='JSON' id='PogoSaveDataFormatJSON'><label for='PogoSaveDataFormatJSON'>JSON</label>
+			</fieldset>
+			</div>`;
+
+		const container = dialog({
+			html: content,
+			title: 'Save visible data',
+			buttons: {
+				'Save': function () {
+					const SaveDataType = document.querySelector('input[name="PogoSaveDataType"]:checked').value;
+					const SaveDataFormat = document.querySelector('input[name="PogoSaveDataFormat"]:checked').value;
+
+					settings.saveDataType = SaveDataType;
+					settings.saveDataFormat = SaveDataFormat;
+					saveSettings();
+
+					container.dialog('close');
+
+					let filename = (SaveDataType == 'Gyms' ? 'gyms_' : 'gyms+stops_') + (new Date()).toISOString().substr(0, 19).replace(/[\D]/g, '_');
+					if (SaveDataFormat == 'CSV') {
+						filename += '.csv';
+						const allData = SaveDataType == 'Gyms' ? gyms : Object.assign({}, gyms, pokestops);
+						const data = filterItemsByMapBounds(allData);
+						const keys = Object.keys(data);
+						const contents = keys.map(id => {
+							const gym = data[id];
+							return (gym.name ? gym.name.replace(/,/g, ' ') + ',' : '') + gym.lat + ',' + gym.lng;
+						});
+
+						saveToFile(contents.join('\n'), filename);
+					} else {
+						filename += '.json';
+						const data = {
+							gyms: findPhotos(cleanUpExtraData(filterItemsByMapBounds(gyms))),
+						};
+						if (SaveDataType != 'Gyms')
+							data.pokestops = findPhotos(cleanUpExtraData(filterItemsByMapBounds(pokestops)));
+
+						saveToFile(JSON.stringify(data), filename);
+					}
+				}
+			}
+
+		});
+
+		// Remove ok button
+		const outer = container.parent();
+		outer.find('.ui-dialog-buttonset button:first').remove();
+
+		const div = container[0];
+		div.querySelector('#PogoSaveDataType' + settings.saveDataType).checked = true;
+		div.querySelector('#PogoSaveDataFormat' + settings.saveDataFormat).checked = true;
+
 	};
 
 	thisPlugin.optAlert = function (message) {
