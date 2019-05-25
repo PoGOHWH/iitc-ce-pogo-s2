@@ -2404,7 +2404,7 @@ img.photo,
 			}
 		});
 		// Remove ok button
-		const outer = container.parent().parent();
+		const outer = container.parent();
 		outer.find('.ui-dialog-buttonset button:first').remove();
 
 		// mark the selected one as pokestop or gym
@@ -2470,7 +2470,7 @@ img.photo,
 			}
 		});
 		// Remove ok button
-		const outer = container.parent().parent();
+		const outer = container.parent();
 		outer.find('.ui-dialog-buttonset button:first').remove();
 
 		// mark the selected one as pokestop or gym
@@ -2846,7 +2846,7 @@ img.photo,
 			}
 		});
 		// Remove ok button
-		const outer = container.parent().parent();
+		const outer = container.parent();
 		outer.find('.ui-dialog-buttonset button:first').remove();
 
 		// mark the selected one as pokestop or gym
@@ -2926,7 +2926,7 @@ img.photo,
 			}
 		});
 		// Remove ok button
-		const outer = container.parent().parent();
+		const outer = container.parent();
 		outer.find('.ui-dialog-buttonset button:first').remove();
 
 		// mark the selected one as pokestop or gym
