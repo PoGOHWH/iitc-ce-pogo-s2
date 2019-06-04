@@ -1634,7 +1634,7 @@ function wrapperPlugin(plugin_info) {
 				const list = JSON.parse(content); // try to parse JSON first
 				let importExStatus = true;
 				let importGymMedal = true;
-				for (let type in list) {
+				Object.keys(list).forEach(type => {
 					for (let idpogo in list[type]) {
 						const item = list[type][idpogo];
 						const lat = item.lat;
@@ -1662,7 +1662,7 @@ function wrapperPlugin(plugin_info) {
 							}
 						}
 					}
-				}
+				});
 
 				thisPlugin.updateStarPortal();
 				thisPlugin.resetAllMarkers();
