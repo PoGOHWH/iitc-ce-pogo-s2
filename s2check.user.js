@@ -1114,7 +1114,8 @@ function wrapperPlugin(plugin_info) {
 		// Draw missing cells in reverse order
 		for (let missingStops = 3; missingStops >= 1; missingStops--) {
 			const color = settings.colors['missingStops' + missingStops].color;
-			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, 1));
+			const opacity = settings.colors['missingStops' + missingStops].opacity;
+			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, opacity));
 		}
 	}
 
