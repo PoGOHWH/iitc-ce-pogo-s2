@@ -1650,7 +1650,7 @@ function wrapperPlugin(plugin_info) {
 							}
 						}
 
-						if (!thisPlugin.findByGuid(guid)) {
+						if (typeof lat !== "undefined" && typeof lng !== "undefined" && name && !thisPlugin.findByGuid(guid)) {
 							thisPlugin.addPortalpogo(guid, lat, lng, name, type);
 							if (type == 'gyms') {
 								if (importExStatus && item.isEx) {
