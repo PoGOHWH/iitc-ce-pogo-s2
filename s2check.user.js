@@ -496,7 +496,8 @@ function wrapperPlugin(plugin_info) {
 
 	let allPortals = {};
 	let newPortals = {};
-	let checkNewPortalsTimout;
+	let checkNewPortalsTimer;
+	let relayoutTimer; // timer for relayout when portal is added
 
 	// Portals that the user hasn't classified as Pokestops (2 or more in the same Lvl17 cell)
 	let skippedPortals = {};
@@ -505,7 +506,6 @@ function wrapperPlugin(plugin_info) {
 
 	// Portals that we know, but that have been moved from our stored location.
 	let movedPortals = [];
-
 	// Pogo items that are no longer available.
 	let missingPortals = {};
 
@@ -517,15 +517,21 @@ function wrapperPlugin(plugin_info) {
 	let ignoredCellsMissingGyms = {};
 
 	// Leaflet layers
-	let regionLayer; // s2 grid
+	let regionLayer; // parent layer
 	let stopLayerGroup; // pokestops
 	let gymLayerGroup; // gyms
-	let nearbyGroupLayer; // circles to mark the too near limit
+	let nearbyLayerGroup; // circles to mark the too near limit
+	let gridLayerGroup; // s2 grid
+	let cellLayerGroup; // cell shading and borders
+	let gymCenterLayerGroup; // gym centers
 
 	// Group of items added to the layer
 	let stopLayers = {};
 	let gymLayers = {};
 	let nearbyCircles = {};
+
+	const gymCellLevel = 14; // the cell level which is considered when counting POIs to determine # of gyms
+	const poiCellLevel = 17; // the cell level where there can only be 1 POI translated to pogo
 
 	const defaultSettings = {
 		highlightGymCandidateCells: false,
@@ -534,7 +540,7 @@ function wrapperPlugin(plugin_info) {
 		analyzeForMissingData: true,
 		grids: [
 			{
-				level: 14,
+				level: gymCellLevel,
 				width: 5,
 				color: '#004D40',
 				opacity: 0.5
@@ -818,12 +824,12 @@ function wrapperPlugin(plugin_info) {
 		const html = 
 			selectRow.replace('{{level}}', '1st') +
 			selectRow.replace('{{level}}', '2nd') +
-			`<p><label><input type="checkbox" id="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
-			<p><label><input type="checkbox" id="chkHighlightCenters">Highlight centers of Cells with a Gym</label></p>
-			<p><label title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'><input type="checkbox" id="chkThisIsPogo">This is PoGo!</label></p>
-			<p><label title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms"><input type="checkbox" id="chkanalyzeForMissingData">Analyze portal data</label></p>
-			<p><a id='PogoEditColors'>Colors</a></p>
-			 `;
+			`<p><input type="checkbox" id="chkHighlightCandidates" /><label for="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
+			 <p><input type="checkbox" id="chkHighlightCenters" /><label for="chkHighlightCenters">Put an X in the center of Cells with a Gym<br />(for determining EX-eligibility)</label></p>
+			 <p><input type="checkbox" id="chkThisIsPogo" /><label for="chkThisIsPogo" title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'>This is PoGo!</label></p>
+			 <p><input type="checkbox" id="chkanalyzeForMissingData" /><label for="chkanalyzeForMissingData" title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms">Analyze portal data</label></p>
+			 <p><a id='PogoEditColors'>Colors</a></p>
+			`;
 
 		const container = dialog({
 			id: 's2Settings',
@@ -903,10 +909,10 @@ function wrapperPlugin(plugin_info) {
 			selectRow.replace('{{title}}', '2nd Grid').replace(/{{id}}/g, 'grid1') +
 			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms') +
 			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms') +
-			selectRow.replace('{{title}}', 'Cell 17 with a gym or stop').replace(/{{id}}/g, 'cell17Filled') +
-			selectRow.replace('{{title}}', 'Cell 14 with 3 gyms').replace(/{{id}}/g, 'cell14Filled') +
-			selectRow.replace('{{title}}', 'Border of too close circles').replace(/{{id}}/g, 'nearbyCircleBorder') +
-			selectRow.replace('{{title}}', 'Fill of too close circles').replace(/{{id}}/g, 'nearbyCircleFill') +
+			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled') +
+			selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled') +
+			selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder') +
+			selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill') +
 			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1') +
 			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2') +
 			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3') +
@@ -917,7 +923,7 @@ function wrapperPlugin(plugin_info) {
 			id: 's2Colors',
 			width: 'auto',
 			html: html,
-			title: 'PoGo grid Colors'
+			title: 'PoGo Grid Colors'
 		});
 
 		const div = container[0];
@@ -977,57 +983,64 @@ function wrapperPlugin(plugin_info) {
 	 * Refresh the S2 grid over the map
 	 */
 	function updateMapGrid() {
-		regionLayer.clearLayers();
-
-		if (!map.hasLayer(regionLayer)) 
+		// preconditions
+		if (!map.hasLayer(regionLayer)) {
 			return;
+		}
+		const zoom = map.getZoom();
 
-		const bounds = map.getBounds();
-		const seenCells = {};
-		const drawCellAndNeighbors = function (cell, color, width, opacity) {
-			const cellStr = cell.toString();
+		// first draw nearby circles at the bottom
+		if (zoom > 16) {
+			if (!regionLayer.hasLayer(nearbyLayerGroup)) {
+				regionLayer.addLayer(nearbyLayerGroup);
+			}
+			nearbyLayerGroup.bringToBack();
+		} else if (regionLayer.hasLayer(nearbyLayerGroup)) {
+			regionLayer.removeLayer(nearbyLayerGroup);
+		}
 
-			if (!seenCells[cellStr]) {
-				// cell not visited - flag it as visited now
-				seenCells[cellStr] = true;
+		// shade level 14 and level 17 cells
+		let cellsCloseToThreshold;
+		if (settings.highlightGymCandidateCells && zoom > 14) {
+			cellsCloseToThreshold = updateCandidateCells(zoom);
+			if (!regionLayer.hasLayer(cellLayerGroup)) {
+				regionLayer.addLayer(cellLayerGroup);
+			}
+			cellLayerGroup.bringToBack();
+		} else if (regionLayer.hasLayer(cellLayerGroup)) {
+			regionLayer.removeLayer(cellLayerGroup);
+		}
 
-				if (isCellOnScreen(bounds, cell)) {
-					// on screen - draw it
-					drawCell(cell, color, width, opacity);
+		// then draw the cell grid
+		if (zoom > 4) {
+			drawCellGrid(zoom);
 
-					// and recurse to our neighbors
-					const neighbors = cell.getNeighbors();
-					for (let i = 0; i < neighbors.length; i++) {
-						drawCellAndNeighbors(neighbors[i], color, width, opacity);
-					}
+			// update cell grid with cells close to a threshold for a gym
+			if (cellsCloseToThreshold) {
+				// draw missing cells in reverse order
+				for (let missingStops = 3; missingStops >= 1; missingStops--) {
+					const color = settings.colors['missingStops' + missingStops].color;
+					const opacity = settings.colors['missingStops' + missingStops].opacity;
+					cellsCloseToThreshold[missingStops].forEach(cell => gridLayerGroup.addLayer(drawCell(cell, color, 3, opacity)));
 				}
 			}
-		};
 
-		// center cell
-		const zoom = map.getZoom();
-		if (zoom < 5) {
-			return;
-		}
-		// first draw nearby circles at the bottom
-		if (16 < zoom) {
-			regionLayer.addLayer(nearbyGroupLayer);
-		}
-		// then draw the cell grid
-		for (let i = 0; i < settings.grids.length; i++) {
-			const grid = settings.grids[i];
-			const gridLevel = grid.level;
-			if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
-				const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
-				drawCellAndNeighbors(cell, grid.color, grid.width, grid.opacity);
+			if (!regionLayer.hasLayer(gridLayerGroup)) {
+				regionLayer.addLayer(gridLayerGroup);
 			}
+		} else if (regionLayer.hasLayer(gridLayerGroup)) {
+			regionLayer.removeLayer(gridLayerGroup);
 		}
-		if (settings.highlightGymCandidateCells && 12 < zoom) {
-			updateCandidateCells();
-		}
-		if (settings.highlightGymCenter && 16 < zoom) {
+
+		// update gym centers
+		if (settings.highlightGymCenter && zoom > 16) {
 			updateGymCenters();
-		}	
+			if (!regionLayer.hasLayer(gymCenterLayerGroup)) {
+				regionLayer.addLayer(gymCenterLayerGroup);
+			}
+		} else if (regionLayer.hasLayer(gymCenterLayerGroup)) {
+			regionLayer.removeLayer(gymCenterLayerGroup);
+		}
 	}
 
 	function getLatLngPoint(data) {
@@ -1040,18 +1053,19 @@ function wrapperPlugin(plugin_info) {
 	}
 
 	/**
-	 * Highlight cells that are missing a few stops to get another gym
+	 * Highlight cells that are missing a few stops to get another gym. Also fills level 17 cells with a stop/gym.
 	 * based on data from https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/ 
 	 * Cut offs: 2, 6, 20
 	 */
-	function updateCandidateCells() {
-		const level = 14;
+	function updateCandidateCells(zoom) {
+		cellLayerGroup.clearLayers();
+
 		// All cells with items
-		const allCells = groupByCell(level);
+		const allCells = groupByCell(gymCellLevel);
 
 		const bounds = map.getBounds();
 		const seenCells = {};
-		const cellsToDraw = {
+		const cellsCloseToThreshold = {
 			1: [],
 			2: [],
 			3: []
@@ -1068,34 +1082,45 @@ function wrapperPlugin(plugin_info) {
 					// on screen - draw it
 					const cellData = allCells[cellStr];
 					if (cellData) {
+						// check for errors
 						const missingGyms = computeMissingGyms(cellData);
 						if (missingGyms > 0 && !ignoredCellsMissingGyms[cellStr]) {
-							fillCell(cell, settings.colors.cellsMissingGyms.color, settings.colors.cellsMissingGyms.opacity);
+							cellLayerGroup.addLayer(fillCell(cell, settings.colors.cellsMissingGyms.color, settings.colors.cellsMissingGyms.opacity));
 						} else if (missingGyms < 0 && !ignoredCellsExtraGyms[cellStr]) {
-							fillCell(cell, settings.colors.cellsExtraGyms.color, settings.colors.cellsExtraGyms.opacity);
+							cellLayerGroup.addLayer(fillCell(cell, settings.colors.cellsExtraGyms.color, settings.colors.cellsExtraGyms.opacity));
 							if (!cellsExtraGyms[cellStr]) {
 								cellsExtraGyms[cellStr] = true;
 								updateCounter('extraGyms', Object.keys(cellsExtraGyms));
 							}
-						} 
+						}
+
+						// shade filled level 17 cells
+						if (zoom > 15) {
+							const coverLevel17Cell = function(point) {
+								const cell = S2.S2Cell.FromLatLng(point, poiCellLevel);
+								cellLayerGroup.addLayer(fillCell(cell, settings.colors.cell17Filled.color, settings.colors.cell17Filled.opacity));
+							};
+
+							cellData.gyms.forEach(coverLevel17Cell);
+							cellData.stops.forEach(coverLevel17Cell);
+						}
+
+						// number of stops to next gym
 						const missingStops = computeMissingStops(cellData);
 						switch (missingStops) {
 							case 0:
-								coverBlockedAreas(cellData);
 								if (missingGyms == 0) {
-									fillCell(cell, settings.colors.cell14Filled.color, settings.colors.cell14Filled.opacity);
+									cellLayerGroup.addLayer(fillCell(cell, settings.colors.cell14Filled.color, settings.colors.cell14Filled.opacity));
 								}
 								break;
 							case 1:
 							case 2:
 							case 3:
-								cellsToDraw[missingStops].push(cell);
-								coverBlockedAreas(cellData);
-								writeInCell(cell, missingStops);
+								cellsCloseToThreshold[missingStops].push(cell);
+								cellLayerGroup.addLayer(writeInCell(cell, missingStops));
 								break;
 							default:
-								coverBlockedAreas(cellData);
-								writeInCell(cell, missingStops);
+								cellLayerGroup.addLayer(writeInCell(cell, missingStops));
 								break;
 						}
 					}
@@ -1109,20 +1134,57 @@ function wrapperPlugin(plugin_info) {
 			}
 		};
 
-		const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), level);
+		const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gymCellLevel);
 		drawCellAndNeighbors(cell);
-		// Draw missing cells in reverse order
-		for (let missingStops = 3; missingStops >= 1; missingStops--) {
-			const color = settings.colors['missingStops' + missingStops].color;
-			const opacity = settings.colors['missingStops' + missingStops].opacity;
-			cellsToDraw[missingStops].forEach(cell => drawCell(cell, color, 3, opacity));
+
+		return cellsCloseToThreshold;
+	}
+
+	function drawCellGrid(zoom) {
+		// clear, to redraw
+		gridLayerGroup.clearLayers();
+
+		const bounds = map.getBounds();
+		const seenCells = {};
+		const drawCellAndNeighbors = function (cell, color, width, opacity) {
+			const cellStr = cell.toString();
+
+			if (!seenCells[cellStr]) {
+				// cell not visited - flag it as visited now
+				seenCells[cellStr] = true;
+
+				if (isCellOnScreen(bounds, cell)) {
+					// on screen - draw it
+					gridLayerGroup.addLayer(drawCell(cell, color, width, opacity));
+
+					// and recurse to our neighbors
+					const neighbors = cell.getNeighbors();
+					for (let i = 0; i < neighbors.length; i++) {
+						drawCellAndNeighbors(neighbors[i], color, width, opacity);
+					}
+				}
+			}
+		};
+
+		for (let i = settings.grids.length - 1; i >= 0; --i) {
+			const grid = settings.grids[i];
+			const gridLevel = grid.level;
+			if (gridLevel >= 6 && gridLevel < (zoom + 2)) {
+				const cell = S2.S2Cell.FromLatLng(getLatLngPoint(map.getCenter()), gridLevel);
+				drawCellAndNeighbors(cell, grid.color, grid.width, grid.opacity);
+			}
 		}
+
+		return gridLayerGroup;
 	}
 
 	/**
 	 * Draw a cross to the center of level 20 cells that have a Gym to check better EX locations
 	 */
 	function updateGymCenters() {
+		// clear
+		gymCenterLayerGroup.clearLayers();
+
 		const visibleGyms = filterItemsByMapBounds(gyms);
 		const level = 20;
 
@@ -1135,26 +1197,14 @@ function wrapperPlugin(plugin_info) {
 
 			const style = {fill: false, color: 'red', opacity: 0.8, weight: 1, clickable: false, interactive: false};
 			const line1 = L.polyline([corners[0], corners[2]], style);
-			regionLayer.addLayer(line1);
+			gymCenterLayerGroup.addLayer(line1);
 
 			const line2 = L.polyline([corners[1], corners[3]], style);
-			regionLayer.addLayer(line2);
+			gymCenterLayerGroup.addLayer(line2);
 
 			const circle = L.circle(center, 1, style);
-			regionLayer.addLayer(circle);
+			gymCenterLayerGroup.addLayer(circle);
 		});
-	}
-
-	function coverBlockedAreas(cellData) {
-		if (!cellData)
-			return;
-		cellData.gyms.forEach(coverLevel17Cell);
-		cellData.stops.forEach(coverLevel17Cell);
-	}
-
-	function coverLevel17Cell(point) {
-		const cell = S2.S2Cell.FromLatLng(point, 17);
-		fillCell(cell, settings.colors.cell17Filled.color, settings.colors.cell17Filled.opacity);
 	}
 
 	// Computes how many new stops must be added to the L14 Cell to get a new Gym
@@ -1199,7 +1249,7 @@ function wrapperPlugin(plugin_info) {
 		// from the other cell, or be off screen so we don't care
 		const region = L.polyline([corners[0], corners[1], corners[2], corners[3], corners[0]], {fill: false, color: color, opacity: opacity, weight: weight, clickable: false, interactive: false});
 
-		regionLayer.addLayer(region);
+		return region;
 	}
 
 	function fillCell(cell, color, opacity) {
@@ -1207,7 +1257,8 @@ function wrapperPlugin(plugin_info) {
 		const corners = cell.getCornerLatLngs();
 
 		const region = L.polygon(corners, {color: color, fillOpacity: opacity, weight: 0, clickable: false, interactive: false});
-		regionLayer.addLayer(region);
+
+		return region;
 	}
 
 	/**
@@ -1228,7 +1279,7 @@ function wrapperPlugin(plugin_info) {
 		});
 		// fixme, maybe add some click handler
 
-		regionLayer.addLayer(marker);
+		return marker;
 	}
 
 	// ***************************
@@ -1522,7 +1573,7 @@ function wrapperPlugin(plugin_info) {
 		if (Object.keys(ignoredCellsExtraGyms).length == 0 && Object.keys(ignoredCellsMissingGyms).length == 0)
 			return false;
 
-		const cell = window.S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), 14);
+		const cell = window.S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), gymCellLevel);
 		const cellId = cell.toString();
 		if (ignoredCellsExtraGyms[cellId]) {
 			delete ignoredCellsExtraGyms[cellId];
@@ -1543,8 +1594,8 @@ function wrapperPlugin(plugin_info) {
 		const content = `<div id="pogoSetbox">
 			<a id="save-dialog" title="Select the data to save from the info on screen">Save...</a>
 			<a onclick="window.plugin.pogo.optReset();return false;" title="Deletes all Pokemon Go markers">Reset PoGo portals</a>
-			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import pogo</a>
-			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export pogo</a>
+			<a onclick="window.plugin.pogo.optImport();return false;" title="Import a JSON file with all the PoGo data">Import Gyms & Pokestops</a>
+			<a onclick="window.plugin.pogo.optExport();return false;" title="Exports a JSON file with all the PoGo data">Export Gyms & Pokestops</a>
 			</div>`;
 
 		const container = dialog({
@@ -2122,6 +2173,8 @@ img.photo,
 
 		data.portal.on('add', function () {
 			addNearbyCircle(guid);
+			window.clearTimeout(relayoutTimer);
+			relayoutTimer = window.setTimeout(relayerBackgroundGroups, 100);
 		});
 
 		data.portal.on('remove', function () {
@@ -2199,7 +2252,7 @@ img.photo,
 
 		const center = portal._latlng;
 		const circle = L.circle(center, 20, circleSettings);
-		nearbyGroupLayer.addLayer(circle);
+		nearbyLayerGroup.addLayer(circle);
 		nearbyCircles[guid] = circle;
 	}
 
@@ -2209,7 +2262,7 @@ img.photo,
 	function removeNearbyCircle(guid) {
 		const circle = nearbyCircles[guid];
 		if (circle != null) {
-			nearbyGroupLayer.removeLayer(circle);
+			nearbyLayerGroup.removeLayer(circle);
 			delete nearbyCircles[guid];
 		}
 	}
@@ -2220,6 +2273,22 @@ img.photo,
 			removeNearbyCircle(guid);
 			addNearbyCircle(guid);
 		});
+		relayerBackgroundGroups();
+	}
+
+	/**
+	 * Re-orders the layerGroups within regionLayer so that foreground objects don't get hidden/obscured by background layers.
+	 */
+	function relayerBackgroundGroups() {
+		if (regionLayer.hasLayer(nearbyLayerGroup)) {
+			nearbyLayerGroup.bringToBack();
+		}
+		if (regionLayer.hasLayer(cellLayerGroup)) {
+			cellLayerGroup.bringToBack();
+		}
+		if (regionLayer.hasLayer(gymCenterLayerGroup)) {
+			gymCenterLayerGroup.bringToFront();
+		}
 	}
 
 	function refreshNewPortalsCounter() {
@@ -2229,8 +2298,8 @@ img.photo,
 		// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
 		try
 		{
-			if (checkNewPortalsTimout) {
-				clearTimeout(checkNewPortalsTimout);
+			if (checkNewPortalsTimer) {
+				clearTimeout(checkNewPortalsTimer);
 			} else {
 				document.getElementById('sidebarPogo').classList.add('refreshingPortalCount');
 			}	
@@ -2241,7 +2310,7 @@ img.photo,
 		// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
 		try
 		{
-			checkNewPortalsTimout = setTimeout(checkNewPortals, 1000);
+			checkNewPortalsTimer = setTimeout(checkNewPortals, 1000);
 		} catch (e) {
 			checkNewPortals();
 		}
@@ -2251,7 +2320,7 @@ img.photo,
 	 * A potential new portal has been received
 	 */
 	function checkNewPortals() {
-		checkNewPortalsTimout = null;
+		checkNewPortalsTimer = null;
 
 		// don't try to classify if we don't have all the portal data
 		if (map.getZoom() < 15)
@@ -2262,7 +2331,7 @@ img.photo,
 		newPokestops = {};
 		notClassifiedPokestops = [];
 
-		const allCells = groupByCell(17);
+		const allCells = groupByCell(poiCellLevel);
 
 		// Check only the items inside the screen, 
 		// the server might provide info about remote portals if they are part of a link 
@@ -2372,7 +2441,7 @@ img.photo,
 	function checkNewGyms() {
 		const cellsWithMissingGyms = [];
 
-		const allCells = groupByCell(14);
+		const allCells = groupByCell(gymCellLevel);
 
 		// Check only the items inside the screen, 
 		// the server might provide info about remote portals if they are part of a link 
@@ -2939,7 +3008,7 @@ img.photo,
 			return;
 
 		const cellId = cellIds[0];
-		const group = findCellItems(cellId, 14, gyms);
+		const group = findCellItems(cellId, gymCellLevel, gyms);
 
 		const div = document.createElement('div');
 		div.className = 'PogoClassification';
@@ -3195,15 +3264,21 @@ img.photo,
 		sidebarPogo.classList.add('refreshingData');
 
 		// Layer - pokemon go portals
-		stopLayerGroup = new L.LayerGroup();
+		stopLayerGroup = L.layerGroup();
 		window.addLayerGroup('PokeStops', stopLayerGroup, true);
-		gymLayerGroup = new L.LayerGroup();
+		gymLayerGroup = L.layerGroup();
 		window.addLayerGroup('Gyms', gymLayerGroup, true);
 		regionLayer = L.layerGroup();
 		window.addLayerGroup('S2 Grid', regionLayer, true);
 
 		// this layer will group all the nearby circles that are added or removed from it when the portals are added or removed
-		nearbyGroupLayer = L.layerGroup();
+		nearbyLayerGroup = L.featureGroup();
+		// this layer will group all the shaded cells and cell borders
+		cellLayerGroup = L.featureGroup();
+		// this layer will contain the s2 grid
+		gridLayerGroup = L.layerGroup()
+		// this layer will contain the gym centers for checking ex eligibility
+		gymCenterLayerGroup = L.featureGroup();
 
 		thisPlugin.addAllMarkers();
 
