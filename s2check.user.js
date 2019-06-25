@@ -3229,6 +3229,11 @@ img.photo,
 		zoomListener();
 		map.on('moveend', updateMapGrid);
 		updateMapGrid();
+		map.on('overlayadd', function(event) {
+			if (event && event.name === "S2 Grid") {
+				updateMapGrid();
+			}
+		});
 
 		// add ids to the links that we want to be able to hide
 		const links = document.querySelectorAll('#toolbox > a');
