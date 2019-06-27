@@ -1209,14 +1209,16 @@ function wrapperPlugin(plugin_info) {
 
 	// Computes how many new stops must be added to the L14 Cell to get a new Gym
 	function computeMissingStops(cellData) {
-		const sum = cellData.gyms.length + cellData.stops.length;
-		if (sum < 2)
+		const gyms = cellData.gyms.length;
+		const stops = cellData.stops.length;
+		const sum = gyms + stops;
+		if (sum < 2 && gyms == 0)
 			return 2 - sum;
 
-		if (sum < 6)
+		if (sum < 6 && gyms < 2)
 			return 6 - sum;
 
-		if (sum < 20)
+		if (sum < 20 && gyms < 3)
 			return 20 - sum;
 
 		// No options to more gyms ATM.
