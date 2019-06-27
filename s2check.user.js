@@ -1109,7 +1109,7 @@ function wrapperPlugin(plugin_info) {
 						const missingStops = computeMissingStops(cellData);
 						switch (missingStops) {
 							case 0:
-								if (missingGyms == 0) {
+								if (missingGyms <= 0) {
 									cellLayerGroup.addLayer(fillCell(cell, settings.colors.cell14Filled.color, settings.colors.cell14Filled.opacity));
 								}
 								break;
