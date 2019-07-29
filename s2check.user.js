@@ -2282,6 +2282,9 @@ img.photo,
 	 * Re-orders the layerGroups within regionLayer so that foreground objects don't get hidden/obscured by background layers.
 	 */
 	function relayerBackgroundGroups() {
+		if (!map.hasLayer(regionLayer)) {
+			return;
+		}
 		if (regionLayer.hasLayer(nearbyLayerGroup)) {
 			nearbyLayerGroup.bringToBack();
 		}
