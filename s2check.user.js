@@ -357,14 +357,12 @@ function wrapperPlugin(plugin_info) {
 			return;
 		}
 
-		// http://stackoverflow.com/a/18197341/250294
 		const element = document.createElement('a');
-		// fails with large amounts of data
-		// element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
 
 		// http://stackoverflow.com/questions/13405129/javascript-create-and-save-file
 		const file = new Blob([text], {type: 'text/plain'});
-		element.setAttribute('href', URL.createObjectURL(file));
+		const objectURL = URL.createObjectURL(file);
+		element.setAttribute('href', objectURL);
 
 		element.setAttribute('download', filename);
 
@@ -373,7 +371,10 @@ function wrapperPlugin(plugin_info) {
 
 		element.click();
 
-		document.body.removeChild(element);
+		setTimeout(function() {
+            document.body.removeChild(element);
+            URL.revokeObjectURL(objectURL);  
+        }, 0); 
 	}
 
 	/**
