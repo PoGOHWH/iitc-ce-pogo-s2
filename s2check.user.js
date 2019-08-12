@@ -2707,11 +2707,32 @@ img.photo,
 		const pogoData = thisPlugin.findByGuid(pogoGuid);
 
 		const existingType = pogoData.type;
+		let gym = null;
+		if (existingType == 'gyms') {
+			gym = pogoData.store[guid];
+		}
+
 		// remove marker
 		removePogoObject(existingType, guid);
 
 		// Draw new marker
 		thisPlugin.addPortalpogo(guid, portal.lat, portal.lng, portal.name || pogoData.name, existingType);
+
+		// copy gym status
+		if (gym != null) {
+			pogoData.store[guid].isEx = gym.isEx;
+			pogoData.store[guid].medal = gym.medal;
+
+			thisPlugin.saveStorage();
+
+			const icon = document.getElementById('gym' + guid.replace('.', ''));
+			// update gym marker
+			if (icon) {
+				icon.classList.add(gym.medal + 'Medal');
+				icon.classList[gym.isEx ? 'add' : 'remove']('exGym');
+			}
+
+		}
 	}
 
 	/**
