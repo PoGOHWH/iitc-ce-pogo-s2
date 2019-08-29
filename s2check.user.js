@@ -906,8 +906,8 @@ function wrapperPlugin(plugin_info) {
             </select>{{width}}</p>`;
 
 		const html = 
-			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='text' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
-			selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='text' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
+			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
+			selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
 			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`,``) +
 			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace(`{{width}}`,``) +
 			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace(`{{width}}`,``) +
@@ -957,10 +957,10 @@ function wrapperPlugin(plugin_info) {
 				updatedSetting(id);
 			});
 			
-			const widthinput = div.querySelector('#' + id + 'Width');
-			widthinput.value = entry.width;
-			widthinput.addEventListener('change', function (event) {
-				settings[key][item].width = widthinput.value;
+			const widthInput = div.querySelector('#' + id + 'Width');
+			widthInput.value = entry.width;
+			widthInput.addEventListener('change', function (event) {
+				settings[key][item].width = widthInput.value;
 				updatedSetting(id);
 			});
 		};
