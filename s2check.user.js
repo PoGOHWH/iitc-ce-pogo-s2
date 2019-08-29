@@ -958,6 +958,9 @@ function wrapperPlugin(plugin_info) {
 			});
 			
 			const widthInput = div.querySelector('#' + id + 'Width');
+			if (entry.width == null) {
+                return;
+            }
 			widthInput.value = entry.width;
 			widthInput.addEventListener('change', function (event) {
 				settings[key][item].width = widthInput.value;
