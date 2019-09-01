@@ -908,15 +908,15 @@ function wrapperPlugin(plugin_info) {
 		const html = 
 			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
 			selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
-			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace(`{{width}}`,``) +
-			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace(`{{width}}`, '') +
+			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace(`{{width}}`, '') +
 			'<a id="resetColorsLink">Reset all colors</a>'
 			;
 
@@ -957,15 +957,14 @@ function wrapperPlugin(plugin_info) {
 				updatedSetting(id);
 			});
 			
-			const widthInput = div.querySelector('#' + id + 'Width');
-			if (entry.width == null) {
-                return;
+			if (entry.width != null) {
+				const widthInput = div.querySelector('#' + id + 'Width');
+				widthInput.value = entry.width;
+				widthInput.addEventListener('change', function (event) {
+					settings[key][item].width = widthInput.value;
+					updatedSetting(id);
+				});
             }
-			widthInput.value = entry.width;
-			widthInput.addEventListener('change', function (event) {
-				settings[key][item].width = widthInput.value;
-				updatedSetting(id);
-			});
 		};
 
 		configureItems('grids', 0, 'grid0');
