@@ -903,20 +903,20 @@ function wrapperPlugin(plugin_info) {
 			<option value=0.8>0.8</option>
 			<option value=0.9>0.9</option>
 			<option value=1>1</option>
-			</select></p>`;
+            </select>{{width}}</p>`;
 
 		const html = 
-			selectRow.replace('{{title}}', '1st Grid').replace(/{{id}}/g, 'grid0') +
-			selectRow.replace('{{title}}', '2nd Grid').replace(/{{id}}/g, 'grid1') +
-			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms') +
-			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms') +
-			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled') +
-			selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled') +
-			selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder') +
-			selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill') +
-			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1') +
-			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2') +
-			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3') +
+			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
+			selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
+			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace(`{{width}}`,``) +
+			selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace(`{{width}}`,``) +
 			'<a id="resetColorsLink">Reset all colors</a>'
 			;
 
@@ -954,6 +954,16 @@ function wrapperPlugin(plugin_info) {
 			input.value = entry.color;
 			input.addEventListener('change', function (event) {
 				settings[key][item].color = input.value;
+				updatedSetting(id);
+			});
+			
+			const widthInput = div.querySelector('#' + id + 'Width');
+			if (entry.width == null) {
+                return;
+            }
+			widthInput.value = entry.width;
+			widthInput.addEventListener('change', function (event) {
+				settings[key][item].width = widthInput.value;
 				updatedSetting(id);
 			});
 		};
