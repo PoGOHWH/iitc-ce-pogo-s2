@@ -3414,25 +3414,26 @@ img.photo,
 	}
 }
 
-const plugin_info = {};
-if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
-	plugin_info.script = {
-		version: GM_info.script.version,
-		name: GM_info.script.name,
-		description: GM_info.script.description
-	};
-}
+(function() {
+	const plugin_info = {};
+	if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
+		plugin_info.script = {
+			version: GM_info.script.version,
+			name: GM_info.script.name,
+			description: GM_info.script.description
+		};
+	}
 
-// Greasemonkey. It will be quite hard to debug
-if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
-	// inject code into site context
-	const script = document.createElement('script');
-	script.appendChild(document.createTextNode('(' + wrapperS2 + ')();'));
-	script.appendChild(document.createTextNode('(' + wrapperPlugin + ')(' + JSON.stringify(plugin_info) + ');'));
-	(document.body || document.head || document.documentElement).appendChild(script);
-} else {
-	// Tampermonkey, run code directly
-	wrapperS2();
-	wrapperPlugin(plugin_info);
-}
-
+	// Greasemonkey. It will be quite hard to debug
+	if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
+		// inject code into site context
+		const script = document.createElement('script');
+		script.appendChild(document.createTextNode('(' + wrapperS2 + ')();'));
+		script.appendChild(document.createTextNode('(' + wrapperPlugin + ')(' + JSON.stringify(plugin_info) + ');'));
+		(document.body || document.head || document.documentElement).appendChild(script);
+	} else {
+		// Tampermonkey, run code directly
+		wrapperS2();
+		wrapperPlugin(plugin_info);
+	}
+})();
