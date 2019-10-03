@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.91
+// @version      0.92
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -17,9 +17,12 @@
 
 /* eslint-env es6 */
 /* eslint no-var: "error" */
-/* globals L, S2, map */
+/* globals L, map */
 /* globals GM_info, $, dialog */
 /* globals renderPortalDetails, findPortalGuidByPositionE6 */
+
+
+;(function() { // eslint-disable-line no-extra-semi
 
 /** S2 Geometry functions
 
@@ -49,10 +52,11 @@
  - i,j: they always use 30 bits, adjusting as needed. we use 0 to (1<<level)-1 instead
 				(so GetSizeIJ for a cell is always 1)
 */
+	
+function wrapperPlugin(plugin_info) {
+	'use strict';
 
-;function wrapperS2() {	// eslint-disable-line no-extra-semi
-
-	const S2 = window.S2 = {};
+	const S2 = {};
 
 	function LatLngToXYZ(latLng) {
 		const d2r = Math.PI / 180.0;
@@ -267,13 +271,10 @@
 			return fromFaceIJWrap(face, [i + values.a, j + values.b], level);
 		});
 	};
-}
 
 /** Our code
 * For safety, S2 must be initialized before our code
 */
-function wrapperPlugin(plugin_info) {
-	'use strict';
 
 	// based on https://github.com/iatkin/leaflet-svgicon
 	function initSvgIcon() {
@@ -398,7 +399,6 @@ function wrapperPlugin(plugin_info) {
 
 		const input = document.createElement('input');
 		input.type = 'file';
-		input.className = 'baseutils-filepicker';
 		document.body.appendChild(input);
 
 		input.addEventListener('change', function () {
@@ -599,11 +599,28 @@ function wrapperPlugin(plugin_info) {
 
 	function saveSettings() {
 		createThrottledTimer('saveSettings', function() {
-			localStorage['s2check_settings'] = JSON.stringify(settings);
+			localStorage[KEY_SETTINGS] = JSON.stringify(settings);
 		});
 	}
 
 	function loadSettings() {
+		const tmp = localStorage[KEY_SETTINGS];
+		if (!tmp) {
+			loadOldSettings();
+			return;
+		}
+		try	{
+			settings = JSON.parse(tmp);
+		} catch (e) { // eslint-disable-line no-empty
+		}
+
+		setThisIsPogo();
+	}
+
+	/**
+	* Migrate from old key to new one in order to avoid conflict with other plugin that reused this code.
+	*/
+	function loadOldSettings() {
 		const tmp = localStorage['s2check_settings'];
 		if (!tmp)
 			return;
@@ -628,6 +645,10 @@ function wrapperPlugin(plugin_info) {
 		}
 
 		setThisIsPogo();
+
+		// migrate key
+		localStorage.removeItem('s2check_settings');
+		thisPlugin.saveStorage();
 	}
 
 	function resetColors() {
@@ -742,7 +763,7 @@ function wrapperPlugin(plugin_info) {
 			let cell;
 			// Compute the cell only once for each level
 			if (!item.cells[level]) {
-				cell = window.S2.S2Cell.FromLatLng(item, level);
+				cell = S2.S2Cell.FromLatLng(item, level);
 				item.cells[level] = cell.toString();
 			}
 			const cellId = item.cells[level];
@@ -750,7 +771,7 @@ function wrapperPlugin(plugin_info) {
 			// Add it to the array of gyms of that cell
 			if (!cells[cellId]) {
 				if (!cell) {
-					cell = window.S2.S2Cell.FromLatLng(item, level);
+					cell = S2.S2Cell.FromLatLng(item, level);
 				}
 				cells[cellId] = {
 					cell: cell,
@@ -1200,7 +1221,7 @@ function wrapperPlugin(plugin_info) {
 
 		Object.keys(visibleGyms).forEach(id => {
 			const gym = gyms[id];
-			const cell = window.S2.S2Cell.FromLatLng(gym, level);
+			const cell = S2.S2Cell.FromLatLng(gym, level);
 			const corners = cell.getCornerLatLngs();
 			// center point
 			const center = cell.getLatLng();
@@ -1282,7 +1303,7 @@ function wrapperPlugin(plugin_info) {
 
 		let marker = L.marker(center, {
 			icon: L.divIcon({
-				className: 's2check-text',
+				className: 'pogo-text',
 				iconAnchor: [25, 5],
 				iconSize: [50, 10],
 				html: text
@@ -1311,7 +1332,7 @@ function wrapperPlugin(plugin_info) {
 
 	const thisPlugin = window.plugin.pogo;
 	const KEY_STORAGE = 'plugin-pogo';
-
+	const KEY_SETTINGS = 'plugin-pogo-settings';
 	/*********************************************************************************************************************/
 
 	// Update the localStorage
@@ -1585,7 +1606,7 @@ function wrapperPlugin(plugin_info) {
 		if (Object.keys(ignoredCellsExtraGyms).length == 0 && Object.keys(ignoredCellsMissingGyms).length == 0)
 			return false;
 
-		const cell = window.S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), gymCellLevel);
+		const cell = S2.S2Cell.FromLatLng(new L.LatLng(lat, lng), gymCellLevel);
 		const cellId = cell.toString();
 		if (ignoredCellsExtraGyms[cellId]) {
 			delete ignoredCellsExtraGyms[cellId];
@@ -1933,7 +1954,7 @@ function wrapperPlugin(plugin_info) {
 	opacity: 1;
 }
 
-.s2check-text {
+.pogo-text {
 	text-align: center;
 	font-weight: bold;
 	border: none !important;
@@ -3414,7 +3435,6 @@ img.photo,
 	}
 }
 
-(function() {
 	const plugin_info = {};
 	if (typeof GM_info !== 'undefined' && GM_info && GM_info.script) {
 		plugin_info.script = {
@@ -3428,12 +3448,10 @@ img.photo,
 	if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
 		// inject code into site context
 		const script = document.createElement('script');
-		script.appendChild(document.createTextNode('(' + wrapperS2 + ')();'));
 		script.appendChild(document.createTextNode('(' + wrapperPlugin + ')(' + JSON.stringify(plugin_info) + ');'));
 		(document.body || document.head || document.documentElement).appendChild(script);
 	} else {
 		// Tampermonkey, run code directly
-		wrapperS2();
 		wrapperPlugin(plugin_info);
 	}
 })();
