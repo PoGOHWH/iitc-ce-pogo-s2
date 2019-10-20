@@ -788,9 +788,7 @@ function wrapperPlugin(plugin_info) {
 	 * Returns the items that belong to the specified cell
 	 */
 	function findCellItems(cellId, level, items) {
-		return Object.values(items).filter(item => {
-			return item.cells[level] == cellId;
-		});
+		return Object.values(items).filter(item => item.cells[level] == cellId);
 	}
 
 	/**
