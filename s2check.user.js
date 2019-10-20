@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.92
+// @version      0.93
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -664,26 +664,33 @@ function wrapperPlugin(plugin_info) {
 	function setThisIsPogo() {
 		document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
 
-		if (settings.thisIsPogo) {
-			removeIngressLayers();
-			if (window._current_highlighter == window._no_highlighter) {
-				// extracted from IITC plugin: Hide portal ownership
-				
-				originalHighlightPortal = window.highlightPortal;
-				window.highlightPortal = portal => {
-					window.portalMarkerScale();
-					const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
-					portal.setStyle(hidePortalOwnershipStyles);
-				};
-				window.resetHighlightedPortals();
+		try
+		{
+			if (settings.thisIsPogo) {
+				removeIngressLayers();
+				if (window._current_highlighter == window._no_highlighter) {
+					// extracted from IITC plugin: Hide portal ownership				
+					originalHighlightPortal = window.highlightPortal;
+					window.highlightPortal = function(portal) {
+						window.portalMarkerScale();
+						const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
+						portal.setStyle(hidePortalOwnershipStyles);
+					};
+					window.resetHighlightedPortals();
+				}
+			} else {
+				restoreIngressLayers();
+				if (originalHighlightPortal != null) {
+					window.highlightPortal = originalHighlightPortal;
+					originalHighlightPortal = null;
+					window.resetHighlightedPortals();
+				}
 			}
-		} else {
-			restoreIngressLayers();
-			if (originalHighlightPortal != null) {
-				window.highlightPortal = originalHighlightPortal;
-				originalHighlightPortal = null;
-				window.resetHighlightedPortals();
-			}
+		}
+		catch (e)
+		{
+			alert('Error initializing ThisIsPogo');
+			console.log(e); // eslint-disable-line no-console
 		}
 	}
 
@@ -1752,7 +1759,7 @@ function wrapperPlugin(plugin_info) {
 				thisPlugin.optAlert('Successful.');
 			} catch (e) {
 				console.warn('pogo: failed to import data: ' + e); // eslint-disable-line no-console
-				thisPlugin.optAlert('<span style="color: #f88">Import failed </span>');
+				thisPlugin.optAlert('<span style="color: #f88">Import failed</span>');
 			}
 		});
 	};
