@@ -1,8 +1,9 @@
+# Pogo-Tools
 This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. 
 
 Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial_pogo_s2_plugin_for_ingress_intel/) to learn how to install and configure it. I'm gonna write my own description below, just follow whatever steps you find easier.
 
-**Pre-requisites**
+## Pre-requisites
   1. An Ingress account. You don't have to play the game, just install it once and create and account, after you have everything configured you can un-install the game if you want to.
   2. Verify that you can login in https://intel.ingress.com
   3.
@@ -11,10 +12,10 @@ Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial
 * For iOS install [IITC-Mobile](https://apps.apple.com/es/app/iitc-mobile/id1032695947)
 4. Load again https://intel.ingress.com (or open the mobile app) and check that it works. You can enable the Google Satellite view to switch to a map easier to understand. You can also install and enable the "OpenStreetMap.org map tiles" plugin ([Destkop install](https://iitc.modos189.ru/build/release/plugins/basemap-openstreetmap.user.js), in Mobile they come pre-installed).
  
-**Install**  
-[Click on this link](https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js). If your browser prompts you to Install it confirm and then reload the Ingress Intel page. If you're on mobile you might be prompted to save it. In Android open IITCm go to settings, plugins and add a new one by picking the file that you have saved, f the file is grayed out, [check this screenshot to switch the file picker](https://twitter.com/PogoCells/status/1103547605521481728). In iOS you can install it by pasting the url after clicking the add plugin and then you have to enable it.
+## Install
+[Click on this link](https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js). If your browser prompts you to Install it confirm and then reload the Ingress Intel page. If you're on mobile you might be prompted to save it. In Android open IITCm go to settings, plugins and add a new one by picking the file that you have saved, if the file is grayed out, [check this screenshot to switch the file picker](https://twitter.com/PogoCells/status/1103547605521481728). In iOS you can install it by pasting the url after clicking the add plugin and then you have to enable it.
 
-**Features**  
+## Features  
 In IITC there are two links added to the side pane, one shows the actions available with the Pokemon data and the other allows you to change the settings of the plugin.
  
 Settings dialog:
@@ -41,5 +42,5 @@ When you select a portal, in the sidebar there will be two little icons of a pok
 **Analyze portal data**
 If this setting is enabled, the plugin will try detect changes in the existing portals and so it will show some messages ("New pokestops X", "Review required X", "Moved portals X", ...) and clicking on those numbers will display a dialog trying to explain the detected changes. Hovering on the photos or locations will display a blinking marker on the map, clicking on them will center the map on them (and they might end up below the dialog, so move it afterwards to check the location)
 
-**Updates**
+## Updates
 I'll try to publish announcements about changes and how to use the features in https://twitter.com/PogoCells so follow that account, it won't have too many posts and all of them focused on this plugin or very related things (but not news about Pokémon Go in general)
