@@ -8,7 +8,7 @@ Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial
   2. Verify that you can login in https://intel.ingress.com
   3.
 * For PC, install [Tampermonkey](https://tampermonkey.net/) on your browser of choice. Then install  [IITC-CE](https://iitc.modos189.ru/build/release/total-conversion-build.user.js) (old IITC also works, but it's no longer maintained)
-* For Android install [IIITC-CE](https://play.google.com/store/apps/details?id=org.exarhteam.iitc_mobile)
+* For Android install [IITC-CE](https://play.google.com/store/apps/details?id=org.exarhteam.iitc_mobile)
 * For iOS install [IITC-Mobile](https://apps.apple.com/es/app/iitc-mobile/id1032695947)
 4. Load again https://intel.ingress.com (or open the mobile app) and check that it works. You can enable the Google Satellite view to switch to a map easier to understand. You can also install and enable the "OpenStreetMap.org map tiles" plugin ([Destkop install](https://iitc.modos189.ru/build/release/plugins/basemap-openstreetmap.user.js), in Mobile they come pre-installed).
  
