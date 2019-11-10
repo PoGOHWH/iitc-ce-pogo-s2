@@ -56,10 +56,12 @@
 function wrapperPlugin(plugin_info) {
 	'use strict';
 
-	const S2 = {};
+	const d2r = Math.PI / 180.0;
+	const r2d = 180.0 / Math.PI;
+
+	 const S2 = {};
 
 	function LatLngToXYZ(latLng) {
-		const d2r = Math.PI / 180.0;
 		const phi = latLng.lat * d2r;
 		const theta = latLng.lng * d2r;
 		const cosphi = Math.cos(phi);
@@ -68,8 +70,6 @@ function wrapperPlugin(plugin_info) {
 	}
 
 	function XYZToLatLng(xyz) {
-		const r2d = 180.0 / Math.PI;
-
 		const lat = Math.atan2(xyz[2], Math.sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1]));
 		const lng = Math.atan2(xyz[1], xyz[0]);
 
