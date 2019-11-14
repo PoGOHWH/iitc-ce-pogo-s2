@@ -1,5 +1,5 @@
 # Pogo-Tools
-This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. 
+This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. I've published an additional page with an [overview of the features](https://gitlab.com/AlfonsoML/pogo-s2/wikis/How-to-add-new-PoI-to-your-city).
 
 Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial_pogo_s2_plugin_for_ingress_intel/) to learn how to install and configure it. I'm gonna write my own description below, just follow whatever steps you find easier.
 
@@ -55,3 +55,6 @@ If this setting is enabled, the plugin will try detect changes in the existing p
 
 ## Updates
 I'll try to publish announcements about changes and how to use the features in https://twitter.com/PogoCells so follow that account, it won't have too many posts and all of them focused on this plugin or very related things (but not news about Pokémon Go in general)
+
+## Adding your candidates
+If you want to add your candidates to the map to easily keep track of them, use the [Wayfarer Planner](https://gitlab.com/AlfonsoML/wayfarer/) plugin.
