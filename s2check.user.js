@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.93
+// @version      0.93.1
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://www.ingress.com/intel*
@@ -59,7 +59,7 @@ function wrapperPlugin(plugin_info) {
 	const d2r = Math.PI / 180.0;
 	const r2d = 180.0 / Math.PI;
 
-	 const S2 = {};
+	const S2 = {};
 
 	function LatLngToXYZ(latLng) {
 		const phi = latLng.lat * d2r;
@@ -490,6 +490,11 @@ function wrapperPlugin(plugin_info) {
 		return ua.match(/ Version\//);
 	}
 
+	function is_iOS() {
+		const ua = navigator.userAgent;
+		return (ua.includes('iPhone') || ua.includes('iPad'))
+	}
+
 	let pokestops = {};
 	let gyms = {};
 	// Portals that aren't marked as PoGo items
@@ -663,6 +668,9 @@ function wrapperPlugin(plugin_info) {
 
 	function setThisIsPogo() {
 		document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
+		// It seems that iOS has some bug in the following code, but I can't debug it.
+		if (is_iOS())
+			return;
 
 		try
 		{
