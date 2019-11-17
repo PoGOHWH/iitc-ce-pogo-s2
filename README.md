@@ -1,5 +1,5 @@
 # Pogo-Tools
-This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. 
+This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. I've published an additional page with an [overview of the features](https://gitlab.com/AlfonsoML/pogo-s2/wikis/How-to-add-new-PoI-to-your-city).
 
 Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial_pogo_s2_plugin_for_ingress_intel/) to learn how to install and configure it. I'm gonna write my own description below, just follow whatever steps you find easier.
 
@@ -13,7 +13,18 @@ Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial
 4. Load again https://intel.ingress.com (or open the mobile app) and check that it works. You can enable the Google Satellite view to switch to a map easier to understand. You can also install and enable the "OpenStreetMap.org map tiles" plugin ([Destkop install](https://iitc.modos189.ru/build/release/plugins/basemap-openstreetmap.user.js), in Mobile they come pre-installed).
  
 ## Install
-<a href='https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js?inline=false' download='s2check.user.js'>Click on this link</a>. If your browser prompts you to Install it confirm and then reload the Ingress Intel page. If you're on mobile you might be prompted to save it. In Android open IITCm go to settings, plugins and add a new one by picking the file that you have saved, if the file is grayed out, [check this screenshot to switch the file picker](https://twitter.com/PogoCells/status/1103547605521481728). In iOS you can install it by pasting the url after clicking the add plugin and then you have to enable it.
+In desktop, 
+<a href='https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js?inline=false'>Click on this link</a>, now your browser should open a new tab with Tampermonkey asking for confirmation of the Install.   
+<img src="https://gitlab.com/AlfonsoML/pogo-s2/raw/master/assets/tampermonkey_install.png">  
+Click the Install button and load again the Ingress Intel page. 
+
+If you are using IITCm on Android, then <a href='https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js?inline=false'>Click on this link</a>, and you might be prompted to open in IITCm (accept it if you have this option), or the file might be downloaded automatically (as either s2check.user.js or s2check.txt). If the file has been downloaded, then open IITCm, go to Settings->Plugins and click the 3 dots menu to add a plugin and select the file that you have downloaded. If the file is grayed out, [check this screenshot to switch the file picker](https://twitter.com/PogoCells/status/1103547605521481728), this problem will be fixed in the next release of IITCm.  
+Then you'll get the install prompt  
+<img src="https://gitlab.com/AlfonsoML/pogo-s2/raw/master/assets/install_prompt.jpg">  
+After successfully installing the plugin, it will be available under User Plugins->Layer and you have to enable it (click the checkbox)  
+<img src="https://gitlab.com/AlfonsoML/pogo-s2/raw/master/assets/enable_plugin.jpg">  
+
+In iOS you can install it by going to plugins, Add new one, then paste [this url](https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js) then like in Android go to User Plugins->Layer and enable it.
 
 ## Features  
 In IITC there are two links added to the side pane, one shows the actions available with the Pokemon data and the other allows you to change the settings of the plugin.
@@ -44,3 +55,6 @@ If this setting is enabled, the plugin will try detect changes in the existing p
 
 ## Updates
 I'll try to publish announcements about changes and how to use the features in https://twitter.com/PogoCells so follow that account, it won't have too many posts and all of them focused on this plugin or very related things (but not news about Pokémon Go in general)
+
+## Adding your candidates
+If you want to add your candidates to the map to easily keep track of them, use the [Wayfarer Planner](https://gitlab.com/AlfonsoML/wayfarer/) plugin.
