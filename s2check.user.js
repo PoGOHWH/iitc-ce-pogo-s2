@@ -535,7 +535,7 @@ function wrapperPlugin(plugin_info) {
 	const poiCellLevel = 17; // the cell level where there can only be 1 POI translated to pogo
 
 	const defaultSettings = {
-		highlightGymCandidateCells: false,
+		highlightGymCandidateCells: true,
 		highlightGymCenter: false,
 		thisIsPogo: false,
 		analyzeForMissingData: true,
@@ -547,7 +547,7 @@ function wrapperPlugin(plugin_info) {
 				opacity: 0.5
 			},
 			{
-				level: 0,
+				level: poiCellLevel,
 				width: 2,
 				color: '#388E3C',
 				opacity: 0.5
