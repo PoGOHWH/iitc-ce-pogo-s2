@@ -2264,7 +2264,7 @@ img.photo,
 					updateCounter('moved', movedPortals);
 				}
 			}
-			if (!pogoItem.name && portal.name) {
+			if (portal.name && pogoItem.name !== portal.name) {
 				pogoData.store[guid].name = portal.name;
 			}
 			return;
