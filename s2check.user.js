@@ -9,8 +9,6 @@
 // @version      0.93.1
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
-// @match        https://www.ingress.com/intel*
-// @match        https://ingress.com/intel*
 // @match        https://intel.ingress.com/*
 // @grant        none
 // ==/UserScript==
@@ -1332,13 +1330,12 @@ function wrapperPlugin(plugin_info) {
 	// IITC code
 	// ***************************
 	
-
 	// ensure plugin framework is there, even if iitc is not yet loaded
 	if (typeof window.plugin !== 'function') {
 		window.plugin = function () {};
 	}
 
-	// PLUGIN START ////////////////////////////////////////////////////////
+	// PLUGIN START 
 
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
@@ -1346,7 +1343,6 @@ function wrapperPlugin(plugin_info) {
 	const thisPlugin = window.plugin.pogo;
 	const KEY_STORAGE = 'plugin-pogo';
 	const KEY_SETTINGS = 'plugin-pogo-settings';
-	/*********************************************************************************************************************/
 
 	// Update the localStorage
 	thisPlugin.saveStorage = function () {
