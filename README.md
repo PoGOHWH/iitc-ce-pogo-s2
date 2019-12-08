@@ -3,6 +3,9 @@ This is script to that tries to help finding out info about Pokestops and Gyms i
 
 Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial_pogo_s2_plugin_for_ingress_intel/) to learn how to install and configure it. I'm gonna write my own description below, just follow whatever steps you find easier.
 
+A video in English: [How to install IITC-mobile and PogoTools](https://www.youtube.com/watch?v=PkxFcIdQ2gk)   
+Video en Español sobre [como instalar IITC en Android](https://www.youtube.com/watch?v=WM4YHcVE9oU) y como [instalar y configuración inicial del PogoTools](https://www.youtube.com/watch?v=mH2vsqpT4Bc).  
+
 ## Pre-requisites
   1. An Ingress account. You don't have to play the game, just install it once and create and account, after you have everything configured you can un-install the game if you want to.
   2. Verify that you can login in https://intel.ingress.com
@@ -18,7 +21,9 @@ In desktop,
 <img src="https://gitlab.com/AlfonsoML/pogo-s2/raw/master/assets/tampermonkey_install.png">  
 Click the Install button and load again the Ingress Intel page. 
 
-If you are using IITCm on Android, then <a href='https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js?inline=false'>Click on this link</a>, and you might be prompted to open in IITCm (accept it if you have this option), or the file might be downloaded automatically (as either s2check.user.js or s2check.txt). If the file has been downloaded, then open IITCm, go to Settings->Plugins and click the 3 dots menu to add a plugin and select the file that you have downloaded. If the file is grayed out, [check this screenshot to switch the file picker](https://twitter.com/PogoCells/status/1103547605521481728), this problem will be fixed in the next release of IITCm.  
+If you are using IITCm on Android, then <a href='https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js?inline=false'>Click on this link</a>, and you might be prompted to open in IITCm (accept it if you have this option), or the file might be downloaded automatically (as either s2check.user.js or s2check.txt). 
+If the file has been downloaded, then open IITCm, go to Settings->Plugins and click the 3 dots menu to add a plugin and select the file that you have downloaded.   
+
 Then you'll get the install prompt  
 <img src="https://gitlab.com/AlfonsoML/pogo-s2/raw/master/assets/install_prompt.jpg">  
 After successfully installing the plugin, it will be available under User Plugins->Layer and you have to enable it (click the checkbox)  
