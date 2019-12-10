@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.93.1
+// @version      0.93.2
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -663,6 +663,7 @@ function wrapperPlugin(plugin_info) {
 	}
 
 	let originalHighlightPortal;
+	let originalChatRequestPublic;
 
 	function setThisIsPogo() {
 		document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
@@ -674,6 +675,11 @@ function wrapperPlugin(plugin_info) {
 		{
 			if (settings.thisIsPogo) {
 				removeIngressLayers();
+				if (chat && chat.requestPublic) {
+					originalChatRequestPublic = chat && chat.requestPublic;
+					chat.requestPublic = function() {}; // no requests for chat
+				}
+
 				if (window._current_highlighter == window._no_highlighter) {
 					// extracted from IITC plugin: Hide portal ownership				
 					originalHighlightPortal = window.highlightPortal;
@@ -686,6 +692,10 @@ function wrapperPlugin(plugin_info) {
 				}
 			} else {
 				restoreIngressLayers();
+				if (originalChatRequestPublic) {
+					chat.requestPublic = originalChatRequestPublic;
+					originalChatRequestPublic = null;
+				}
 				if (originalHighlightPortal != null) {
 					window.highlightPortal = originalHighlightPortal;
 					originalHighlightPortal = null;
