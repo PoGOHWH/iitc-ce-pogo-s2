@@ -651,7 +651,7 @@ function wrapperPlugin(plugin_info) {
 
 		// migrate key
 		localStorage.removeItem('s2check_settings');
-		thisPlugin.saveStorage();
+		saveStorage();
 	}
 
 	function resetColors() {
@@ -1355,7 +1355,7 @@ function wrapperPlugin(plugin_info) {
 	const KEY_SETTINGS = 'plugin-pogo-settings';
 
 	// Update the localStorage
-	thisPlugin.saveStorage = function () {
+	function saveStorage() {
 		createThrottledTimer('saveStorage', function() {
 			localStorage[KEY_STORAGE] = JSON.stringify({
 				gyms: cleanUpExtraData(gyms), 
@@ -1365,7 +1365,7 @@ function wrapperPlugin(plugin_info) {
 				ignoredCellsMissingGyms: ignoredCellsMissingGyms
 			});
 		});
-	};
+	}
 
 	/**
 	 * Create a new object where the extra properties of each pokestop/gym have been removed. Store only the minimum.
@@ -1408,7 +1408,7 @@ function wrapperPlugin(plugin_info) {
 		notpogo = {};
 		ignoredCellsExtraGyms = {};
 		ignoredCellsMissingGyms = {};
-		thisPlugin.saveStorage();
+		saveStorage();
 
 		allPortals = {};
 		newPortals = {};
@@ -1480,7 +1480,7 @@ function wrapperPlugin(plugin_info) {
 						icon.classList.remove(gyms[guid].medal + 'Medal');
 					}
 					gyms[guid].medal = ev.target.value;
-					thisPlugin.saveStorage();
+					saveStorage();
 					// update gym marker
 					if (icon) {
 						icon.classList.add(gyms[guid].medal + 'Medal');
@@ -1491,7 +1491,7 @@ function wrapperPlugin(plugin_info) {
 					const guid = window.selectedPortal;
 					const icon = document.getElementById('gym' + guid.replace('.', ''));
 					gyms[guid].isEx = ev.target.checked;
-					thisPlugin.saveStorage();
+					saveStorage();
 					// update gym marker
 					if (icon) {
 						icon.classList[gyms[guid].isEx ? 'add' : 'remove']('exGym');
@@ -1565,7 +1565,7 @@ function wrapperPlugin(plugin_info) {
 			const existingType = pogoData.type;
 			removePogoObject(existingType, guid);
 
-			thisPlugin.saveStorage();
+			saveStorage();
 			thisPlugin.updateStarPortal();
 	
 			// Get portal name and coordinates
@@ -1576,7 +1576,7 @@ function wrapperPlugin(plugin_info) {
 			}
 			// we've changed one item from pogo, if the cell was marked as ignored, reset it.
 			if (updateExtraGymsCells(ll.lat, ll.lng))
-				thisPlugin.saveStorage();
+				saveStorage();
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
 	
@@ -1612,7 +1612,7 @@ function wrapperPlugin(plugin_info) {
 		}
 
 		updateExtraGymsCells(lat, lng);
-		thisPlugin.saveStorage();
+		saveStorage();
 		thisPlugin.updateStarPortal();
 
 		thisPlugin.addStar(guid, lat, lng, name, type);
@@ -2711,7 +2711,7 @@ img.photo,
 					movedPortals.length = 0;
 					updateCounter('moved', movedPortals);
 
-					thisPlugin.saveStorage();
+					saveStorage();
 					if (settings.highlightGymCandidateCells) {
 						updateMapGrid();
 					}
@@ -2726,7 +2726,7 @@ img.photo,
 			const portal = row.dataPortal;
 			movePogo(portal, row.dataPogoGuid);
 
-			thisPlugin.saveStorage();
+			saveStorage();
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
 			}
@@ -2772,7 +2772,7 @@ img.photo,
 			pogoData.store[guid].isEx = gym.isEx;
 			pogoData.store[guid].medal = gym.medal;
 
-			thisPlugin.saveStorage();
+			saveStorage();
 
 			const icon = document.getElementById('gym' + guid.replace('.', ''));
 			// update gym marker
@@ -2816,7 +2816,7 @@ img.photo,
 
 			// remove marker
 			removePogoObject(existingType, guid);
-			thisPlugin.saveStorage();
+			saveStorage();
 
 			if (settings.highlightGymCandidateCells) {
 				updateMapGrid();
@@ -3033,7 +3033,7 @@ img.photo,
 					}
 					container.dialog('close');
 
-					thisPlugin.saveStorage();
+					saveStorage();
 
 					updateCounter('gyms', groups);
 					// continue
@@ -3113,7 +3113,7 @@ img.photo,
 					container.dialog('close');
 					delete cellsExtraGyms[cellId];
 
-					thisPlugin.saveStorage();
+					saveStorage();
 
 					updateCounter('extraGyms', Object.keys(cellsExtraGyms));
 					// continue
