@@ -664,6 +664,8 @@ function wrapperPlugin(plugin_info) {
 
 	let originalHighlightPortal;
 	let originalChatRequestPublic;
+	let originalChatRequestFaction;
+	let originalChatRequestAlerts;
 
 	function setThisIsPogo() {
 		document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
@@ -678,6 +680,14 @@ function wrapperPlugin(plugin_info) {
 				if (chat && chat.requestPublic) {
 					originalChatRequestPublic = chat && chat.requestPublic;
 					chat.requestPublic = function() {}; // no requests for chat
+				}
+				if (chat && chat.requestFaction) {
+					originalChatRequestFaction = chat && chat.requestFaction;
+					chat.requestFaction = function() {}; // no requests for chat
+				}
+				if (chat && chat.requestAlerts) {
+					originalChatRequestAlerts = chat && chat.requestAlerts;
+					chat.requestAlerts = function() {}; // no requests for chat
 				}
 
 				if (window._current_highlighter == window._no_highlighter) {
@@ -695,6 +705,14 @@ function wrapperPlugin(plugin_info) {
 				if (originalChatRequestPublic) {
 					chat.requestPublic = originalChatRequestPublic;
 					originalChatRequestPublic = null;
+				}
+				if (originalChatRequestFaction) {
+					chat.requestFaction = originalChatRequestFaction;
+					originalChatRequestFaction = null;
+				}
+				if (originalChatRequestAlerts) {
+					chat.requestAlerts = originalChatRequestAlerts;
+					originalChatRequestAlerts = null;
 				}
 				if (originalHighlightPortal != null) {
 					window.highlightPortal = originalHighlightPortal;
