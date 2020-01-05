@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.93.2
+// @version      0.94
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -1187,12 +1187,11 @@ function wrapperPlugin(plugin_info) {
 							case 2:
 							case 3:
 								cellsCloseToThreshold[missingStops].push(cell);
-								cellLayerGroup.addLayer(writeInCell(cell, missingStops));
 								break;
 							default:
-								cellLayerGroup.addLayer(writeInCell(cell, missingStops));
 								break;
 						}
+						cellLayerGroup.addLayer(writeInCell(cell, missingStops));
 					}
 
 					// and recurse to our neighbors
@@ -1299,7 +1298,9 @@ function wrapperPlugin(plugin_info) {
 	// If the result is negative then it has extra gyms
 	function computeMissingGyms(cellData) {
 		const totalGyms = cellData.gyms.length;
-		const sum = totalGyms + cellData.stops.length;
+		// exclude from the count those pokestops that have been marked as missing photos
+		const validStops = cellData.stops.filter(p => typeof p.photos == 'undefined' || p.photos > 0);
+		const sum = totalGyms + validStops.length;
 		if (sum < 2)
 			return 0 - totalGyms;
 
@@ -1347,11 +1348,99 @@ function wrapperPlugin(plugin_info) {
 				iconSize: [50, 10],
 				html: text
 			}),
-			interactive: false
 		});
 		// fixme, maybe add some click handler
-
+		marker.on('click', function() {
+			displayCellSummary(cell);
+		});
 		return marker;
+	}
+
+	/**
+	Show a summary with the pokestops and gyms of a L14 Cell
+	*/
+	function displayCellSummary(cell) {
+		const cellStr = cell.toString();
+
+		const allCells = groupByCell(gymCellLevel);
+		const cellData = allCells[cellStr];
+		if (!cellData)
+			return;
+
+		function updateScore(portal, wrapper) {
+			const photos = typeof portal.photos == 'undefined' ? 1 : portal.photos;
+			const votes = typeof portal.votes == 'undefined' ? 0 : portal.votes;
+			const score = photos + votes;
+			wrapper.querySelector('.Pogo_Score').textContent = score;
+		}
+
+		function dumpGroup(data, title, useHeader) {
+			const div = document.createElement('div');
+			const header = document.createElement('h3');
+			if (useHeader) {
+				header.className = 'header';
+				header.innerHTML = '<span>' + title + ' (' + data.length + ')</span><span>Photos</span><span>Votes</span><span>Score</span>';
+			} else {
+				header.textContent = title + ' (' + data.length + ')';
+			}
+			div.appendChild(header);
+
+			data.sort(sortByName).forEach(portal => {
+				const wrapper = document.createElement('div');
+				wrapper.setAttribute('data-guid', portal.guid);
+				wrapper.className = 'PortalSummary';
+				const img = getPortalImage(portal);
+				let scoreData = '';
+
+				if (title == 'Pokestops' || title == 'Portals') {
+					const photos = typeof portal.photos == 'undefined' ? 1 : portal.photos;
+					const votes = typeof portal.votes == 'undefined' ? 0 : portal.votes;
+					scoreData = '<span><input type="number" min=0 value=' + photos + ' title="Total number of photos of this portal" class="Pogo_Photos"></span>' +
+					'<span><input type="number" min=0 value=' + votes + ' title="Total sum of votes in the portal" class="Pogo_Votes"></span>' +
+					'<span class="Pogo_Score" title="Gym score: The pokestops with highest score will become the next gym">' + (photos + votes) + '</span>';
+				}
+				wrapper.innerHTML = '<span class="PogoName">' + img + '</span>' +
+					'<span>' + getPortalName(portal) + '</span>' +
+					scoreData
+				;
+
+				if (scoreData != '') {
+					wrapper.querySelector('.Pogo_Photos').addEventListener('input', function() {
+						var update = portal.photos !== this.valueAsNumber && (portal.photos === 0 || this.valueAsNumber === 0);
+						portal.photos = this.valueAsNumber;
+						updateScore(portal, wrapper);
+						saveStorage();
+						if (update)
+							updateMapGrid();
+					});
+					wrapper.querySelector('.Pogo_Votes').addEventListener('input', function() {
+						portal.votes = this.valueAsNumber;
+						updateScore(portal, wrapper);
+						saveStorage();
+					});
+				}
+
+				div.appendChild(wrapper);
+			});
+			return div;
+		}
+
+		const div = document.createElement('div');
+		div.appendChild(dumpGroup(cellData.gyms, 'Gyms'));
+		div.appendChild(dumpGroup(cellData.stops, 'Pokestops', true));
+		//div.appendChild(dumpGroup(cellData.notClassified, 'Other portals')); They don't matter, they have been removed from Pokemon
+		//div.appendChild(dumpGroup(cellData.portals, 'Portals', true)); FIXME: portals from Ingress that are hidden in Pokemon
+		div.className = 'PogoListing';
+
+		const container = dialog({
+			id: 'PokemonList',
+			html: div,
+			width: '420px',
+			title: 'List of Pokestops and Gyms',
+		});
+
+		container.on('click', 'img.photo', centerPortal);
+		configureHoverMarker(container);
 	}
 
 	// ***************************
@@ -1404,6 +1493,12 @@ function wrapperPlugin(plugin_info) {
 
 			if (data.medal)
 				newData.medal = data.medal;
+
+			if (typeof data.photos != 'undefined')
+				newData.photos = data.photos;
+
+			if (data.votes)
+				newData.votes = data.votes;
 
 			newGroup[id] = newData;
 		});
@@ -2232,6 +2327,47 @@ img.photo,
 .pogo-colors input[type=color] {
 	border: 0;
 	padding: 0;
+}
+
+.PogoListing .header {
+    align-items: center;
+    display: grid;
+	grid-column-gap: 5px;
+    grid-template-columns: 1fr 40px 40px 40px;
+    text-align: center;
+}
+
+.PogoListing .header > span + span {
+	font-size: 90%;
+	font-weight: normal;
+}
+
+.PogoListing .PortalSummary {
+    align-items: center;
+    display: grid;
+	grid-column-gap: 5px;
+    grid-template-columns: 100px 1fr 40px 40px 40px;
+    height: 70px;
+	margin-bottom: 10px;
+    overflow: hidden;
+    text-align: center;
+}
+
+.PogoListing div div:nth-child(odd) {
+	background: rgba(7, 42, 69, 0.9);
+}
+
+.PogoListing img {
+    max-width: 100px;
+	max-height: 70px;
+    display: block;
+    margin: 0 auto;
+}
+
+.Pogo_Photos, 
+.Pogo_Votes {
+	width: 100%;
+	text-align: right;
 }
 
 `).appendTo('head');
