@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.94
+// @version      0.94.1
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -17,7 +17,7 @@
 /* eslint no-var: "error" */
 /* globals L, map */
 /* globals GM_info, $, dialog */
-/* globals renderPortalDetails, findPortalGuidByPositionE6 */
+/* globals renderPortalDetails, findPortalGuidByPositionE6, chat */
 
 
 ;(function() { // eslint-disable-line no-extra-semi
@@ -418,11 +418,12 @@ function wrapperPlugin(plugin_info) {
 		textarea.style.width = '100%';
 		textarea.style.minHeight = '8em';
 		div.appendChild(textarea);
+		var width = Math.min(screen.availWidth, 360);
 
 		const container = dialog({
 			id: 'promptForPaste',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'Paste here the data',
 			buttons: {
 				OK: function () {
@@ -441,11 +442,12 @@ function wrapperPlugin(plugin_info) {
 		textarea.style.minHeight = '8em';
 		textarea.value = text;
 		div.appendChild(textarea);
+		var width = Math.min(screen.availWidth, 360);
 
 		const container = dialog({
 			id: 'promptForCopy',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'Copy this data',
 			buttons: {
 				OK: function () {
@@ -1431,11 +1433,11 @@ function wrapperPlugin(plugin_info) {
 		//div.appendChild(dumpGroup(cellData.notClassified, 'Other portals')); They don't matter, they have been removed from Pokemon
 		//div.appendChild(dumpGroup(cellData.portals, 'Portals', true)); FIXME: portals from Ingress that are hidden in Pokemon
 		div.className = 'PogoListing';
-
+		var width = Math.min(screen.availWidth, 420);
 		const container = dialog({
 			id: 'PokemonList',
 			html: div,
-			width: '420px',
+			width: width + 'px',
 			title: 'List of Pokestops and Gyms',
 		});
 
@@ -2701,10 +2703,12 @@ img.photo,
 				'<a data-type="notpogo">' + 'N/A' + '</a>';
 			div.appendChild(wrapper);
 		});
+		var width = Math.min(screen.availWidth, 420);
+
 		const container = dialog({
 			id: 'classifyPokestop',
 			html: div,
-			width: '420px',
+			width: width + 'px',
 			title: 'Are all of these Pokestops or Gyms?',
 			buttons: {
 				// Button to allow skip this cell
@@ -2780,10 +2784,11 @@ img.photo,
 				'<a data-type="gyms">' + 'GYM' + '</a>';
 			div.appendChild(wrapper);
 		});
+		var width = Math.min(screen.availWidth, 360);
 		const container = dialog({
 			id: 'classifyPokestop',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'Which one is in Pokemon Go?',
 			buttons: {
 				// Button to allow skip this cell
@@ -2848,10 +2853,11 @@ img.photo,
 				'<a>' + 'Update' + '</a></span>';
 			div.appendChild(wrapper);
 		});
+		var width = Math.min(screen.availWidth, 360);
 		const container = dialog({
 			id: 'movedPortals',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'These portals have been moved in Ingress',
 			buttons: {
 				// Button to move all the portals at once
@@ -2952,10 +2958,11 @@ img.photo,
 				'<span><a>' + 'Remove' + '</a></span>';
 			div.appendChild(wrapper);
 		});
+		var width = Math.min(screen.availWidth, 360);
 		const container = dialog({
 			id: 'missingPortals',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'These portals are missing in Ingress',
 			buttons: {
 			}
@@ -3163,10 +3170,11 @@ img.photo,
 			return;
 		}
 
+		var width = Math.min(screen.availWidth, 360);
 		const container = dialog({
 			id: 'classifyPokestop',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: missingGyms == 1 ? 'Which one is a Gym?' : 'Which ' + missingGyms + ' are Gyms?',
 			buttons: {
 				// Button to allow skip this cell
@@ -3251,10 +3259,11 @@ img.photo,
 				'<a data-type="pokestops">' + 'STOP' + '</a>';
 			div.appendChild(wrapper);
 		});
+		var width = Math.min(screen.availWidth, 360);
 		const container = dialog({
 			id: 'classifyPokestop',
 			html: div,
-			width: '360px',
+			width: width + 'px',
 			title: 'This cell has too many Gyms.',
 			buttons: {
 				// Button to allow skip this cell
