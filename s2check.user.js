@@ -1441,7 +1441,6 @@ function wrapperPlugin(plugin_info) {
 			title: 'List of Pokestops and Gyms',
 		});
 
-		container.on('click', 'img.photo', centerPortal);
 		configureHoverMarker(container);
 	}
 
@@ -2759,7 +2758,6 @@ img.photo,
 			updateCounter('pokestops', Object.values(newPokestops));
 		});
 
-		container.on('click', 'img.photo', centerPortal);
 		configureHoverMarker(container);
 	}
 
@@ -2825,7 +2823,7 @@ img.photo,
 			// continue
 			promptToClassifyPokestops();
 		});
-		container.on('click', 'img.photo', centerPortal);
+
 		configureHoverMarker(container);
 	}
 
@@ -2901,9 +2899,7 @@ img.photo,
 			if (movedPortals.length == 0)
 				container.dialog('close');
 		});
-		container.on('click', 'img.photo', centerPortal);
-		container.on('click', '.ingressLocation', centerPortal);
-		container.on('click', '.pogoLocation', centerPortalAlt);
+
 		configureHoverMarker(container);
 		configureHoverMarkerAlt(container);
 	}
@@ -2992,11 +2988,13 @@ img.photo,
 				container.dialog('close');
 			}
 		});
-		container.on('click', '.pogoLocation', centerPortalAlt);
+
 		configureHoverMarkerAlt(container);
 	}
 
 	function configureHoverMarker(container) {
+		container.on('click', 'img.photo, .ingressLocation', centerPortal);
+
 		let hoverMarker;
 		container.find('img.photo, .ingressLocation').hover( 
 			function hIn() {
@@ -3023,6 +3021,8 @@ img.photo,
 	}
 
 	function configureHoverMarkerAlt(container) {
+		container.on('click', '.pogoLocation', centerPortalAlt);
+
 		let hoverMarker;
 		container.find('.pogoLocation').hover( 
 			function hIn() {
@@ -3231,7 +3231,6 @@ img.photo,
 			}
 		});
 
-		container.on('click', 'img.photo', centerPortal);
 		configureHoverMarker(container);
 	}
 
@@ -3304,7 +3303,7 @@ img.photo,
 			// continue
 			promptToVerifyGyms();
 		});
-		container.on('click', 'img.photo', centerPortal);
+
 		configureHoverMarker(container);
 	}
 
