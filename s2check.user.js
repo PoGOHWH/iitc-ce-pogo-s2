@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.94.1
+// @version      0.94.2
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -3057,6 +3057,9 @@ img.photo,
 		const center = portal._latlng || new L.LatLng(portal.lat, portal.lng);
 		map.panTo(center);
 		drawClickAnimation(center);
+		// Open in sidebar
+		if (!window.isSmartphone())
+			renderPortalDetails(guid);
 	}
 
 	function centerPortalAlt(e) {
