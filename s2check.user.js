@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.94.2
+// @version      0.94.3
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -50,7 +50,7 @@
  - i,j: they always use 30 bits, adjusting as needed. we use 0 to (1<<level)-1 instead
 				(so GetSizeIJ for a cell is always 1)
 */
-	
+
 function wrapperPlugin(plugin_info) {
 	'use strict';
 
@@ -284,7 +284,7 @@ function wrapperPlugin(plugin_info) {
 			},
 			initialize: function (options) {
 				options = L.Util.setOptions(this, options);
-			
+
 				//iconSize needs to be converted to a Point object if it is not passed as one
 				options.iconSize = L.point(options.iconSize);
 
@@ -346,7 +346,7 @@ function wrapperPlugin(plugin_info) {
 			text = JSON.stringify(text);
 		}
 
-		if (typeof window.android !== 'undefined' && window.android.saveFile) { 
+		if (typeof window.android !== 'undefined' && window.android.saveFile) {
 			window.android.saveFile(filename, 'application/json', text);
 			return;
 		}
@@ -372,8 +372,8 @@ function wrapperPlugin(plugin_info) {
 
 		setTimeout(function() {
             document.body.removeChild(element);
-            URL.revokeObjectURL(objectURL);  
-        }, 0); 
+            URL.revokeObjectURL(objectURL);
+        }, 0);
 	}
 
 	/**
@@ -388,7 +388,7 @@ function wrapperPlugin(plugin_info) {
 				callback(content);
 			});
 			return;
-		} 
+		}
 
 		if (isIITCm()) {
 			promptForPaste(callback);
@@ -486,7 +486,7 @@ function wrapperPlugin(plugin_info) {
 
 		if (ua.match(/; wb\)/))
 			return true;
-		
+
 		return ua.match(/ Version\//);
 	}
 
@@ -544,6 +544,7 @@ function wrapperPlugin(plugin_info) {
 		highlightGymCenter: false,
 		thisIsPogo: false,
 		analyzeForMissingData: true,
+        centerMapOnClick: true,
 		grids: [
 			{
 				level: gymCellLevel,
@@ -693,7 +694,7 @@ function wrapperPlugin(plugin_info) {
 				}
 
 				if (window._current_highlighter == window._no_highlighter) {
-					// extracted from IITC plugin: Hide portal ownership				
+					// extracted from IITC plugin: Hide portal ownership
 					originalHighlightPortal = window.highlightPortal;
 					window.highlightPortal = function(portal) {
 						window.portalMarkerScale();
@@ -884,13 +885,14 @@ function wrapperPlugin(plugin_info) {
 			<option value=20>20</option>
 			</select></p>`;
 
-		const html = 
+		const html =
 			selectRow.replace('{{level}}', '1st') +
 			selectRow.replace('{{level}}', '2nd') +
 			`<p><input type="checkbox" id="chkHighlightCandidates" /><label for="chkHighlightCandidates">Highlight Cells that might get a Gym</label></p>
 			 <p><input type="checkbox" id="chkHighlightCenters" /><label for="chkHighlightCenters">Put an X in the center of Cells with a Gym<br />(for determining EX-eligibility)</label></p>
 			 <p><input type="checkbox" id="chkThisIsPogo" /><label for="chkThisIsPogo" title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'>This is PoGo!</label></p>
 			 <p><input type="checkbox" id="chkanalyzeForMissingData" /><label for="chkanalyzeForMissingData" title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms">Analyze portal data</label></p>
+             <p><input type="checkbox" id="chkcenterMapOnClick" /><label for="chkcenterMapOnClick" title="Center map on portal when clicked in a dialog box.">Center map on click.</label></p>
 			 <p><a id='PogoEditColors'>Colors</a></p>
 			`;
 
@@ -943,6 +945,14 @@ function wrapperPlugin(plugin_info) {
 			}
 		});
 
+        const chkcenterMapOnClick = div.querySelector('#chkcenterMapOnClick');
+		chkcenterMapOnClick.checked = settings.centerMapOnClick;
+		chkcenterMapOnClick.addEventListener('change', e => {
+			settings.centerMapOnClick = chkcenterMapOnClick.checked;
+            console.log(settings.centerMapOnClick);
+			saveSettings();
+		});
+
 		const PogoEditColors = div.querySelector('#PogoEditColors');
 		PogoEditColors.addEventListener('click', function (e) {
 			editColors();
@@ -967,7 +977,7 @@ function wrapperPlugin(plugin_info) {
 			<option value=1>1</option>
             </select>{{width}}</p>`;
 
-		const html = 
+		const html =
 			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
 			selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
 			selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`, '') +
@@ -1018,7 +1028,7 @@ function wrapperPlugin(plugin_info) {
 				settings[key][item].color = input.value;
 				updatedSetting(id);
 			});
-			
+
 			if (entry.width != null) {
 				const widthInput = div.querySelector('#' + id + 'Width');
 				widthInput.value = entry.width;
@@ -1126,7 +1136,7 @@ function wrapperPlugin(plugin_info) {
 
 	/**
 	 * Highlight cells that are missing a few stops to get another gym. Also fills level 17 cells with a stop/gym.
-	 * based on data from https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/ 
+	 * based on data from https://www.reddit.com/r/TheSilphRoad/comments/7ppb3z/gyms_pok%C3%A9stops_and_s2_cells_followup_research/
 	 * Cut offs: 2, 6, 20
 	 */
 	function updateCandidateCells(zoom) {
@@ -1142,7 +1152,7 @@ function wrapperPlugin(plugin_info) {
 			2: [],
 			3: []
 		};
-		
+
 		const drawCellAndNeighbors = function (cell) {
 			const cellStr = cell.toString();
 
@@ -1447,13 +1457,13 @@ function wrapperPlugin(plugin_info) {
 	// ***************************
 	// IITC code
 	// ***************************
-	
+
 	// ensure plugin framework is there, even if iitc is not yet loaded
 	if (typeof window.plugin !== 'function') {
 		window.plugin = function () {};
 	}
 
-	// PLUGIN START 
+	// PLUGIN START
 
 	// use own namespace for plugin
 	window.plugin.pogo = function () {};
@@ -1466,8 +1476,8 @@ function wrapperPlugin(plugin_info) {
 	function saveStorage() {
 		createThrottledTimer('saveStorage', function() {
 			localStorage[KEY_STORAGE] = JSON.stringify({
-				gyms: cleanUpExtraData(gyms), 
-				pokestops: cleanUpExtraData(pokestops), 
+				gyms: cleanUpExtraData(gyms),
+				pokestops: cleanUpExtraData(pokestops),
 				notpogo: cleanUpExtraData(notpogo),
 				ignoredCellsExtraGyms: ignoredCellsExtraGyms,
 				ignoredCellsMissingGyms: ignoredCellsMissingGyms
@@ -1508,7 +1518,7 @@ function wrapperPlugin(plugin_info) {
 
 	// Load the localStorage
 	thisPlugin.loadStorage = function () {
-		const tmp = JSON.parse(localStorage[KEY_STORAGE] || '{}');	
+		const tmp = JSON.parse(localStorage[KEY_STORAGE] || '{}');
 		gyms = tmp.gyms || {};
 		pokestops = tmp.pokestops || {};
 		notpogo = tmp.notpogo || {};
@@ -1681,7 +1691,7 @@ function wrapperPlugin(plugin_info) {
 
 			saveStorage();
 			thisPlugin.updateStarPortal();
-	
+
 			// Get portal name and coordinates
 			const p = window.portals[guid];
 			const ll = p.getLatLng();
@@ -1693,7 +1703,7 @@ function wrapperPlugin(plugin_info) {
 				saveStorage();
 		} else {
 			// If portal isn't saved in pogo: Add this pogo
-	
+
 			// Get portal name and coordinates
 			const portal = window.portals[guid];
 			const latlng = portal.getLatLng();
@@ -1753,7 +1763,7 @@ function wrapperPlugin(plugin_info) {
 	}
 
 	/*
-		OPTIONS 
+		OPTIONS
 	*/
 	// Manual import, export and reset data
 	thisPlugin.pogoActionsDialog = function () {
@@ -1876,7 +1886,7 @@ function wrapperPlugin(plugin_info) {
 								// don't overwrite existing medals
 								if (importGymMedal && !gyms[guid].medal) {
 									gyms[guid].medal = item.medal;
-								}								
+								}
 							}
 						}
 					}
@@ -1979,10 +1989,10 @@ function wrapperPlugin(plugin_info) {
 			return;
 
 		window.registerMarkerForOMS(star);
-		star.on('spiderfiedclick', function () { 
+		star.on('spiderfiedclick', function () {
 			// don't try to render fake portals
 			if (guid.indexOf('.') > -1) {
-				renderPortalDetails(guid); 
+				renderPortalDetails(guid);
 			}
 		});
 
@@ -2001,7 +2011,7 @@ function wrapperPlugin(plugin_info) {
 #sidebar #portaldetails h3.title{
 	width:auto;
 }
-.pogoStop span, 
+.pogoStop span,
 .pogoGym span {
 	display:inline-block;
 	float:left;
@@ -2154,7 +2164,7 @@ function wrapperPlugin(plugin_info) {
 .SilverMedal .ball-outline-center {
 	fill: #CEDFE6;
 }
-.BronzeMedal .gym-main-outline, 
+.BronzeMedal .gym-main-outline,
 .BronzeMedal .ball-outline-center {
 	fill: #F0B688;
 }
@@ -2365,7 +2375,7 @@ img.photo,
     margin: 0 auto;
 }
 
-.Pogo_Photos, 
+.Pogo_Photos,
 .Pogo_Votes {
 	width: 100%;
 	text-align: right;
@@ -2391,7 +2401,7 @@ img.photo,
 		// analyze each portal only once, but sometimes the first time there's no additional data of the portal
 		if (allPortals[guid] && allPortals[guid].name)
 			return;
-	
+
 		const portal = {
 			guid: guid,
 			name: data.portal.options.data.title,
@@ -2444,11 +2454,11 @@ img.photo,
 	 */
 	function addNearbyCircle(guid) {
 		const portal = window.portals[guid];
-		if (!portal) 
+		if (!portal)
 			return;
 
 		const circleSettings = {
-			color: settings.colors.nearbyCircleBorder.color, 
+			color: settings.colors.nearbyCircleBorder.color,
 			opacity: settings.colors.nearbyCircleBorder.opacity,
 			fillColor: settings.colors.nearbyCircleFill.color,
 			fillOpacity: settings.colors.nearbyCircleFill.opacity,
@@ -2512,7 +2522,7 @@ img.photo,
 				clearTimeout(checkNewPortalsTimer);
 			} else {
 				document.getElementById('sidebarPogo').classList.add('refreshingPortalCount');
-			}	
+			}
 		} catch (e) {
 			// nothing
 		}
@@ -2543,8 +2553,8 @@ img.photo,
 
 		const allCells = groupByCell(poiCellLevel);
 
-		// Check only the items inside the screen, 
-		// the server might provide info about remote portals if they are part of a link 
+		// Check only the items inside the screen,
+		// the server might provide info about remote portals if they are part of a link
 		// and we don't know anything else about nearby portals of that one.
 		// In this case (vs drawing) we want to filter only cells fully within the screen
 		const cells = filterWithinScreen(allCells);
@@ -2653,8 +2663,8 @@ img.photo,
 
 		const allCells = groupByCell(gymCellLevel);
 
-		// Check only the items inside the screen, 
-		// the server might provide info about remote portals if they are part of a link 
+		// Check only the items inside the screen,
+		// the server might provide info about remote portals if they are part of a link
 		// and we don't know anything else about nearby portals of that one.
 		// In this case (vs drawing) we want to filter only cells fully within the screen
 		const cells = filterWithinScreen(allCells);
@@ -2670,7 +2680,7 @@ img.photo,
 			const missingGyms = computeMissingGyms(data);
 			if (missingGyms > 0) {
 				cellsWithMissingGyms.push(data);
-			} 
+			}
 		});
 
 		if (cellsWithMissingGyms.length > 0) {
@@ -2996,7 +3006,7 @@ img.photo,
 		container.on('click', 'img.photo, .ingressLocation', centerPortal);
 
 		let hoverMarker;
-		container.find('img.photo, .ingressLocation').hover( 
+		container.find('img.photo, .ingressLocation').hover(
 			function hIn() {
 				const row = this.parentNode.parentNode;
 				const guid = row.getAttribute('data-guid');
@@ -3024,7 +3034,7 @@ img.photo,
 		container.on('click', '.pogoLocation', centerPortalAlt);
 
 		let hoverMarker;
-		container.find('.pogoLocation').hover( 
+		container.find('.pogoLocation').hover(
 			function hIn() {
 				const lat = this.getAttribute('data-lat');
 				const lng = this.getAttribute('data-lng');
@@ -3055,7 +3065,8 @@ img.photo,
 		if (!portal)
 			return;
 		const center = portal._latlng || new L.LatLng(portal.lat, portal.lng);
-		map.panTo(center);
+        if (settings.centerMapOnClick)
+            map.panTo(center);
 		drawClickAnimation(center);
 		// Open in sidebar
 		if (!window.isSmartphone())
@@ -3162,7 +3173,7 @@ img.photo,
 			wrapper.setAttribute('data-guid', portal.guid);
 			wrapper.innerHTML =
 				'<span class="PogoName">' + getPortalName(portal) +
-				getPortalImage(portal) + '</span>' + 
+				getPortalImage(portal) + '</span>' +
 				'<a data-type="gyms">' + 'GYM' + '</a>';
 			div.appendChild(wrapper);
 		});
@@ -3344,7 +3355,7 @@ img.photo,
 		}
 		if (typeof leafletLayer.off != 'undefined')
 			leafletLayer.off();
-		
+
 		// new Leaflet
 		if (Array.isArray(layers)) {
 			// remove from array
@@ -3356,7 +3367,7 @@ img.photo,
 		}
 		window.layerChooser._update();
 		removedLayers[name] = {
-			layer: leafletLayer, 
+			layer: leafletLayer,
 			enabled: enabled,
 			isBase: isBase
 		};
@@ -3386,7 +3397,7 @@ img.photo,
 		//removeLayer('Enlightened');
 		mergePortalLayers();
 	}
-	
+
 	/**
 	 * Put all the layers for Ingress portals under a single one
 	 */
@@ -3411,7 +3422,7 @@ img.photo,
 		const name = 'Ingress Portals';
 		const layerId = portalsLayerGroup._leaflet_id;
 		const enabled = map._layers[layerId] != null;
-		
+
 		const layers = window.layerChooser._layers;
 		if (Array.isArray(layers)) {
 			// remove from array
@@ -3592,7 +3603,7 @@ img.photo,
 		if (data.length > 0) {
 			pane.style.display = '';
 			return;
-		} 
+		}
 		let node = pane.firstElementChild;
 		while (node) {
 			const rowData = node.lastElementChild.PogoData;
