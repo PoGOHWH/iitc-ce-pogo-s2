@@ -371,9 +371,9 @@ function wrapperPlugin(plugin_info) {
 		element.click();
 
 		setTimeout(function() {
-            document.body.removeChild(element);
-            URL.revokeObjectURL(objectURL);
-        }, 0);
+			document.body.removeChild(element);
+			URL.revokeObjectURL(objectURL);
+		}, 0);
 	}
 
 	/**
@@ -544,7 +544,7 @@ function wrapperPlugin(plugin_info) {
 		highlightGymCenter: false,
 		thisIsPogo: false,
 		analyzeForMissingData: true,
-        centerMapOnClick: true,
+		centerMapOnClick: true,
 		grids: [
 			{
 				level: gymCellLevel,
@@ -892,7 +892,7 @@ function wrapperPlugin(plugin_info) {
 			 <p><input type="checkbox" id="chkHighlightCenters" /><label for="chkHighlightCenters">Put an X in the center of Cells with a Gym<br />(for determining EX-eligibility)</label></p>
 			 <p><input type="checkbox" id="chkThisIsPogo" /><label for="chkThisIsPogo" title='Hide Ingress panes, info and whatever that clutters the map and it is useless for Pokemon Go'>This is PoGo!</label></p>
 			 <p><input type="checkbox" id="chkanalyzeForMissingData" /><label for="chkanalyzeForMissingData" title="Analyze the portal data to show the pane that suggests new Pokestops and Gyms">Analyze portal data</label></p>
-             <p><input type="checkbox" id="chkcenterMapOnClick" /><label for="chkcenterMapOnClick" title="Center map on portal when clicked in a dialog box.">Center map on click.</label></p>
+			 <p><input type="checkbox" id="chkcenterMapOnClick" /><label for="chkcenterMapOnClick" title="Center map on portal when clicked in a dialog box.">Center map on click.</label></p>
 			 <p><a id='PogoEditColors'>Colors</a></p>
 			`;
 
@@ -945,11 +945,10 @@ function wrapperPlugin(plugin_info) {
 			}
 		});
 
-        const chkcenterMapOnClick = div.querySelector('#chkcenterMapOnClick');
+		const chkcenterMapOnClick = div.querySelector('#chkcenterMapOnClick');
 		chkcenterMapOnClick.checked = settings.centerMapOnClick;
 		chkcenterMapOnClick.addEventListener('change', e => {
 			settings.centerMapOnClick = chkcenterMapOnClick.checked;
-            console.log(settings.centerMapOnClick);
 			saveSettings();
 		});
 
@@ -975,7 +974,7 @@ function wrapperPlugin(plugin_info) {
 			<option value=0.8>0.8</option>
 			<option value=0.9>0.9</option>
 			<option value=1>1</option>
-            </select>{{width}}</p>`;
+			</select>{{width}}</p>`;
 
 		const html =
 			selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
@@ -1036,7 +1035,7 @@ function wrapperPlugin(plugin_info) {
 					settings[key][item].width = widthInput.value;
 					updatedSetting(id);
 				});
-            }
+			}
 		};
 
 		configureItems('grids', 0, 'grid0');
@@ -2072,25 +2071,25 @@ function wrapperPlugin(plugin_info) {
 }
 
 .notPogo span {
-    color: #FFF;
-    background: #000;
-    border-radius: 50%;
-    font-size: 10px;
-    letter-spacing: -0.15em;
-    display: inline-block;
-    padding: 2px;
-    opacity: 0.6;
-    margin: 3px 1px 0 2px;
-    height: 15px;
-    width: 16px;
-    box-sizing: border-box;
-    line-height: 1;
+	color: #FFF;
+	background: #000;
+	border-radius: 50%;
+	font-size: 10px;
+	letter-spacing: -0.15em;
+	display: inline-block;
+	padding: 2px;
+	opacity: 0.6;
+	margin: 3px 1px 0 2px;
+	height: 15px;
+	width: 16px;
+	box-sizing: border-box;
+	line-height: 1;
 }
 
 .notPogo span:after {
-    display: inline-block;
-    content: "N/A";
-    position: absolute;
+	display: inline-block;
+	content: "N/A";
+	position: absolute;
 }
 
 .notPogo:focus span, .notPogo.favorite span {
@@ -2109,7 +2108,7 @@ function wrapperPlugin(plugin_info) {
 
 #PogoGymInfo {
 	display: none;
-    padding: 3px;
+	padding: 3px;
 }
 
 .isGym #PogoGymInfo {
@@ -2121,7 +2120,7 @@ function wrapperPlugin(plugin_info) {
 .thisIsPogo #randdetails,
 .thisIsPogo #resodetails,
 .thisIsPogo #level {
-    display: none;
+	display: none;
 }
 
 .thisIsPogo #playerstat,
@@ -2132,12 +2131,12 @@ function wrapperPlugin(plugin_info) {
 .thisIsPogo #scoresLink,
 .thisIsPogo #chatinput,
 .thisIsPogo #chatcontrols {
-    display: none;
+	display: none;
 }
 
 .thisIsPogo #mobileinfo .portallevel,
 .thisIsPogo #mobileinfo .resonator {
-    display: none;
+	display: none;
 }
 
 .thisIsPogo #sidebar #portaldetails h3.title {
@@ -2191,33 +2190,33 @@ function wrapperPlugin(plugin_info) {
 }
 
 .exGym:after {
-    content: "EX";
-    font-weight: bold;
-    text-shadow: 1px 1px 3px #BED1D5, -1px -1px 3px #BED1D5;
-    color: #09131D;
-    font-size: 130%;
-    position: absolute;
-    top: 0;
-    right: 0;
+	content: "EX";
+	font-weight: bold;
+	text-shadow: 1px 1px 3px #BED1D5, -1px -1px 3px #BED1D5;
+	color: #09131D;
+	font-size: 130%;
+	position: absolute;
+	top: 0;
+	right: 0;
 }
 
 .pokestop {
-    opacity: 0.75;
+	opacity: 0.75;
 }
 
 .pokestop path,
 .pokestop ellipse {
-    fill: #2370DA;
+	fill: #2370DA;
 }
 
 path.pokestop-circle {
-    fill: #23FEF8;
-    stroke-width: 30px;
-    stroke: #2370DA;
+	fill: #23FEF8;
+	stroke-width: 30px;
+	stroke: #2370DA;
 }
 
 .smallpokestops .pokestop {
-    opacity: 0.85;
+	opacity: 0.85;
 }
 
 .smallpokestops path.pokestop-pole,
@@ -2230,12 +2229,12 @@ path.pokestop-circle {
 }
 
 .PogoClassification div {
-    display: grid;
-    grid-template-columns: 200px 60px 60px 60px;
-    text-align: center;
-    align-items: center;
-    height: 140px;
-    overflow: hidden;
+	display: grid;
+	grid-template-columns: 200px 60px 60px 60px;
+	text-align: center;
+	align-items: center;
+	height: 140px;
+	overflow: hidden;
 	margin-bottom: 10px;
 }
 
@@ -2244,10 +2243,10 @@ path.pokestop-circle {
 }
 
 .PogoClassification img {
-    max-width: 200px;
+	max-width: 200px;
 	max-height: 140px;
-    display: block;
-    margin: 0 auto;
+	display: block;
+	margin: 0 auto;
 }
 
 #dialog-missingPortals .PogoClassification div {
@@ -2257,7 +2256,7 @@ path.pokestop-circle {
 img.photo,
 .ingressLocation,
 .pogoLocation {
-    cursor: zoom-in;
+	cursor: zoom-in;
 }
 
 .PoGo-PortalAnimation {
@@ -2311,28 +2310,28 @@ img.photo,
 }
 
 #sidebarPogo {
-    color: #eee;
-    padding: 2px 5px;
+	color: #eee;
+	padding: 2px 5px;
 }
 
 #sidebarPogo span {
-    margin-right: 5px;
+	margin-right: 5px;
 }
 
 .refreshingData,
 .refreshingPortalCount {
-    opacity: 0.5;
+	opacity: 0.5;
 	pointer-events: none;
 }
 
 #sidebarPogo.mobile {
-    width: 100%;
-    background: rebeccapurple;
-    display: flex;
+	width: 100%;
+	background: rebeccapurple;
+	display: flex;
 }
 
 #sidebarPogo.mobile > div {
-    margin-right: 1em;
+	margin-right: 1em;
 }
 
 .pogo-colors input[type=color] {
@@ -2341,11 +2340,11 @@ img.photo,
 }
 
 .PogoListing .header {
-    align-items: center;
-    display: grid;
+	align-items: center;
+	display: grid;
 	grid-column-gap: 5px;
-    grid-template-columns: 1fr 40px 40px 40px;
-    text-align: center;
+	grid-template-columns: 1fr 40px 40px 40px;
+	text-align: center;
 }
 
 .PogoListing .header > span + span {
@@ -2354,14 +2353,14 @@ img.photo,
 }
 
 .PogoListing .PortalSummary {
-    align-items: center;
-    display: grid;
+	align-items: center;
+	display: grid;
 	grid-column-gap: 5px;
-    grid-template-columns: 100px 1fr 40px 40px 40px;
-    height: 70px;
+	grid-template-columns: 100px 1fr 40px 40px 40px;
+	height: 70px;
 	margin-bottom: 10px;
-    overflow: hidden;
-    text-align: center;
+	overflow: hidden;
+	text-align: center;
 }
 
 .PogoListing div div:nth-child(odd) {
@@ -2369,10 +2368,10 @@ img.photo,
 }
 
 .PogoListing img {
-    max-width: 100px;
+	max-width: 100px;
 	max-height: 70px;
-    display: block;
-    margin: 0 auto;
+	display: block;
+	margin: 0 auto;
 }
 
 .Pogo_Photos,
@@ -3065,8 +3064,8 @@ img.photo,
 		if (!portal)
 			return;
 		const center = portal._latlng || new L.LatLng(portal.lat, portal.lng);
-        if (settings.centerMapOnClick)
-            map.panTo(center);
+		if (settings.centerMapOnClick)
+			map.panTo(center);
 		drawClickAnimation(center);
 		// Open in sidebar
 		if (!window.isSmartphone())
