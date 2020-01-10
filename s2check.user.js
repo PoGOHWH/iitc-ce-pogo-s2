@@ -1977,7 +1977,7 @@ function wrapperPlugin(plugin_info) {
 						<ellipse class="pokestop-base" cx="415.185" cy="1345.949" rx="305.686" ry="115.202" stroke-width="6"/>
 						</svg>`,
 					iconSize: L.point(24, 32),
-					iconAnchor: [12, 38],
+					iconAnchor: [12, 30],
 					id: 'pokestop' + guid.replace('.', '')
 				}
 			});
