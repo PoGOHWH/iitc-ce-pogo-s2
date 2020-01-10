@@ -1290,8 +1290,9 @@ function wrapperPlugin(plugin_info) {
 	// Computes how many new stops must be added to the L14 Cell to get a new Gym
 	function computeMissingStops(cellData) {
 		const gyms = cellData.gyms.length;
-		const stops = cellData.stops.length;
-		const sum = gyms + stops;
+		// exclude from the count those pokestops that have been marked as missing photos
+		const validStops = cellData.stops.filter(p => typeof p.photos == 'undefined' || p.photos > 0);
+		const sum = gyms + validStops.length;
 		if (sum < 2 && gyms == 0)
 			return 2 - sum;
 
@@ -1380,7 +1381,7 @@ function wrapperPlugin(plugin_info) {
 
 		function updateScore(portal, wrapper) {
 			const photos = typeof portal.photos == 'undefined' ? 1 : portal.photos;
-			const votes = typeof portal.votes == 'undefined' ? 0 : portal.votes;
+			const votes = photos == 0 || typeof portal.votes == 'undefined' ? 0 : portal.votes;
 			const score = photos + votes;
 			wrapper.querySelector('.Pogo_Score').textContent = score;
 		}
@@ -1421,8 +1422,10 @@ function wrapperPlugin(plugin_info) {
 						portal.photos = this.valueAsNumber;
 						updateScore(portal, wrapper);
 						saveStorage();
-						if (update)
+						if (update) {
+							refreshPokestopMissingPhotoStatus(portal);
 							updateMapGrid();
+						}
 					});
 					wrapper.querySelector('.Pogo_Votes').addEventListener('input', function() {
 						portal.votes = this.valueAsNumber;
@@ -1945,20 +1948,37 @@ function wrapperPlugin(plugin_info) {
 		thisPlugin.addAllMarkers();
 	};
 
+	/**
+	* Update the disk color and title if the portal has no photo or switches to have at least one
+	*/
+	function refreshPokestopMissingPhotoStatus(portal) {
+		const hasPhoto = typeof portal.photos == 'undefined' || portal.photos > 0;
+		const guid = portal.guid;
+		const icon = document.getElementById('pokestop' + guid.replace('.', ''));
+		if (icon) {
+			icon.classList.toggle('missingPhoto', !hasPhoto);
+			icon.title = portal.name + (!hasPhoto ? '\r\n<br>Missing Photo, add one to make it count for Gym creation.' : '');
+		}
+	}
+
 	thisPlugin.addStar = function (guid, lat, lng, name, type) {
 		let star;
 		if (type === 'pokestops') {
+			const pokestop = pokestops[guid];
+			var hasPhoto = typeof pokestop.photos == 'undefined' || pokestop.photos > 0;
+
 			star = new L.Marker.SVGMarker([lat, lng], {
-				title: name,
+				title: name + (!hasPhoto ? '\r\n<br>Missing Photo, add one to make it count for Gym creation.' : ''),
 				iconOptions: {
-					className: 'pokestop',
+					className: 'pokestop' + (!hasPhoto ? ' missingPhoto' : ''),
 					html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 821.52 1461.152">
 						<path class="pokestop-circle" d="M410.76 0C203.04.14 30.93 152.53 0 351.61l211.27.39c26.99-84.43 106.09-145.55 199.49-145.6 93.25.11 172.24 61.13 199.33 145.41l211.2.19C790.58 152.8 618.51.26 410.76 0zm0 280c-75.11 0-136 60.89-136 136s60.89 136 136 136 136-60.89 136-136-60.89-136-136-136zM.23 480c30.71 199.2 202.78 351.74 410.53 352 207.72-.14 379.83-152.53 410.76-351.61L610.25 480c-26.99 84.43-106.09 145.55-199.49 145.6-93.25-.11-172.24-61.13-199.33-145.41z"/>
 						<path class="pokestop-pole" d="M380.387 818.725h65.085v465.159h-65.085z" stroke-width="4.402"/>
 						<ellipse class="pokestop-base" cx="415.185" cy="1345.949" rx="305.686" ry="115.202" stroke-width="6"/>
 						</svg>`,
 					iconSize: L.point(24, 32),
-					iconAnchor: [12, 38]
+					iconAnchor: [12, 38],
+					id: 'pokestop' + guid.replace('.', '')
 				}
 			});
 
@@ -1971,7 +1991,6 @@ function wrapperPlugin(plugin_info) {
 			star = new L.Marker.SVGMarker([lat, lng], {
 				title: name,
 				iconOptions: {
-					id: 'gym' + guid.replace('.', ''),
 					className: className,
 					html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 410"><g transform="translate(-62 -45)">
 			<path class="gym-main-outline" d="M436.23 45.87C368.38 181.94 300.54 318.02 232.7 454.09c-12.48-46.6-24.97-93.19-37.45-139.78l-1.67-6.2s-7.37-.21-12.03-.72c-57.77-3.97-109.7-50.53-117.27-107.86-11.31-57.8 25.24-118.19 79.1-139.79 57.74-24.6 130.02 2.07 160 56.72 39.96-20.87 80.14-42.63 120.19-63.84z" />
@@ -1979,7 +1998,8 @@ function wrapperPlugin(plugin_info) {
 			<path d="M404.7 78.26L297.06 135.6l-59.42 31.6a48.252 48.252 0 0 1 1.58 12.02c0 26.6-21.56 48.16-48.16 48.16a48.138 48.138 0 0 1-36-16.27l-59.35 31.56c21.21 31.94 57 51.17 95.35 51.23 4.26-.02 8.52-.28 12.76-.77l32.78 122.31z" class="ball-outline-bottom"/>
 			<path class="ball-outline-center" d="M191.06 144.82c19 0 34.4 15.4 34.4 34.4s-15.4 34.4-34.4 34.4c-19.01 0-34.41-15.4-34.41-34.4s15.4-34.4 34.41-34.4z"/>
 			</g></g></svg>`,
-					iconSize: L.point(36, 36)
+					iconSize: L.point(36, 36),
+					id: 'gym' + guid.replace('.', '')
 				}
 			});
 		}
@@ -2213,6 +2233,12 @@ path.pokestop-circle {
 	fill: #23FEF8;
 	stroke-width: 30px;
 	stroke: #2370DA;
+}
+
+.missingPhoto path.pokestop-circle {
+	stroke-width: 20px;
+	fill: white;
+	opacity: 0.5;
 }
 
 .smallpokestops .pokestop {
