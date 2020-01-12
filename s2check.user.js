@@ -20,7 +20,7 @@
 /* globals renderPortalDetails, findPortalGuidByPositionE6, chat */
 
 
-;(function() { // eslint-disable-line no-extra-semi
+;(function () { // eslint-disable-line no-extra-semi
 
 	/** S2 Geometry functions
 
@@ -370,7 +370,7 @@
 
 			element.click();
 
-			setTimeout(function() {
+			setTimeout(function () {
 				document.body.removeChild(element);
 				URL.revokeObjectURL(objectURL);
 			}, 0);
@@ -418,7 +418,7 @@
 			textarea.style.width = '100%';
 			textarea.style.minHeight = '8em';
 			div.appendChild(textarea);
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 
 			const container = dialog({
 				id: 'promptForPaste',
@@ -442,7 +442,7 @@
 			textarea.style.minHeight = '8em';
 			textarea.value = text;
 			div.appendChild(textarea);
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 
 			const container = dialog({
 				id: 'promptForCopy',
@@ -463,15 +463,15 @@
 				clearTimeout(TIMERS[name]);
 
 			// throttle if there are several calls to the functions
-			TIMERS[name] = setTimeout(function() {
+			TIMERS[name] = setTimeout(function () {
 				delete TIMERS[name];
 				if (typeof window.requestIdleCallback == 'undefined')
 					callback();
 				else
 					// and even now, wait for iddle
-					requestIdleCallback(function() {
+					requestIdleCallback(function () {
 						callback();
-					}, { timeout: 2000 });
+					}, {timeout: 2000});
 
 			}, ms || 100);
 		}
@@ -492,7 +492,7 @@
 
 		function is_iOS() {
 			const ua = navigator.userAgent;
-			return (ua.includes('iPhone') || ua.includes('iPad'))
+			return ua.includes('iPhone') || ua.includes('iPad');
 		}
 
 		let pokestops = {};
@@ -604,7 +604,7 @@
 		let settings = defaultSettings;
 
 		function saveSettings() {
-			createThrottledTimer('saveSettings', function() {
+			createThrottledTimer('saveSettings', function () {
 				localStorage[KEY_SETTINGS] = JSON.stringify(settings);
 			});
 		}
@@ -676,27 +676,26 @@
 			if (is_iOS())
 				return;
 
-			try
-			{
+			try {
 				if (settings.thisIsPogo) {
 					removeIngressLayers();
 					if (chat && chat.requestPublic) {
 						originalChatRequestPublic = chat && chat.requestPublic;
-						chat.requestPublic = function() {}; // no requests for chat
+						chat.requestPublic = function () {}; // no requests for chat
 					}
 					if (chat && chat.requestFaction) {
 						originalChatRequestFaction = chat && chat.requestFaction;
-						chat.requestFaction = function() {}; // no requests for chat
+						chat.requestFaction = function () {}; // no requests for chat
 					}
 					if (chat && chat.requestAlerts) {
 						originalChatRequestAlerts = chat && chat.requestAlerts;
-						chat.requestAlerts = function() {}; // no requests for chat
+						chat.requestAlerts = function () {}; // no requests for chat
 					}
 
 					if (window._current_highlighter == window._no_highlighter) {
 						// extracted from IITC plugin: Hide portal ownership
 						originalHighlightPortal = window.highlightPortal;
-						window.highlightPortal = function(portal) {
+						window.highlightPortal = function (portal) {
 							window.portalMarkerScale();
 							const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
 							portal.setStyle(hidePortalOwnershipStyles);
@@ -723,9 +722,7 @@
 						window.resetHighlightedPortals();
 					}
 				}
-			}
-			catch (e)
-			{
+			} catch (e) {
 				alert('Error initializing ThisIsPogo');
 				console.log(e); // eslint-disable-line no-console
 			}
@@ -977,17 +974,17 @@
 				</select>{{width}}</p>`;
 
 			const html =
-				selectRow.replace('{{title}}', '1st Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
-				selectRow.replace('{{title}}', '2nd Grid').replace(`{{width}}`, ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
-				selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace(`{{width}}`, '') +
-				selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace(`{{width}}`, '') +
+				selectRow.replace('{{title}}', '1st Grid').replace('{{width}}', ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid0') +
+				selectRow.replace('{{title}}', '2nd Grid').replace('{{width}}', ` Width: <input type='number' min='1' max='8' id='{{id}}Width' size='2'> `).replace(/{{id}}/g, 'grid1') +
+				selectRow.replace('{{title}}', 'Cells with extra gyms').replace(/{{id}}/g, 'cellsExtraGyms').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'Cells with missing gyms').replace(/{{id}}/g, 'cellsMissingGyms').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', `Cell ${poiCellLevel} with a gym or stop`).replace(/{{id}}/g, 'cell17Filled').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', `Cell ${gymCellLevel} with 3 gyms`).replace(/{{id}}/g, 'cell14Filled').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', '20m submit radius border').replace(/{{id}}/g, 'nearbyCircleBorder').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', '20m submit radius fill').replace(/{{id}}/g, 'nearbyCircleFill').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace('{{width}}', '') +
 				'<a id="resetColorsLink">Reset all colors</a>'
 				;
 
@@ -1051,7 +1048,7 @@
 			configureItems('colors', 'missingStops3');
 
 			const resetColorsLink = div.querySelector('#resetColorsLink');
-			resetColorsLink.addEventListener('click', function() {
+			resetColorsLink.addEventListener('click', function () {
 				container.dialog('close');
 				resetColors();
 				updatedSetting('nearbyCircleBorder');
@@ -1177,7 +1174,7 @@
 
 							// shade filled level 17 cells
 							if (zoom > 15) {
-								const coverLevel17Cell = function(point) {
+								const coverLevel17Cell = function (point) {
 									const cell = S2.S2Cell.FromLatLng(point, poiCellLevel);
 									cellLayerGroup.addLayer(fillCell(cell, settings.colors.cell17Filled.color, settings.colors.cell17Filled.opacity));
 								};
@@ -1359,10 +1356,10 @@
 					iconAnchor: [25, 5],
 					iconSize: [50, 10],
 					html: text
-				}),
+				})
 			});
 			// fixme, maybe add some click handler
-			marker.on('click', function() {
+			marker.on('click', function () {
 				displayCellSummary(cell);
 			});
 			return marker;
@@ -1417,8 +1414,8 @@
 					;
 
 					if (scoreData != '') {
-						wrapper.querySelector('.Pogo_Photos').addEventListener('input', function() {
-							var update = portal.photos !== this.valueAsNumber && (portal.photos === 0 || this.valueAsNumber === 0);
+						wrapper.querySelector('.Pogo_Photos').addEventListener('input', function () {
+							const update = portal.photos !== this.valueAsNumber && (portal.photos === 0 || this.valueAsNumber === 0);
 							portal.photos = this.valueAsNumber;
 							updateScore(portal, wrapper);
 							saveStorage();
@@ -1427,7 +1424,7 @@
 								updateMapGrid();
 							}
 						});
-						wrapper.querySelector('.Pogo_Votes').addEventListener('input', function() {
+						wrapper.querySelector('.Pogo_Votes').addEventListener('input', function () {
 							portal.votes = this.valueAsNumber;
 							updateScore(portal, wrapper);
 							saveStorage();
@@ -1445,12 +1442,12 @@
 			//div.appendChild(dumpGroup(cellData.notClassified, 'Other portals')); They don't matter, they have been removed from Pokemon
 			//div.appendChild(dumpGroup(cellData.portals, 'Portals', true)); FIXME: portals from Ingress that are hidden in Pokemon
 			div.className = 'PogoListing';
-			var width = Math.min(screen.availWidth, 420);
+			const width = Math.min(screen.availWidth, 420);
 			const container = dialog({
 				id: 'PokemonList',
 				html: div,
 				width: width + 'px',
-				title: 'List of Pokestops and Gyms',
+				title: 'List of Pokestops and Gyms'
 			});
 
 			configureHoverMarker(container);
@@ -1476,7 +1473,7 @@
 
 		// Update the localStorage
 		function saveStorage() {
-			createThrottledTimer('saveStorage', function() {
+			createThrottledTimer('saveStorage', function () {
 				localStorage[KEY_STORAGE] = JSON.stringify({
 					gyms: cleanUpExtraData(gyms),
 					pokestops: cleanUpExtraData(pokestops),
@@ -1827,7 +1824,7 @@
 						} else {
 							filename += '.json';
 							const data = {
-								gyms: findPhotos(cleanUpExtraData(filterItemsByMapBounds(gyms))),
+								gyms: findPhotos(cleanUpExtraData(filterItemsByMapBounds(gyms)))
 							};
 							if (SaveDataType != 'Gyms')
 								data.pokestops = findPhotos(cleanUpExtraData(filterItemsByMapBounds(pokestops)));
@@ -1846,8 +1843,7 @@
 			const div = container[0];
 			div.querySelector('#PogoSaveDataType' + settings.saveDataType).checked = true;
 			div.querySelector('#PogoSaveDataFormat' + settings.saveDataFormat).checked = true;
-
-		};
+		}
 
 		thisPlugin.optAlert = function (message) {
 			$('.ui-dialog .ui-dialog-buttonset').prepend('<p class="pogo-alert" style="float:left;margin-top:4px;">' + message + '</p>');
@@ -1879,7 +1875,7 @@
 								}
 							}
 
-							if (typeof lat !== "undefined" && typeof lng !== "undefined" && name && !thisPlugin.findByGuid(guid)) {
+							if (typeof lat !== 'undefined' && typeof lng !== 'undefined' && name && !thisPlugin.findByGuid(guid)) {
 								thisPlugin.addPortalpogo(guid, lat, lng, name, type);
 								if (type == 'gyms') {
 									if (importExStatus && item.isEx) {
@@ -1965,7 +1961,7 @@
 			let star;
 			if (type === 'pokestops') {
 				const pokestop = pokestops[guid];
-				var hasPhoto = typeof pokestop.photos == 'undefined' || pokestop.photos > 0;
+				const hasPhoto = typeof pokestop.photos == 'undefined' || pokestop.photos > 0;
 
 				star = new L.Marker.SVGMarker([lat, lng], {
 					title: name + (!hasPhoto ? '\r\n<br>Missing Photo, add one to make it count for Gym creation.' : ''),
@@ -2541,8 +2537,7 @@
 				return;
 
 			// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
-			try
-			{
+			try {
 				if (checkNewPortalsTimer) {
 					clearTimeout(checkNewPortalsTimer);
 				} else {
@@ -2553,8 +2548,7 @@
 			}
 
 			// workaround for https://bugs.chromium.org/p/chromium/issues/detail?id=961199
-			try
-			{
+			try {
 				checkNewPortalsTimer = setTimeout(checkNewPortals, 1000);
 			} catch (e) {
 				checkNewPortals();
@@ -2737,7 +2731,7 @@
 					'<a data-type="notpogo">' + 'N/A' + '</a>';
 				div.appendChild(wrapper);
 			});
-			var width = Math.min(screen.availWidth, 420);
+			const width = Math.min(screen.availWidth, 420);
 
 			const container = dialog({
 				id: 'classifyPokestop',
@@ -2817,7 +2811,7 @@
 					'<a data-type="gyms">' + 'GYM' + '</a>';
 				div.appendChild(wrapper);
 			});
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 			const container = dialog({
 				id: 'classifyPokestop',
 				html: div,
@@ -2886,7 +2880,7 @@
 					'<a>' + 'Update' + '</a></span>';
 				div.appendChild(wrapper);
 			});
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 			const container = dialog({
 				id: 'movedPortals',
 				html: div,
@@ -2989,7 +2983,7 @@
 					'<span><a>' + 'Remove' + '</a></span>';
 				div.appendChild(wrapper);
 			});
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 			const container = dialog({
 				id: 'missingPortals',
 				html: div,
@@ -3209,7 +3203,7 @@
 				return;
 			}
 
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 			const container = dialog({
 				id: 'classifyPokestop',
 				html: div,
@@ -3297,7 +3291,7 @@
 					'<a data-type="pokestops">' + 'STOP' + '</a>';
 				div.appendChild(wrapper);
 			});
-			var width = Math.min(screen.availWidth, 360);
+			const width = Math.min(screen.availWidth, 360);
 			const container = dialog({
 				id: 'classifyPokestop',
 				html: div,
@@ -3553,7 +3547,7 @@
 			// this layer will group all the shaded cells and cell borders
 			cellLayerGroup = L.featureGroup();
 			// this layer will contain the s2 grid
-			gridLayerGroup = L.layerGroup()
+			gridLayerGroup = L.layerGroup();
 			// this layer will contain the gym centers for checking ex eligibility
 			gymCenterLayerGroup = L.featureGroup();
 
@@ -3581,8 +3575,8 @@
 			zoomListener();
 			map.on('moveend', updateMapGrid);
 			updateMapGrid();
-			map.on('overlayadd', function(event) {
-				if (event && event.name === "S2 Grid") {
+			map.on('overlayadd', function (event) {
+				if (event && event.name === 'S2 Grid') {
 					updateMapGrid();
 				}
 			});
