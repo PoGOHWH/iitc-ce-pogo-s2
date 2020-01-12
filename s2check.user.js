@@ -51,7 +51,7 @@
 					(so GetSizeIJ for a cell is always 1)
 	*/
 
-	function wrapperPlugin(plugin_info) {
+	function wrapper(plugin_info) {
 		'use strict';
 
 		const d2r = Math.PI / 180.0;
@@ -1809,7 +1809,7 @@
 
 						container.dialog('close');
 
-						let filename = (SaveDataType == 'Gyms' ? 'gyms_' : 'gyms+stops_') + (new Date()).toISOString().substr(0, 19).replace(/[\D]/g, '_');
+						let filename = (SaveDataType == 'Gyms' ? 'gyms_' : 'gyms+stops_') + new Date().toISOString().substr(0, 19).replace(/[\D]/g, '_');
 						if (SaveDataFormat == 'CSV') {
 							filename += '.csv';
 							const allData = SaveDataType == 'Gyms' ? gyms : Object.assign({}, gyms, pokestops);
@@ -3662,10 +3662,10 @@
 	if (typeof unsafeWindow != 'undefined' || typeof GM_info == 'undefined' || GM_info.scriptHandler != 'Tampermonkey') {
 		// inject code into site context
 		const script = document.createElement('script');
-		script.appendChild(document.createTextNode('(' + wrapperPlugin + ')(' + JSON.stringify(plugin_info) + ');'));
+		script.appendChild(document.createTextNode('(' + wrapper + ')(' + JSON.stringify(plugin_info) + ');'));
 		(document.body || document.head || document.documentElement).appendChild(script);
 	} else {
 		// Tampermonkey, run code directly
-		wrapperPlugin(plugin_info);
+		wrapper(plugin_info);
 	}
 })();
