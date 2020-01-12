@@ -2276,7 +2276,7 @@
 	}
 
 	.smallpokestops .pokestop svg {
-		transform: translateY(25px) scale(0.8);
+		transform: translateY(20px) scale(0.8);
 	}
 
 	.PogoClassification div {
