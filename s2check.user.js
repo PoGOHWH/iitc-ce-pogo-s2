@@ -556,6 +556,7 @@
 		let gymLayers = {};
 		let nearbyCircles = {};
 
+		const highlighterTitle = 'PoGo Tools';
 		const gymCellLevel = 14; // the cell level which is considered when counting POIs to determine # of gyms
 		const poiCellLevel = 17; // the cell level where there can only be 1 POI translated to pogo
 
@@ -691,6 +692,11 @@
 		let originalChatRequestAlerts;
 		let originalRANGE_INDICATOR_COLOR;
 
+		function markPortalsAsNeutral(data) {
+			const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
+			data.portal.setStyle(hidePortalOwnershipStyles);
+		}
+
 		function setThisIsPogo() {
 			document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
 			// It seems that iOS has some bug in the following code, but I can't debug it.
@@ -714,19 +720,13 @@
 					}
 
 					// Hide the link range indicator around the selected portal
-					originalRANGE_INDICATOR_COLOR = RANGE_INDICATOR_COLOR;
-					RANGE_INDICATOR_COLOR = 'transparent';
+					originalRANGE_INDICATOR_COLOR = window.RANGE_INDICATOR_COLOR;
+					window.RANGE_INDICATOR_COLOR = 'transparent';
 
 					if (window._current_highlighter == window._no_highlighter) {
-						// extracted from IITC plugin: Hide portal ownership
-						originalHighlightPortal = window.highlightPortal;
-						window.highlightPortal = function (portal) {
-							window.portalMarkerScale();
-							const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
-							portal.setStyle(hidePortalOwnershipStyles);
-						};
-						window.resetHighlightedPortals();
+						window.changePortalHighlights(highlighterTitle);
 					}
+
 				} else {
 					restoreIngressLayers();
 					if (originalChatRequestPublic) {
@@ -742,7 +742,11 @@
 						originalChatRequestAlerts = null;
 					}
 
-					RANGE_INDICATOR_COLOR = originalRANGE_INDICATOR_COLOR;
+					window.RANGE_INDICATOR_COLOR = originalRANGE_INDICATOR_COLOR;
+
+					if (window._current_highlighter == highlighterTitle) {
+						window.changePortalHighlights(window._no_highlighter);
+					}
 
 					if (originalHighlightPortal != null) {
 						window.highlightPortal = originalHighlightPortal;
@@ -2184,6 +2188,10 @@
 		display: none;
 	}
 
+	.thisIsPogo #portal_highlight_select {
+		display: none;
+	}
+
 	.thisIsPogo #sidebar #portaldetails h3.title {
 		color: #fff;
 	}
@@ -3622,6 +3630,7 @@
 				}
 			});
 
+			window.addPortalHighlighter(highlighterTitle, markPortalsAsNeutral);
 		};
 
 		function createCounter(title, type, callback) {
