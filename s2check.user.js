@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.95
+// @version      0.96
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -346,6 +346,14 @@
 				text = JSON.stringify(text);
 			}
 
+			if (typeof window.saveFile != 'undefined') {
+				window.saveFile(text, filename, 'application/json');
+				return;
+			}
+
+			alert('You are using an old version of IITC.\r\nIn the future this plugin will no longer be compatible with it.\r\nPlease, upgrade ASAP to IITC-CE https://iitc.modos189.ru/');
+
+
 			if (typeof window.android !== 'undefined' && window.android.saveFile) {
 				window.android.saveFile(filename, 'application/json', text);
 				return;
@@ -382,6 +390,18 @@
 		 * Callback signature: function( {string} contents ) {}
 		 */
 		function readFromFile(callback) {
+
+			if (typeof L.FileListLoader != 'undefined') {
+				L.FileListLoader.loadFiles({accept: 'application/json'})
+					.on('load',function (e) {
+						callback(e.reader.result);
+					});
+				return;
+			}
+
+			alert('You are using an old version of IITC.\r\nIn the future this plugin will no longer be compatible with it.\r\nPlease, upgrade ASAP to IITC-CE https://iitc.modos189.ru/');
+
+
 			// special hook from iitcm
 			if (typeof window.requestFile != 'undefined') {
 				window.requestFile(function (filename, content) {
