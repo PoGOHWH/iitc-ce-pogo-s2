@@ -689,6 +689,7 @@
 		let originalChatRequestPublic;
 		let originalChatRequestFaction;
 		let originalChatRequestAlerts;
+		let originalRANGE_INDICATOR_COLOR;
 
 		function setThisIsPogo() {
 			document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
@@ -711,6 +712,10 @@
 						originalChatRequestAlerts = chat && chat.requestAlerts;
 						chat.requestAlerts = function () {}; // no requests for chat
 					}
+
+					// Hide the link range indicator around the selected portal
+					originalRANGE_INDICATOR_COLOR = RANGE_INDICATOR_COLOR;
+					RANGE_INDICATOR_COLOR = 'transparent';
 
 					if (window._current_highlighter == window._no_highlighter) {
 						// extracted from IITC plugin: Hide portal ownership
@@ -736,6 +741,9 @@
 						chat.requestAlerts = originalChatRequestAlerts;
 						originalChatRequestAlerts = null;
 					}
+
+					RANGE_INDICATOR_COLOR = originalRANGE_INDICATOR_COLOR;
+
 					if (originalHighlightPortal != null) {
 						window.highlightPortal = originalHighlightPortal;
 						originalHighlightPortal = null;
@@ -2143,6 +2151,7 @@
 	}
 
 	#PogoGymInfo {
+		color: #fff;
 		display: none;
 		padding: 3px;
 	}
