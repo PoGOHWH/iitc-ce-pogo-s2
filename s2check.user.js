@@ -1733,7 +1733,7 @@
 					thisPlugin.addPortalpogo(guid, ll.lat, ll.lng, p.options.data.title, type);
 				}
 				// we've changed one item from pogo, if the cell was marked as ignored, reset it.
-				if (updateExtraGymsCells(ll.lat, ll.lng))
+				if ((type == 'gyms' || existingType == 'gyms') && updateExtraGymsCells(ll.lat, ll.lng))
 					saveStorage();
 			} else {
 				// If portal isn't saved in pogo: Add this pogo
@@ -1760,6 +1760,7 @@
 			}
 
 			if (type == 'gyms') {
+				updateExtraGymsCells(lat, lng);
 				gyms[guid] = obj;
 			}
 			if (type == 'pokestops') {
@@ -1769,7 +1770,6 @@
 				notpogo[guid] = obj;
 			}
 
-			updateExtraGymsCells(lat, lng);
 			saveStorage();
 			thisPlugin.updateStarPortal();
 
