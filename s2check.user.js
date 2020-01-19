@@ -670,6 +670,9 @@
 			if (typeof settings.saveDataFormat == 'undefined') {
 				settings.saveDataFormat = 'CSV';
 			}
+			if (typeof settings.centerMapOnClick == 'undefined') {
+				settings.centerMapOnClick = true;
+			}
 
 			setThisIsPogo();
 
