@@ -2276,6 +2276,7 @@
 
 	.smallpokestops .pokestop {
 		opacity: 0.85;
+		pointer-events: none;
 	}
 
 	.smallpokestops path.pokestop-pole,
