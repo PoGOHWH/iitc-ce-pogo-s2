@@ -1,4 +1,13 @@
-# Pogo-Tools
+# PoGO Tools, PoGOHWH Edition
+
+> This is a fork of the original [Pogo-Tools](https://gitlab.com/AlfonsoML/pogo-s2/) IITC Plugin, for [IITC-CE](https://iitc.modos189.ru/).
+>
+> The aim of this fork is to make this addon much faster by moving back to native Leaflet markers instead of custom SVGs inside div icons.
+> The original addon grinds even the fastest of machines to a halt and is often unusuable on phones because of the overhead of these SVG icons.
+> But with native Leaflet SVG circle markers, there are no noticable performance drops for hundreds and thousands of marked Pokéstops and Gyms.
+>
+> Install: https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
+
 This is script to that tries to help finding out info about Pokestops and Gyms in Pokemon Go. Is is a plugin for IITC to run in https://ingress.com/intel, you need an Ingress account and IITC already installed. I've published an additional page with an [overview of the features](https://gitlab.com/AlfonsoML/pogo-s2/wikis/How-to-add-new-PoI-to-your-city).
 
 Check [this post](https://www.reddit.com/r/TheSilphRoad/comments/9fn61y/tutorial_pogo_s2_plugin_for_ingress_intel/) to learn how to install and configure it. I'm gonna write my own description below, just follow whatever steps you find easier.
