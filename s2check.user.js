@@ -2001,44 +2001,34 @@
 
 		thisPlugin.addStar = function (guid, lat, lng, name, type) {
 			let star;
+			// Note: PoGOHWH Edition: Pokéstop and Gym markers just use CircleMarkers
+			const m = navigator.userAgent.match(/Android.*Mobile/) ? 1.5 : 1; // Note: the isIITCm() implementation here does not work on IITC-CE-m at least
 			if (type === 'pokestops') {
 				const pokestop = pokestops[guid];
 				const hasPhoto = typeof pokestop.photos == 'undefined' || pokestop.photos > 0;
-
-				star = new L.Marker.SVGMarker([lat, lng], {
-					title: name + (!hasPhoto ? '\r\n<br>Missing Photo, add one to make it count for Gym creation.' : ''),
-					iconOptions: {
-						className: 'pokestop' + (!hasPhoto ? ' missingPhoto' : ''),
-						html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 821.52 1461.152">
-							<path class="pokestop-circle" d="M410.76 0C203.04.14 30.93 152.53 0 351.61l211.27.39c26.99-84.43 106.09-145.55 199.49-145.6 93.25.11 172.24 61.13 199.33 145.41l211.2.19C790.58 152.8 618.51.26 410.76 0zm0 280c-75.11 0-136 60.89-136 136s60.89 136 136 136 136-60.89 136-136-60.89-136-136-136zM.23 480c30.71 199.2 202.78 351.74 410.53 352 207.72-.14 379.83-152.53 410.76-351.61L610.25 480c-26.99 84.43-106.09 145.55-199.49 145.6-93.25-.11-172.24-61.13-199.33-145.41z"/>
-							<path class="pokestop-pole" d="M380.387 818.725h65.085v465.159h-65.085z" stroke-width="4.402"/>
-							<ellipse class="pokestop-base" cx="415.185" cy="1345.949" rx="305.686" ry="115.202" stroke-width="6"/>
-							</svg>`,
-						iconSize: L.point(24, 32),
-						iconAnchor: [12, 30],
-						id: 'pokestop' + guid.replace('.', '')
-					}
+				star = new L.circleMarker([lat, lng], {
+					title: name,
+					radius: 6*m,
+					weight: 4*m,
+					color: '#13c193',
+					opacity: 1.0,
+					fillColor: hasPhoto ? '#13c193' : '#666666',
+					fillOpacity: 1.0,
+					pane: 'pogoPaneStops'
 				});
 
 			}
 			if (type === 'gyms') {
-				// icon from https://github.com/FortAwesome/Font-Awesome/issues/9685#issuecomment-239238656
 				const gym = gyms[guid];
-				const medal = gym.medal || 'None';
-				const className = medal + 'Medal' + (gym.isEx ? ' exGym' : '');
-				star = new L.Marker.SVGMarker([lat, lng], {
+				star = new L.circleMarker([lat, lng], {
 					title: name,
-					iconOptions: {
-						className: className,
-						html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 410"><g transform="translate(-62 -45)">
-				<path class="gym-main-outline" d="M436.23 45.87C368.38 181.94 300.54 318.02 232.7 454.09c-12.48-46.6-24.97-93.19-37.45-139.78l-1.67-6.2s-7.37-.21-12.03-.72c-57.77-3.97-109.7-50.53-117.27-107.86-11.31-57.8 25.24-118.19 79.1-139.79 57.74-24.6 130.02 2.07 160 56.72 39.96-20.87 80.14-42.63 120.19-63.84z" />
-				<g class='gym-inner'><path class="ball-outline-top" d="M286.17 115.42l-59.41 31.59a48.157 48.157 0 0 0-35.7-15.96c-26.61 0-48.17 21.57-48.17 48.17.02 3.91.51 7.81 1.47 11.6l-59.45 31.62c-5.61-13.72-8.51-28.4-8.53-43.22 0-63.34 51.34-114.68 114.68-114.68 38.2.06 73.86 19.13 95.11 50.88z"/>
-				<path d="M404.7 78.26L297.06 135.6l-59.42 31.6a48.252 48.252 0 0 1 1.58 12.02c0 26.6-21.56 48.16-48.16 48.16a48.138 48.138 0 0 1-36-16.27l-59.35 31.56c21.21 31.94 57 51.17 95.35 51.23 4.26-.02 8.52-.28 12.76-.77l32.78 122.31z" class="ball-outline-bottom"/>
-				<path class="ball-outline-center" d="M191.06 144.82c19 0 34.4 15.4 34.4 34.4s-15.4 34.4-34.4 34.4c-19.01 0-34.41-15.4-34.41-34.4s15.4-34.4 34.41-34.4z"/>
-				</g></g></svg>`,
-						iconSize: L.point(36, 36),
-						id: 'gym' + guid.replace('.', '')
-					}
+					radius: 8*m,
+					weight: 6*m,
+					color: 'black',
+					opacity: 1.0,
+					fillColor: gym.isEx ? '#ff7bee' : 'black',
+					fillOpacity: 1.0,
+					pane: 'pogoPaneGyms'
 				});
 			}
 
