@@ -2450,6 +2450,12 @@
 		text-align: right;
 	}
 
+	/* NOTE: PoGOHWH Edition: Our custom Pane needs a particular Z-index */
+	.leaflet-pogoStops-pane, .leaflet-pogoGyms-pane {
+		z-index: 450;
+		pointer-events: none;
+	}
+
 	`).appendTo('head');
 		};
 
@@ -3535,6 +3541,10 @@
 			window.addPortalHighlighter(highlighterTitle, markPortalsAsNeutral);
 
 			loadSettings();
+
+			// NOTE: PoGOHWH Edition: Create panes just for our markers
+			map.createPane('pogoPaneStops');
+			map.createPane('pogoPaneGyms');
 
 			// Load data from localStorage
 			thisPlugin.loadStorage();
