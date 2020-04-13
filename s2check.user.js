@@ -3526,6 +3526,7 @@
 			thisPlugin.isSmart = window.isSmartphone();
 
 			initSvgIcon();
+			window.addPortalHighlighter(highlighterTitle, markPortalsAsNeutral);
 
 			loadSettings();
 
@@ -3635,7 +3636,6 @@
 				}
 			});
 
-			window.addPortalHighlighter(highlighterTitle, markPortalsAsNeutral);
 		};
 
 		function createCounter(title, type, callback) {
