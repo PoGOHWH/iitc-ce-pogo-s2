@@ -1957,7 +1957,8 @@
 					const lng = item.lng;
 					const guid = item.guid;
 					const name = item.name;
-					thisPlugin.addStar(guid, lat, lng, name, type);
+					if (guid != null)
+						thisPlugin.addStar(guid, lat, lng, name, type);
 				}
 			}
 
