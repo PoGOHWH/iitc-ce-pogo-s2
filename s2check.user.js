@@ -1209,8 +1209,14 @@
 
 							// shade filled level 17 cells
 							if (zoom > 15) {
+								const subCells = {};
+
 								const coverLevel17Cell = function (point) {
 									const cell = S2.S2Cell.FromLatLng(point, poiCellLevel);
+									const cellId = cell.toString();
+									if (subCells[cellId])
+										return;
+									subCells[cellId] = true;
 									cellLayerGroup.addLayer(fillCell(cell, settings.colors.cell17Filled.color, settings.colors.cell17Filled.opacity));
 								};
 
