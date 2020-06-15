@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.97.2
+// @version      0.97.3
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -694,6 +694,7 @@
 		let originalChatRequestFaction;
 		let originalChatRequestAlerts;
 		let originalRANGE_INDICATOR_COLOR;
+		let originalHACK_RANGE;
 
 		function markPortalsAsNeutral(data) {
 			const hidePortalOwnershipStyles = window.getMarkerStyleOptions({team: window.TEAM_NONE, level: 0});
@@ -726,6 +727,10 @@
 					originalRANGE_INDICATOR_COLOR = window.RANGE_INDICATOR_COLOR;
 					window.RANGE_INDICATOR_COLOR = 'transparent';
 
+					// Use 80 m. interaction radius
+					originalHACK_RANGE = window.HACK_RANGE;
+					window.HACK_RANGE = 80;
+
 					if (window._current_highlighter == window._no_highlighter) {
 						window.changePortalHighlights(highlighterTitle);
 					}
@@ -745,7 +750,11 @@
 						originalChatRequestAlerts = null;
 					}
 
-					window.RANGE_INDICATOR_COLOR = originalRANGE_INDICATOR_COLOR;
+					if (originalRANGE_INDICATOR_COLOR != null)
+						window.RANGE_INDICATOR_COLOR = originalRANGE_INDICATOR_COLOR;
+
+					if (originalHACK_RANGE != null)
+						window.HACK_RANGE = originalHACK_RANGE;
 
 					if (window._current_highlighter == highlighterTitle) {
 						window.changePortalHighlights(window._no_highlighter);
