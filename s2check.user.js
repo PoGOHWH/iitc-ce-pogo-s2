@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.97.4
+// @version      0.97.5
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -556,6 +556,9 @@
 		let gymLayers = {};
 		let nearbyCircles = {};
 
+		// grouping of the portals in the second level of the grid
+		let cellsPortals = {};
+
 		const highlighterTitle = 'PoGo Tools';
 		const gymCellLevel = 14; // the cell level which is considered when counting POIs to determine # of gyms
 		const poiCellLevel = 17; // the cell level where there can only be 1 POI translated to pogo
@@ -862,7 +865,8 @@
 						cell: cell,
 						gyms: [],
 						stops: [],
-						notClassified: []
+						notClassified: [],
+						portals: []
 					};
 				}
 				callback(cells[cellId], item);
@@ -900,9 +904,44 @@
 			select.value = settings.grids[i].level;
 			select.addEventListener('change', e => {
 				settings.grids[i].level = parseInt(select.value, 10);
+				if (i==1)
+					resetGrouping();
+
 				saveSettings();
 				updateMapGrid();
 			});
+		}
+
+		function resetGrouping() {
+			cellsPortals = {};
+			const level = settings.grids[1].level;
+			classifyGroup(cellsPortals, gyms, level, (cell, item) => cell.portals.push(item));
+
+		}
+
+		function groupPortal(item) {
+			const level = settings.grids[1].level;
+			let cells = cellsPortals;
+			let cell;
+
+			// Compute the cell only once for each level
+			if (!item.cells[level]) {
+				cell = S2.S2Cell.FromLatLng(item, level);
+				item.cells[level] = cell.toString();
+			}
+			const cellId = item.cells[level];
+
+			// Add it to the array of gyms of that cell
+			if (!cells[cellId]) {
+				if (!cell) {
+					cell = S2.S2Cell.FromLatLng(item, level);
+				}
+				cells[cellId] = {
+					cell: cell,
+					portals: []
+				};
+			}
+			cells[cellId].portals.push(item);
 		}
 
 		function showS2Dialog() {
@@ -1283,6 +1322,10 @@
 					if (isCellOnScreen(bounds, cell)) {
 						// on screen - draw it
 						gridLayerGroup.addLayer(drawCell(cell, color, width, opacity));
+
+						var cellGroup = cellsPortals[cellStr];
+						if (cellGroup)
+							gridLayerGroup.addLayer(writeInCell(cell, cellGroup.portals.length));
 
 						// and recurse to our neighbors
 						const neighbors = cell.getNeighbors();
@@ -2490,6 +2533,7 @@
 			};
 
 			allPortals[guid] = portal;
+			groupPortal(portal);
 
 			// If it's already classified in Pokemon, get out
 			const pogoData = thisPlugin.findByGuid(guid);
