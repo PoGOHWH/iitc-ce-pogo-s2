@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.97.5
+// @version      0.97.6
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -915,7 +915,7 @@
 		function resetGrouping() {
 			cellsPortals = {};
 			const level = settings.grids[1].level;
-			classifyGroup(cellsPortals, gyms, level, (cell, item) => cell.portals.push(item));
+			classifyGroup(cellsPortals, allPortals, level, (cell, item) => cell.portals.push(item));
 
 		}
 
@@ -1323,6 +1323,7 @@
 						// on screen - draw it
 						gridLayerGroup.addLayer(drawCell(cell, color, width, opacity));
 
+						// show number of PoI in the cell
 						var cellGroup = cellsPortals[cellStr];
 						if (cellGroup)
 							gridLayerGroup.addLayer(writeInCell(cell, cellGroup.portals.length));
@@ -2661,6 +2662,9 @@
 		 */
 		function checkNewPortals() {
 			checkNewPortalsTimer = null;
+
+			// reuse to update grid counters
+			drawCellGrid(map.getZoom());
 
 			// don't try to classify if we don't have all the portal data
 			if (map.getZoom() < 15)
