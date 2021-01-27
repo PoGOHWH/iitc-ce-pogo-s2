@@ -6,7 +6,7 @@
 // @downloadURL  https://gitlab.com/AlfonsoML/pogo-s2/raw/master/s2check.user.js
 // @homepageURL  https://gitlab.com/AlfonsoML/pogo-s2/
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.97.6
+// @version      0.97.7
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -551,6 +551,8 @@
 		let cellLayerGroup; // cell shading and borders
 		let gymCenterLayerGroup; // gym centers
 
+		let countLayer; // layer with count of portals in each cell
+
 		// Group of items added to the layer
 		let stopLayers = {};
 		let gymLayers = {};
@@ -915,12 +917,17 @@
 		function resetGrouping() {
 			cellsPortals = {};
 			const level = settings.grids[1].level;
-			classifyGroup(cellsPortals, allPortals, level, (cell, item) => cell.portals.push(item));
+			if (level < 4)
+				return;
 
+			classifyGroup(cellsPortals, allPortals, level, (cell, item) => cell.portals.push(item.guid));
 		}
 
 		function groupPortal(item) {
 			const level = settings.grids[1].level;
+			if (level < 4)
+				return;
+
 			let cells = cellsPortals;
 			let cell;
 
@@ -941,7 +948,7 @@
 					portals: []
 				};
 			}
-			cells[cellId].portals.push(item);
+			cells[cellId].portals.push(item.guid);
 		}
 
 		function showS2Dialog() {
@@ -1309,6 +1316,7 @@
 		function drawCellGrid(zoom) {
 			// clear, to redraw
 			gridLayerGroup.clearLayers();
+			countLayer.clearLayers();
 
 			const bounds = map.getBounds();
 			const seenCells = {};
@@ -1326,7 +1334,7 @@
 						// show number of PoI in the cell
 						var cellGroup = cellsPortals[cellStr];
 						if (cellGroup)
-							gridLayerGroup.addLayer(writeInCell(cell, cellGroup.portals.length));
+							countLayer.addLayer(writeInCell(cell, cellGroup.portals.length));
 
 						// and recurse to our neighbors
 						const neighbors = cell.getNeighbors();
@@ -1345,8 +1353,6 @@
 					drawCellAndNeighbors(cell, grid.color, grid.width, grid.opacity);
 				}
 			}
-
-			return gridLayerGroup;
 		}
 
 		/**
@@ -2215,6 +2221,19 @@
 		font-size: 130%;
 		color: #000;
 		text-shadow: 1px 1px #FFF, 2px 2px 6px #fff, -1px -1px #fff, -2px -2px 6px #fff;
+	}
+
+	@media (min-width: 1000px) {
+		.pogo-text {
+			font-size: 1.2vw;
+		}
+	}
+
+	@media (min-width: 3000px) {
+		.pogo-text {
+			margin-left: -0.5vw !important;
+			margin-top: -0.7vw !important;
+		}
 	}
 
 	#PogoGymInfo {
@@ -3656,6 +3675,9 @@
 			gridLayerGroup = L.layerGroup();
 			// this layer will contain the gym centers for checking ex eligibility
 			gymCenterLayerGroup = L.featureGroup();
+
+			countLayer = L.layerGroup();
+			window.addLayerGroup('PoI in cell counter', countLayer, false);
 
 			thisPlugin.addAllMarkers();
 
