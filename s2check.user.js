@@ -868,7 +868,7 @@
 						gyms: [],
 						stops: [],
 						notClassified: [],
-						portals: []
+						portals: {}
 					};
 				}
 				callback(cells[cellId], item);
@@ -920,7 +920,7 @@
 			if (level < 4)
 				return;
 
-			classifyGroup(cellsPortals, allPortals, level, (cell, item) => cell.portals.push(item.guid));
+			classifyGroup(cellsPortals, allPortals, level, (cell, item) => cell.portals[item.guid] = true);
 		}
 
 		function groupPortal(item) {
@@ -945,10 +945,10 @@
 				}
 				cells[cellId] = {
 					cell: cell,
-					portals: []
+					portals: {}
 				};
 			}
-			cells[cellId].portals.push(item.guid);
+			cells[cellId].portals[item.guid] = true;
 		}
 
 		function showS2Dialog() {
@@ -1334,7 +1334,7 @@
 						// show number of PoI in the cell
 						var cellGroup = cellsPortals[cellStr];
 						if (cellGroup)
-							countLayer.addLayer(writeInCell(cell, cellGroup.portals.length));
+							countLayer.addLayer(writeInCell(cell, Object.keys(cellGroup.portals).length));
 
 						// and recurse to our neighbors
 						const neighbors = cell.getNeighbors();
