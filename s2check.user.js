@@ -6,7 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.97.4
+// @version      0.98.0
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -517,7 +517,7 @@
 
 		let pokestops = {};
 		let gyms = {};
-		// Portals that aren't marked as PoGo items
+		// Portals that are marked as no PoGo items
 		let notpogo = {};
 
 		let allPortals = {};
@@ -546,6 +546,7 @@
 		let regionLayer; // parent layer
 		let stopLayerGroup; // pokestops
 		let gymLayerGroup; // gyms
+		let notpogoLayerGroup; // not in PoGO
 		let nearbyLayerGroup; // circles to mark the too near limit
 		let gridLayerGroup; // s2 grid
 		let cellLayerGroup; // cell shading and borders
@@ -554,6 +555,7 @@
 		// Group of items added to the layer
 		let stopLayers = {};
 		let gymLayers = {};
+		let notpogoLayers = {};
 		let nearbyCircles = {};
 
 		const highlighterTitle = 'PoGo Tools';
@@ -616,6 +618,38 @@
 				missingStops3: {
 					color: '#FF5722',
 					opacity: 1
+				},
+				stopInner: {
+					color: '#666666',
+					opacity: 1
+				},
+				stopOuter: {
+					color: '#0000cd', // mediumblue
+					opacity: 1
+				},
+				photoStopInner: {
+					color: '#00bfff', // deepskyblue
+					opacity: 1
+				},
+				gymInner: {
+					color: '#3cb371', // mediumseagreen
+					opacity: 1
+				},
+				gymOuter: {
+					color: '#f8f8ff', // ghostwhite
+					opacity: 1
+				},
+				exGymInner: {
+					color: '#ff1493', // deeppink
+					opacity: 1
+				},
+				notpogoInner: {
+					color: '#ff0000', // red
+					opacity: 1
+				},
+				notpogoOuter: {
+					color: '#8b0000', // darkred
+					opacity: 1
 				}
 			},
 			saveDataType: 'Gyms',
@@ -638,6 +672,16 @@
 			}
 			try	{
 				settings = JSON.parse(tmp);
+				if (!settings.colors.notpogoOuter) { // Migrate to new color settings
+					settings.colors.notpogoOuter = defaultSettings.colors.notpogoOuter;
+					settings.colors.notpogoInner = defaultSettings.colors.notpogoInner;
+					settings.colors.stopOuter = defaultSettings.colors.stopOuter;
+					settings.colors.photoStopInner = defaultSettings.colors.photoStopInner;
+					settings.colors.stopInner = defaultSettings.colors.stopInner;
+					settings.colors.gymInner = defaultSettings.colors.gymInner;
+					settings.colors.gymOuter = defaultSettings.colors.gymOuter;
+					settings.colors.exGymInner = defaultSettings.colors.exGymInner;
+				}
 			} catch (e) { // eslint-disable-line no-empty
 			}
 
@@ -660,6 +704,16 @@
 			}
 			if (typeof settings.promptForMissingData != 'undefined') {
 				delete settings.promptForMissingData;
+			}
+			if (!settings.colors.notpogoOuter) {
+				settings.colors.notpogoOuter = defaultSettings.colors.notpogoOuter;
+				settings.colors.notpogoInner = defaultSettings.colors.notpogoInner;
+				settings.colors.stopOuter = defaultSettings.colors.stopOuter;
+				settings.colors.photoStopInner = defaultSettings.colors.photoStopInner;
+				settings.colors.stopInner = defaultSettings.colors.stopInner;
+				settings.colors.gymInner = defaultSettings.colors.gymInner;
+				settings.colors.gymOuter = defaultSettings.colors.gymOuter;
+				settings.colors.exGymInner = defaultSettings.colors.exGymInner;
 			}
 			if (!settings.colors) {
 				resetColors();
@@ -1029,6 +1083,14 @@
 				selectRow.replace('{{title}}', '1 more stop to get a gym').replace(/{{id}}/g, 'missingStops1').replace('{{width}}', '') +
 				selectRow.replace('{{title}}', '2 more stops to get a gym').replace(/{{id}}/g, 'missingStops2').replace('{{width}}', '') +
 				selectRow.replace('{{title}}', '3 more stops to get a gym').replace(/{{id}}/g, 'missingStops3').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'PokeStop inside').replace(/{{id}}/g, 'photoStopInner').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'PokeStop inside (no photo)').replace(/{{id}}/g, 'stopInner').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'PokeStop outside').replace(/{{id}}/g, 'stopOuter').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'Gym inside').replace(/{{id}}/g, 'gymInner').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'EX-Gym inside').replace(/{{id}}/g, 'exGymInner').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'Gym outside').replace(/{{id}}/g, 'gymOuter').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'Not in PoGO inside').replace(/{{id}}/g, 'notpogoInner').replace('{{width}}', '') +
+				selectRow.replace('{{title}}', 'Not in PoGO outside').replace(/{{id}}/g, 'notpogoOuter').replace('{{width}}', '') +
 				'<a id="resetColorsLink">Reset all colors</a>'
 				;
 
@@ -1047,6 +1109,7 @@
 					redrawNearbyCircles();
 				} else {
 					updateMapGrid();
+					thisPlugin.addAllMarkers();
 				}
 			};
 
@@ -1090,6 +1153,14 @@
 			configureItems('colors', 'missingStops1');
 			configureItems('colors', 'missingStops2');
 			configureItems('colors', 'missingStops3');
+			configureItems('colors', 'photoStopInner');
+			configureItems('colors', 'stopInner');
+			configureItems('colors', 'stopOuter');
+			configureItems('colors', 'gymInner');
+			configureItems('colors', 'exGymInner');
+			configureItems('colors', 'gymOuter');
+			configureItems('colors', 'notpogoInner');
+			configureItems('colors', 'notpogoOuter');
 
 			const resetColorsLink = div.querySelector('#resetColorsLink');
 			resetColorsLink.addEventListener('click', function () {
@@ -1721,6 +1792,9 @@
 			}
 			if (type === 'notpogo') {
 				delete notpogo[guid];
+				const notpogoInLayer = notpogoLayers[guid];
+				notpogoLayerGroup.removeLayer(notpogoInLayer);
+				delete notpogoLayers[guid];
 			}
 		}
 
@@ -1976,7 +2050,7 @@
 						thisPlugin.addStar(guid, lat, lng, name, type);
 				}
 			}
-
+			iterateStore(notpogo, 'notpogo');
 			iterateStore(gyms, 'gyms');
 			iterateStore(pokestops, 'pokestops');
 		};
@@ -1991,6 +2065,11 @@
 				const gymInLayer = gymLayers[gymGuid];
 				gymLayerGroup.removeLayer(gymInLayer);
 				delete gymLayers[gymGuid];
+			}
+			for (let notpogoGuid in notpogoLayers) {
+				const notpogoInLayer = notpogoLayers[notpogoGuid];
+				notpogoLayerGroup.removeLayer(notpogoInLayer);
+				delete notpogoLayers[notpogoGuid];
 			}
 			thisPlugin.addAllMarkers();
 		};
@@ -2011,18 +2090,18 @@
 		thisPlugin.addStar = function (guid, lat, lng, name, type) {
 			let star;
 			// Note: PoGOHWH Edition: Pokéstop and Gym markers just use CircleMarkers
-			const m = navigator.userAgent.match(/Android.*Mobile/) ? 1.5 : 1; // Note: the isIITCm() implementation here does not work on IITC-CE-m at least
+			const m = navigator.userAgent.match(/Android.*Mobile/) ? 1.5 : 1.0; // Note: the isIITCm() implementation here does not work on IITC-CE-m at least
 			if (type === 'pokestops') {
 				const pokestop = pokestops[guid];
 				const hasPhoto = typeof pokestop.photos == 'undefined' || pokestop.photos > 0;
 				star = new L.circleMarker([lat, lng], {
 					title: name,
-					radius: 6*m,
-					weight: 4*m,
-					color: '#13c193',
-					opacity: 1.0,
-					fillColor: hasPhoto ? '#13c193' : '#666666',
-					fillOpacity: 1.0,
+					radius: 7*m,
+					weight: 5*m,
+					color: settings.colors.stopOuter.color,
+					opacity: settings.colors.stopOuter.opacity,
+					fillColor: hasPhoto ? settings.colors.photoStopInner.color : settings.colors.stopInner.color,
+					fillOpacity: hasPhoto ? settings.colors.photoStopInner.opacity : settings.colors.stopInner.opacity,
 					pane: 'pogoPaneStops'
 				});
 
@@ -2033,11 +2112,23 @@
 					title: name,
 					radius: 8*m,
 					weight: 6*m,
-					color: 'black',
-					opacity: 1.0,
-					fillColor: gym.isEx ? '#ff7bee' : 'black',
-					fillOpacity: 1.0,
+					color: settings.colors.gymOuter.color,
+					opacity: settings.colors.gymOuter.opacity,
+					fillColor: gym.isEx ? settings.colors.exGymInner.color : settings.colors.gymInner.color,
+					fillOpacity: gym.isEx ? settings.colors.exGymInner.opacity : settings.colors.gymInner.opacity,
 					pane: 'pogoPaneGyms'
+				});
+			}
+			if (type === 'notpogo') {
+				star = new L.circleMarker([lat, lng], {
+					title: name,
+					radius: 6*m,
+					weight: 4*m,
+					color: settings.colors.notpogoOuter.color,
+					opacity: settings.colors.notpogoOuter.opacity,
+					fillColor: settings.colors.notpogoInner.color,
+					fillOpacity: settings.colors.notpogoInner.opacity,
+					pane: 'pogoPaneStops'
 				});
 			}
 
@@ -2059,6 +2150,10 @@
 			if (type === 'gyms') {
 				gymLayers[guid] = star;
 				star.addTo(gymLayerGroup);
+			}
+			if (type === 'notpogo') {
+				notpogoLayers[guid] = star;
+				star.addTo(notpogoLayerGroup);
 			}
 		};
 
@@ -2177,6 +2272,7 @@
 	.thisIsPogo .mods,
 	.thisIsPogo #randdetails,
 	.thisIsPogo #resodetails,
+	.thisIsPogo #historydetails,
 	.thisIsPogo #level {
 		display: none;
 	}
@@ -3597,6 +3693,8 @@
 			window.addLayerGroup('PokeStops', stopLayerGroup, true);
 			gymLayerGroup = L.layerGroup();
 			window.addLayerGroup('Gyms', gymLayerGroup, true);
+			notpogoLayerGroup = L.layerGroup();
+			window.addLayerGroup('Not in PoGO', notpogoLayerGroup, true);
 			regionLayer = L.layerGroup();
 			window.addLayerGroup('S2 Grid', regionLayer, true);
 
