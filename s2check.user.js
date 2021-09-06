@@ -6,7 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.98.0
+// @version      0.98.1
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -2128,7 +2128,7 @@
 					opacity: settings.colors.notpogoOuter.opacity,
 					fillColor: settings.colors.notpogoInner.color,
 					fillOpacity: settings.colors.notpogoInner.opacity,
-					pane: 'pogoPaneStops'
+					pane: 'pogoPaneNotinpogo'
 				});
 			}
 
@@ -3638,6 +3638,7 @@
 			loadSettings();
 
 			// NOTE: PoGOHWH Edition: Create panes just for our markers
+			map.createPane('pogoPaneNotinpogo');
 			map.createPane('pogoPaneStops');
 			map.createPane('pogoPaneGyms');
 
