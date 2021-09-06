@@ -6,7 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.98.1
+// @version      0.99.0
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -755,6 +755,14 @@
 			data.portal.setStyle(hidePortalOwnershipStyles);
 		}
 
+		function changeLocationCircle() {
+			if (window.plugin.userLocation && window.plugin.userLocation.circle) {
+				var newRadius = settings.thisIsPogo ? 80 : 40;
+				window.plugin.userLocation.circle.setRadius(newRadius);
+				window.plugin.userLocation.onZoomEnd();
+			}
+		}
+
 		function setThisIsPogo() {
 			document.body.classList[settings.thisIsPogo ? 'add' : 'remove']('thisIsPogo');
 			// It seems that iOS has some bug in the following code, but I can't debug it.
@@ -764,6 +772,7 @@
 			try {
 				if (settings.thisIsPogo) {
 					removeIngressLayers();
+					changeLocationCircle();
 					if (chat && chat.requestPublic) {
 						originalChatRequestPublic = chat && chat.requestPublic;
 						chat.requestPublic = function () {}; // no requests for chat
@@ -791,6 +800,7 @@
 
 				} else {
 					restoreIngressLayers();
+					changeLocationCircle();
 					if (originalChatRequestPublic) {
 						chat.requestPublic = originalChatRequestPublic;
 						originalChatRequestPublic = null;
@@ -821,7 +831,7 @@
 					}
 				}
 			} catch (e) {
-				alert('Error initializing ThisIsPogo');
+				alert('Error initializing ThisIsPogo: ' + e);
 				console.log(e); // eslint-disable-line no-console
 			}
 		}
@@ -3642,6 +3652,8 @@
 
 			initSvgIcon();
 			window.addPortalHighlighter(highlighterTitle, markPortalsAsNeutral);
+
+			window.addHook('pluginUserLocation', changeLocationCircle);
 
 			loadSettings();
 
