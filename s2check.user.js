@@ -2546,8 +2546,16 @@
 	}
 
 	/* NOTE: PoGOHWH Edition: Our custom Pane needs a particular Z-index */
-	.leaflet-pogoStops-pane, .leaflet-pogoGyms-pane {
+	.leaflet-pogoNotinpogo-pane {
 		z-index: 450;
+		pointer-events: none;
+	}
+	.leaflet-pogoStops-pane {
+		z-index: 451;
+		pointer-events: none;
+	}
+	.leaflet-pogoGyms-pane {
+		z-index: 452;
 		pointer-events: none;
 	}
 
