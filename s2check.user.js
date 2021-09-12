@@ -6,7 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.99.0
+// @version      0.99.1
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
@@ -898,7 +898,7 @@
 			classifyGroup(cells, gyms, level, (cell, item) => cell.gyms.push(item));
 			classifyGroup(cells, pokestops, level, (cell, item) => cell.stops.push(item));
 			classifyGroup(cells, newPortals, level, (cell, item) => cell.notClassified.push(item));
-			classifyGroup(cells, notpogo, level, (cell, item) => {/* */});
+			classifyGroup(cells, notpogo, level, (cell, item) => cell.notpogo.push(item));
 
 			return cells;
 		}
@@ -926,7 +926,8 @@
 						cell: cell,
 						gyms: [],
 						stops: [],
-						notClassified: []
+						notClassified: [],
+						notpogo: []
 					};
 				}
 				callback(cells[cellId], item);
@@ -2750,7 +2751,7 @@
 				const data = allCells[id];
 				checkIsPortalMissing(data.gyms, data);
 				checkIsPortalMissing(data.stops, data);
-				//checkIsPortalMissing(data.notpogo);
+				checkIsPortalMissing(data.notpogo, data);
 
 				if (data.notClassified.length == 0)
 					return;
@@ -3155,7 +3156,7 @@
 				id: 'missingPortals',
 				html: div,
 				width: width + 'px',
-				title: 'These portals are missing in Ingress',
+				title: 'These wayspots are no longer available',
 				buttons: {
 				}
 			});
@@ -3687,10 +3688,10 @@
 				document.getElementById('sidebar').appendChild(sidebarPogo);
 			}
 
-			sidebarPogo.appendChild(createCounter('New pokestops', 'pokestops', promptForNewPokestops));
+			sidebarPogo.appendChild(createCounter('New wayspots', 'pokestops', promptForNewPokestops));
 			sidebarPogo.appendChild(createCounter('Review required', 'classification', promptToClassifyPokestops));
-			sidebarPogo.appendChild(createCounter('Moved portals', 'moved', promptToMovePokestops));
-			sidebarPogo.appendChild(createCounter('Missing portals', 'missing', promptToRemovePokestops));
+			sidebarPogo.appendChild(createCounter('Moved wayspots', 'moved', promptToMovePokestops));
+			sidebarPogo.appendChild(createCounter('Missing wayspots', 'missing', promptToRemovePokestops));
 			sidebarPogo.appendChild(createCounter('New Gyms', 'gyms', promptToClassifyGyms));
 			sidebarPogo.appendChild(createCounter('Cells with extra Gyms', 'extraGyms', promptToVerifyGyms));
 
