@@ -6,7 +6,7 @@
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
-// @version      0.99.1
+// @version      0.99.2
 // @description  Pokemon Go tools over IITC. News on https://twitter.com/PogoCells
 // @author       Alfonso M.
 // @match        https://intel.ingress.com/*
