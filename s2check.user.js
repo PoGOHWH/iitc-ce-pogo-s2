@@ -3558,7 +3558,7 @@
 				enabled: enabled,
 				isBase: isBase
 			};
-			window.updateDisplayedLayerGroup(name, enabled);
+			// window.updateDisplayedLayerGroup(name, enabled); // No longer a public API, but seems to work fine without it somehow
 		}
 		const removedLayers = {};
 		let portalsLayerGroup;
@@ -3621,7 +3621,7 @@
 				delete layers[layerId];
 			}
 			window.layerChooser._update();
-			window.updateDisplayedLayerGroup(name, enabled);
+			// window.updateDisplayedLayerGroup(name, enabled); // No longer a public API, but seems to work fine without it somehow
 
 			if (typeof portalsLayerGroup.off != 'undefined')
 				portalsLayerGroup.off();
