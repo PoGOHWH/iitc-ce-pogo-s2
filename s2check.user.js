@@ -1,8 +1,9 @@
 // ==UserScript==
-// @id           s2check@pogohwh
 // @name         PoGO Tools, PoGOHWH Edition
-// @category     Layer
 // @namespace    https://github.com/PoGOHWH/iitc-ce-pogo-s2
+// @id           s2check@pogohwh
+// @category     Layer
+// @updateURL    https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @downloadURL  https://raw.githubusercontent.com/PoGOHWH/iitc-ce-pogo-s2/pogohwh/s2check.user.js
 // @homepageURL  https://github.com/PoGOHWH/iitc-ce-pogo-s2
 // @supportURL   https://twitter.com/PogoCells
